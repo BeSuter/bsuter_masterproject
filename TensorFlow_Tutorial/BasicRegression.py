@@ -191,7 +191,6 @@ dnn_horsepower_model = build_and_compile_model(horsepower_normalizer)
 x = tf.linspace(0.0, 250, 251)
 y = dnn_horsepower_model.predict(x)
 
-print(y)
 
 
 
