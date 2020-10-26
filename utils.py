@@ -49,13 +49,14 @@ def tfrecord_writer(path):
 
 
 def get_dataset(path):
-    f_names = [file for file in os.listdir(path)]
+    f_names = [os.path.join(path, file) for file in os.listdir(path) if not file.startswith(".")]
     shapes = _shape_finder(f_names[0])
     dset = tf.data.TFRecordDataset(f_names)
     decoded_dset = data.decode_labeled_dset(dset, shapes)
+    return decoded_dset
 
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
 #    tfrecord_writer("./kappa_maps")
-#    get_dataset("./TFRecords")
+#    dset = get_dataset("./TFRecords")
 
