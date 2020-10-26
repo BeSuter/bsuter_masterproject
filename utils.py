@@ -30,6 +30,7 @@ def tfrecord_writer(path):
     for file in f_names:
         file_path = os.path.join(path, file)
         kappa_map = np.load(file_path)
+        kappa_map = kappa_map - np.mean(kappa_map)
         labels = _label_finder(file)
 
         for index, line in enumerate(all_cosmologies):
@@ -57,3 +58,4 @@ def get_dataset(path):
 #if __name__ == "__main__":
 #    tfrecord_writer("./kappa_maps")
 #    get_dataset("./TFRecords")
+
