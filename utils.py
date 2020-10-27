@@ -62,20 +62,23 @@ def tfrecord_writer(path, target="TFRecords", file_count=32, SCRATCH=True):
 
             if len(serialized_example_dump) % batch_size == 0 and not len(
                     serialized_example_dump) == 0:
+                logger.info("Dumping maps")
                 tfrecord_name = f"kappa_map_cosmo_shapes={len(kappa_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
                 target_path = os.path.join(target, tfrecord_name)
 
                 with tf.io.TFRecordWriter(target_path) as writer:
-                    for serialized_example in serialized_example_dump:
+                    for index, serialized_example in enumerate(serialized_example_dump):
+                        logger.info(f"Writing serialized_example {index+1}/{batch_size}")
                         writer.write(serialized_example)
                 serialized_example_dump.clear()
 
     if not len(serialized_example_dump) == 0:
+        logger.info("Dumping remaining maps")
         tfrecord_name = f"kappa_map_cosmo_shapes={len(kappa_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
         target_path = os.path.join(target, tfrecord_name)
 
         with tf.io.TFRecordWriter(target_path) as writer:
-            for serialized_example in serialized_example_dump:
+            for index, serialized_example in enumerate(serialized_example_dump):
                 writer.write(serialized_example)
 
 
