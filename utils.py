@@ -43,7 +43,7 @@ def tfrecord_writer(path, target="TFRecords", file_count=32, SCRATCH=True):
     batch_size = int(map_count / file_count)
     serialized_example_dump = []
 
-    all_cosmologies = np.genfromtxt("cosmo.par")
+    all_cosmologies = np.genfromtxt(os.path.join(os.path.expandvars("$SCRATCH"), "cosmo.par"))
     for cosmology_label in all_cosmologies:
         omega_m = cosmology_label[0]
         sigma_8 = cosmology_label[6]
