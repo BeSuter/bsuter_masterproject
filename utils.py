@@ -4,6 +4,7 @@ import sys
 import uuid
 import logging
 import numpy as np
+import healpy as hp
 import tensorflow as tf
 
 from DeepSphere import data
@@ -25,13 +26,18 @@ def _shape_finder(str):
     return shapes
 
 
-def tfrecord_writer(path, target="TFRecords", file_count=32, SCRATCH=True):
+def tfrecord_writer(path,
+                    target="TFRecords",
+                    file_count=32,
+                    downsampling=False,
+                    SCRATCH=True):
     """
-    Writes data in 'path' to a TFRecord file. The data will be batched such that there will
-    be #file_count TFRecord files created.
+    Writes kappa_maps in 'path' to a TFRecord file. The kappa_maps are reordered to 'NESTED' an will be batched such
+    that there will be #file_count TFRecord files created.
     :param path: string, absolute path to data directory
     :param target: string, path to directory where TFRecord files will be written to
     :param file_count: int, number of TFRecord files created
+    :param downsampling: int, The desired nside of the output maps
     :param SCRATCH: bool, if True we have $SCRATCH/target
     """
     if SCRATCH:
@@ -43,7 +49,8 @@ def tfrecord_writer(path, target="TFRecords", file_count=32, SCRATCH=True):
     batch_size = int(map_count / file_count)
     serialized_example_dump = []
 
-    all_cosmologies = np.genfromtxt(os.path.join(os.path.expandvars("$SCRATCH"), "cosmo.par"))
+    all_cosmologies = np.genfromtxt(
+        os.path.join(os.path.expandvars("$SCRATCH"), "cosmo.par"))
     for cosmology_label in all_cosmologies:
         omega_m = cosmology_label[0]
         sigma_8 = cosmology_label[6]
@@ -52,6 +59,12 @@ def tfrecord_writer(path, target="TFRecords", file_count=32, SCRATCH=True):
             file_path = os.path.join(path, file)
             try:
                 kappa_map = np.load(file_path)
+                if downsampling:
+                    kappa_map = hp.ud_grade(kappa_map,
+                                            downsampling,
+                                            order_out="NESTED")
+                else:
+                    kappa_map = hp.reorder(kappa_map, r2n=True)
             except IOError as e:
                 logger.critical(e)
                 continue
@@ -63,22 +76,28 @@ def tfrecord_writer(path, target="TFRecords", file_count=32, SCRATCH=True):
             if len(serialized_example_dump) % batch_size == 0 and not len(
                     serialized_example_dump) == 0:
                 logger.info("Dumping maps")
-                tfrecord_name = f"kappa_map_cosmo_shapes={len(kappa_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
+                res = int(np.sqrt((len(kappa_map) / 12.0)))
+                tfrecord_name = f"kappa_map_cosmo_res={res}_shapes={len(kappa_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
                 target_path = os.path.join(target, tfrecord_name)
 
                 with tf.io.TFRecordWriter(target_path) as writer:
-                    for index, serialized_example in enumerate(serialized_example_dump):
-                        logger.info(f"Writing serialized_example {index+1}/{batch_size}")
+                    for index, serialized_example in enumerate(
+                            serialized_example_dump):
+                        logger.info(
+                            f"Writing serialized_example {index+1}/{batch_size}"
+                        )
                         writer.write(serialized_example)
                 serialized_example_dump.clear()
 
     if not len(serialized_example_dump) == 0:
         logger.info("Dumping remaining maps")
-        tfrecord_name = f"kappa_map_cosmo_shapes={len(kappa_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
+        res = int(np.sqrt((len(kappa_map) / 12.0)))
+        tfrecord_name = f"kappa_map_cosmo_res={res}_shapes={len(kappa_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
         target_path = os.path.join(target, tfrecord_name)
 
         with tf.io.TFRecordWriter(target_path) as writer:
-            for index, serialized_example in enumerate(serialized_example_dump):
+            for index, serialized_example in enumerate(
+                    serialized_example_dump):
                 writer.write(serialized_example)
 
 
