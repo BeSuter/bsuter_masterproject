@@ -20,6 +20,13 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
+def _is_power_of_2(n):
+    """
+    Allows zero to pass as a power of 2
+    """
+    return (n & (n - 1) == 0)
+
+
 def _shape_finder(str):
     shapes = re.search(r"(?<=shapes=).+(?=\_total)", str).group(0)
     shapes = [(int(item), ) for item in shapes.split(",")]
@@ -40,6 +47,10 @@ def tfrecord_writer(path,
     :param downsampling: int, The desired nside of the output maps
     :param SCRATCH: bool, if True we have $SCRATCH/target
     """
+    assert _is_power_of_2(
+        downsampling
+    ) == True, f"downsampling={downsampling} is not a power of two"
+
     if SCRATCH:
         target = os.path.join(os.path.expandvars("$SCRATCH"), target)
     os.makedirs(target, exist_ok=True)
