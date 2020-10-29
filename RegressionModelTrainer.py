@@ -100,7 +100,7 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
     model = hp_nn.HealpyGCNN(nside=NSIDE, indices=indices_ext, layers=layers)
     model.build(input_shape=(1,len(indices_ext), 1))
 
-    scratch_path = os.expandvars("$SCRATCH")
+    scratch_path = os.path.expandvars("$SCRATCH")
     data_path = os.path.join(scratch_path, data_path)
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
@@ -143,9 +143,9 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(epoch, epoch_loss_avg.result()))
 
     if HOME:
-        path_to_dir = os.path.join(os.expandvars("$HOME"), save_weights_dir)
+        path_to_dir = os.path.join(os.path.expandvars("$HOME"), save_weights_dir)
     else:
-        path_to_dir = os.path.join(os.expandvars("$SCRATCH"), save_weights_dir)
+        path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"), save_weights_dir)
     os.makedirs(path_to_dir, exist_ok=True)
     weight_file_name = f"kappa_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_"
     logger.info(f"Saving model weights to {save_weights_to}")
@@ -154,5 +154,6 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
 
 
 if __name__ == "__main__":
+    print("Starting RegressionModelTrainer")
     args = sys.argv[1:]
     regression_model_trainer(args[0], args[1], args[2], args[3], args[4])
