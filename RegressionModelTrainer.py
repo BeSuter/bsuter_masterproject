@@ -156,4 +156,4 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
 if __name__ == "__main__":
     print("Starting RegressionModelTrainer")
     args = sys.argv[1:]
-    regression_model_trainer(args[0], args[1], args[2], args[3], args[4])
+    regression_model_trainer(args[0], int(args[1]), int(args[2]), int(args[3]), args[4])
