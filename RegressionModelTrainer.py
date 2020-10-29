@@ -147,7 +147,8 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"), save_weights_dir)
     os.makedirs(path_to_dir, exist_ok=True)
-    weight_file_name = f"kappa_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_"
+    weight_file_name = f"kappa_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.tf"
+    save_weights_to = os.path.join(path_to_dir, weight_file_name)
     logger.info(f"Saving model weights to {save_weights_to}")
     model.save_weights(save_weights_to)
 
