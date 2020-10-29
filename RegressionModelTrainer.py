@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import healpy as hp
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from datetime import datetime
 from utils import get_dataset
@@ -151,6 +152,46 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
     save_weights_to = os.path.join(path_to_dir, weight_file_name)
     logger.info(f"Saving model weights to {save_weights_to}")
     model.save_weights(save_weights_to)
+
+    # Evaluate the model and plot the results
+    for index, set in test_dset.enumerate():
+        kappa_data = tf.expand_dims(tf.boolean_mask(set[0], bool_mask, axis=1), axis=-1)
+        labels = set[1]
+
+        predictions = model(kappa_data)
+        logger.info(f"Plotting predictions {index+1}")
+
+        # Omega_M
+        true_line = np.linspace(0, 0.5, 100)
+        plt.figure(figsize=(12, 8))
+        plt.title('OmegaM predictioin compared to Label')
+        plt.xlabel("Label", fontsize=14)
+        plt.ylabel("Prediction", fontsize=14)
+        plt.plot(labels[:, 0], predictions[:, 0], marker='o', alpha=0.5, ls='')
+        plt.plot(true_line, true_line, alpha=0.3)
+
+        figure_name = f"OmegaM_comparison_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_num={index + 1}.png"
+        path_to_plot_dir = os.path.join(os.path.expandvars("$HOME"), "Plots")
+        os.makedirs(path_to_plot_dir, exist_ok=True)
+        figure_path = os.path.join(path_to_plot_dir, figure_name)
+        plt.savefig(figure_path)
+
+        # Sigma_8
+        true_line = np.linspace(0.4, 0.9, 100)
+        plt.figure(figsize=(12, 8))
+        plt.title('Sigma8 predictioin compared to Label')
+        plt.xlabel("Label", fontsize=14)
+        plt.ylabel("Prediction", fontsize=14)
+        plt.plot(labels[:, 6], predictions[:, 6], marker='o', alpha=0.5, ls='')
+        plt.plot(true_line, true_line, alpha=0.3)
+
+        figure_name = f"Sigma8_comparison_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_num={index + 1}.png"
+        path_to_plot_dir = os.path.join(os.path.expandvars("$HOME"), "Plots")
+        os.makedirs(path_to_plot_dir, exist_ok=True)
+        figure_path = os.path.join(path_to_plot_dir, figure_name)
+        plt.savefig(figure_path)
+
+
 
 
 
