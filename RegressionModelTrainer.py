@@ -101,7 +101,7 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
     model.build(input_shape=(1,len(indices_ext), 1))
 
     scratch_path = os.expandvars("$SCRATCH")
-    data_path = 0s.path.join(scratch_path, data_path)
+    data_path = os.path.join(scratch_path, data_path)
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
     train_dset, test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
