@@ -159,10 +159,11 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
         labels = set[1]
 
         predictions = model(kappa_data)
+        print(predictions)
         logger.info(f"Plotting predictions {index+1}")
 
         # Omega_M
-        true_line = np.linspace(0, 0.5, 100)
+        true_line = np.linspace(0.1, 0.5, 100)
         plt.figure(figsize=(12, 8))
         plt.title('OmegaM predictioin compared to Label')
         plt.xlabel("Label", fontsize=14)
@@ -177,7 +178,7 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
         plt.savefig(figure_path)
 
         # Sigma_8
-        true_line = np.linspace(0.4, 0.9, 100)
+        true_line = np.linspace(0.4, 1.3, 100)
         plt.figure(figsize=(12, 8))
         plt.title('Sigma8 predictioin compared to Label')
         plt.xlabel("Label", fontsize=14)
