@@ -1,9 +1,11 @@
+import os
 import sys
 import logging
 import numpy as np
 import healpy as hp
 import tensorflow as tf
 
+from datetime import datetime
 from utils import get_dataset
 from DeepSphere.utils import extend_indices
 from DeepSphere import healpy_networks as hp_nn
@@ -70,8 +72,8 @@ def grad(model, inputs, targets):
 
 
 def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
-                             save_weights_to, nside=256, vec=[-0.4, 1.0, 0.25],
-                             radius=0.26, l_rate=0.008):
+                             save_weights_dir, nside=256, vec=[-0.4, 1.0, 0.25],
+                             radius=0.26, l_rate=0.008, HOME=True):
     NSIDE = nside
     NPIX = hp.nside2npix(NSIDE)
     vec = np.array(vec)
@@ -98,7 +100,8 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
     model = hp_nn.HealpyGCNN(nside=NSIDE, indices=indices_ext, layers=layers)
     model.build(input_shape=(1,len(indices_ext), 1))
 
-
+    scratch_path = os.expandvars("$SCRATCH")
+    data_path = 0s.path.join(scratch_path, data_path)
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
     train_dset, test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
@@ -138,6 +141,13 @@ def regression_model_trainer(data_path, batch_size, shuffle_size, epochs,
 
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(epoch, epoch_loss_avg.result()))
+
+    if HOME:
+        path_to_dir = os.path.join(os.expandvars("$HOME"), save_weights_dir)
+    else:
+        path_to_dir = os.path.join(os.expandvars("$SCRATCH"), save_weights_dir)
+    os.makedirs(path_to_dir, exist_ok=True)
+    weight_file_name = f"kappa_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_"
     logger.info(f"Saving model weights to {save_weights_to}")
     model.save_weights(save_weights_to)
 
