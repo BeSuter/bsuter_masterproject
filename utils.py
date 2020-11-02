@@ -102,7 +102,8 @@ def get_mask(configuration="Default"):
     indices = np.arange(n_pix)[hp_map > 0.5]
     indices_ext = extend_indices(indices=indices,
                                  nside_in=nside,
-                                 nside_out=nside_out)
+                                 nside_out=nside_out,
+                                 nest=False)
 
     return indices, indices_ext
 
