@@ -35,6 +35,12 @@ def _is_power_of_2(n):
     return n & (n - 1) == 0
 
 
+def _label_finder(str):
+    Om_label = re.search(r"(?<=Om=).+(?=_num)", str).group(0)
+    s8_label = re.search(r"(?<=s8=).+(?=_total)", str).group(0)
+    return (float(Om_label), float(s8_label))
+
+
 def _shape_finder(str):
     shapes = re.search(r"(?<=shapes=).+(?=\_total)", str).group(0)
     shapes = [(int(item), ) for item in shapes.split(",")]
@@ -255,6 +261,63 @@ def LSF_map_rotator(job_index,
         outfile_name = cosmo_file[:-4] + f"_angles={angles[0]},{angles[1]},{angles[2]}.npy"
         final_target_path = os.path.join(target_path, outfile_name)
         np.save(final_target_path, masked_k_map)
+
+
+def LSF_tfrecord_writer(job_index,
+                        path=".cache",
+                        target="TFRecordsMasked",
+                        file_count=32,
+                        SCRATCH=True
+                        ):
+    """
+    ToDo: Find better way of generating the cosmology labels
+    This function is meant to be used in the context of lsf job array.
+    :param job_index: int, corresponds to the job index of the job array has to be [1-file_count].
+    """
+    # Job index starts at 1, array index starts at 0
+    array_idx = int(job_index) - 1
+    if SCRATCH:
+        map_path = os.path.join(os.path.expandvars("$SCRATCH"), path)
+        target_path = os.path.join(os.path.expandvars("$SCRATCH"), target)
+    else:
+        map_path = path
+        target_path = target
+    f_names = [
+        os.path.join(map_path, file) for file in os.listdir(map_path)
+        if not file.startswith(".")
+    ]
+    batch_size = int(len(f_names) / file_count)
+    start = int(array_idx*batch_size)
+    if array_idx+1 == file_count:
+        name_batch = f_names[start:]
+        logger.info(f"Serializing maps {start} to end")
+    else:
+        end = int(start + batch_size)
+        name_batch = f_names[start:end]
+        logger.info(f"Serializing maps {start} to {end}")
+    serialized_example_dump = []
+    for file in name_batch:
+        try:
+            k_map = np.load(file)
+        except IOError as e:
+            logger.critical(e)
+            continue
+        labels = _label_finder(file)
+        cosmo_labels = np.array([labels[0], -1.0, -1.0,
+                                 0.0, 0.0493, 0.6736,
+                                 labels[1], 0.9649, 0.02])
+        serialized_example_dump.append(
+            data.serialize_labeled_example(k_map, cosmo_labels))
+    logger.info("Dumping maps")
+    tfrecord_name = f"kappa_map_cosmo={start}-{end-1}_shapes={len(k_map)},{len(cosmo_labels)}_total_{uuid.uuid4().hex}.tfrecord"
+    target_path = os.path.join(target_path, tfrecord_name)
+    _write_tfr(serialized_example_dump, target_path)
+    serialized_example_dump.clear()
+
+
+
+
+
 
 
 
