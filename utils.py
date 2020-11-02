@@ -50,8 +50,10 @@ def _get_euler_angels(configuration="Default"):
     return unpacked_angles
 
 
-def _get_masked_map(map, mask_pixels):
+def _get_masked_map(map, mask_pixels, padded_pixels):
     masked_map = np.full_like(map, hp.UNSEEN)
+    zero_padding = np.zeros_like(map)
+    masked_map[padded_pixels] = zero_padding[padded_pixels]
     masked_map[mask_pixels] = map[mask_pixels]
     return masked_map
 
@@ -102,7 +104,7 @@ def get_mask(configuration="Default"):
                                  nside_in=nside,
                                  nside_out=nside_out)
 
-    return indices_ext
+    return indices, indices_ext
 
 
 def rotate_map(map, angles, eulertype="ZYX"):
@@ -153,7 +155,7 @@ def tfrecord_writer(path,
 
     if euler_angles:
         all_angles = _get_euler_angels(euler_angles)
-        mask_pixels = get_mask(mask)
+        mask_pixels, padded_pixels = get_mask(mask)
         batch_size = int(len(all_angles) * map_count / file_count)
     else:
         batch_size = int(map_count / file_count)
@@ -177,9 +179,9 @@ def tfrecord_writer(path,
             if euler_angles:
                 for angles in all_angles:
                     rotated_k_map = rotate_map(k_map, angles)
-                    masked_k_map = _get_masked_map(rotated_k_map, mask_pixels)
+                    masked_k_map = _get_masked_map(rotated_k_map, mask_pixels, padded_pixels)
 
-                    masked_k_map = _reorder_map(map, downsampling=downsampling)
+                    masked_k_map = _reorder_map(masked_k_map, downsampling=downsampling)
 
                     serialized_example_dump.append(
                         data.serialize_labeled_example(masked_k_map,
