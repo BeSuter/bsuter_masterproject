@@ -41,7 +41,7 @@ def _shape_finder(str):
     return shapes
 
 
-def _get_euler_angels(configuration="Default"):
+def _get_euler_angles(configuration="Default"):
     all_angles = _get_config("./euler_angles.ini")[configuration]
     unpacked_angles = []
     for angles in all_angles.values():
@@ -138,7 +138,7 @@ def tfrecord_writer(path,
     :param path: string, absolute path to data directory
     :param target: string, path to directory where TFRecord files will be written to
     :param file_count: int, number of TFRecord files created, default is 32
-    :euler_angels: string corresponding section in ./euler_angels.ini, set to False if not applicable
+    :euler_angels: string, corresponding section in ./euler_angels.ini, set to False if not applicable
     :param mask: string, corresponding section in ./mask.ini, only applicable if euler_angles is not False
     :param downsampling: int, The desired nside of the output maps (optional)
     :param SCRATCH: bool, if True we have $SCRATCH/target (optional)
@@ -155,7 +155,7 @@ def tfrecord_writer(path,
         [file for file in os.listdir(path) if not file.startswith(".")])
 
     if euler_angles:
-        all_angles = _get_euler_angels(euler_angles)
+        all_angles = _get_euler_angles(euler_angles)
         mask_pixels, padded_pixels = get_mask(mask)
         batch_size = int(len(all_angles) * map_count / file_count)
     else:
@@ -215,6 +215,47 @@ def tfrecord_writer(path,
         tfrecord_name = f"kappa_map_cosmo_shapes={len(k_map)},{len(cosmology_label)}_total_{uuid.uuid4().hex}.tfrecord"
         target_path = os.path.join(target, tfrecord_name)
         _write_tfr(serialized_example_dump, target_path)
+
+
+def LSF_map_rotator(job_index,
+                    path="kappa_maps",
+                    target=".cache",
+                    downsampling=256,
+                    cosmo_conf="Default",
+                    euler_angles="Default",
+                    mask="Default",
+                    SCRATCH=True):
+    """
+    This function is meant to be used in the context of lsf job array.
+    """
+    cosmo_file = _get_config("./LSF_cosmo_conf.ini")[cosmo_conf][str(job_index)]
+    if SCRATCH:
+        tem_path = os.path.join(os.path.expandvars("$SCRATCH"), path)
+        map_path = os.path.join(tem_path, cosmo_file)
+        target_path = os.path.join(os.path.expandvars("$SCRATCH"), target)
+    else:
+        map_path = os.path.join(path, cosmo_file)
+        target_path = target
+    os.makedirs(target_path, exist_ok=True)
+    try:
+        k_map = np.load(map_path)
+    except IOError as e:
+        logger.critical(e)
+        sys.exit(0)
+    k_map = k_map - np.mean(k_map)
+
+    all_angles = _get_euler_angles(euler_angles)
+    mask_pixels, padded_pixels = get_mask(mask)
+
+    for angles in all_angles:
+        logger.info(f"Rotating map, euler_angle={angles[0]},{angles[1]},{angles[2]}")
+        rotated_k_map = rotate_map(k_map, angles)
+        masked_k_map = _get_masked_map(rotated_k_map, mask_pixels, padded_pixels)
+        masked_k_map = _reorder_map(masked_k_map, downsampling=downsampling)
+        outfile_name = cosmo_file[:-4] + f"_angles={angles[0]},{angles[1]},{angles[2]}.npy"
+        final_target_path = os.path.join(target_path, outfile_name)
+        np.save(final_target_path, masked_k_map)
+
 
 
 def get_dataset(path):
