@@ -44,7 +44,7 @@ def preprocess_dataset(dset, batch_size, shuffle_size):
     train_counter = 0
     for item in test_dataset:
         test_counter += 1
-    for item in train_counter:
+    for item in train_dataset:
         train_counter += 1
     logger.info(
         f"Maps split into training={train_counter*batch_size} and test={test_counter*batch_size}"
