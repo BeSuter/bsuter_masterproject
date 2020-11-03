@@ -23,7 +23,7 @@ logger.addHandler(handler)
 
 
 def is_test(x, y):
-    return x % 5 == 0
+    return x % 10 == 0
 
 
 def is_train(x, y):
