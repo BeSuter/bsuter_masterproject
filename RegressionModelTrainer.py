@@ -39,6 +39,16 @@ def preprocess_dataset(dset, batch_size, shuffle_size):
 
     test_dataset = dset.enumerate().filter(is_test).map(recover)
     train_dataset = dset.enumerate().filter(is_train).map(recover)
+
+    test_counter = 0
+    train_counter = 0
+    for item in test_dataset:
+        test_counter += 1
+    for item in train_counter:
+        train_counter += 1
+    logger.info(
+        f"Maps split into training={train_counter*batch_size} and test={test_counter*batch_size}"
+    )
     return train_dataset, test_dataset
 
 
@@ -146,52 +156,61 @@ def regression_model_trainer(data_path,
                                    save_weights_dir)
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
-                                   save_weights_dir)
+                                   save_weights_dir, date_time)
     os.makedirs(path_to_dir, exist_ok=True)
-    weight_file_name = f"kappa_date-time={date_time}_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.tf"
+    weight_file_name = f"kappa_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.tf"
     save_weights_to = os.path.join(path_to_dir, weight_file_name)
     logger.info(f"Saving model weights to {save_weights_to}")
     model.save_weights(save_weights_to)
 
     # Evaluate the model and plot the results
+    omega_m = plt.figure(figsize=(12, 8))
+    sigma_8 = plt.figure(figsize=(12, 8))
+
+    omega_m_ax = omega_m.add_axes([0.1, 0.35, 0.8, 0.6],
+                                  ylabel="Predictions",
+                                  xlabel="Labels",
+                                  title="OmegaM prediction compared to Label")
+    true_line = np.linspace(0.1, 0.5, 100)
+    omega_m_ax.plot(true_line, true_line, alpha=0.3, color="red")
+
+    sigma_8_ax = omega_m.add_axes([0.1, 0.35, 0.8, 0.6],
+                                  ylabel="Predictions",
+                                  xlabel="Labels",
+                                  title="Sigma8 prediction compared to Label")
+    true_line = np.linspace(0.4, 1.3, 100)
+    sigma_8_ax.plot(true_line, true_line, alpha=0.3, color="red")
+
     for index, set in test_dset.enumerate():
         kappa_data = tf.expand_dims(tf.boolean_mask(set[0], bool_mask, axis=1),
                                     axis=-1)
         labels = set[1]
 
         predictions = model(kappa_data)
-        print(predictions)
+
         logger.info(f"Plotting predictions {index+1}")
+        omega_m_ax.plot(labels[:, 0],
+                        predictions[:, 0],
+                        marker='o',
+                        alpha=0.5,
+                        ls='',
+                        color="blue")
+        sigma_8_ax.plot(labels[:, 6],
+                        predictions[:, 6],
+                        marker='o',
+                        alpha=0.5,
+                        ls='',
+                        color="blue")
 
-        # Omega_M
-        true_line = np.linspace(0.1, 0.5, 100)
-        plt.figure(figsize=(12, 8))
-        plt.title('OmegaM predictioin compared to Label')
-        plt.xlabel("Label", fontsize=14)
-        plt.ylabel("Prediction", fontsize=14)
-        plt.plot(labels[:, 0], predictions[:, 0], marker='o', alpha=0.5, ls='')
-        plt.plot(true_line, true_line, alpha=0.3)
-
-        figure_name = f"OmegaM_comparison_date-time={date_time}_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_num={index + 1}.png"
-        path_to_plot_dir = os.path.join(os.path.expandvars("$HOME"), "Plots")
-        os.makedirs(path_to_plot_dir, exist_ok=True)
-        figure_path = os.path.join(path_to_plot_dir, figure_name)
-        plt.savefig(figure_path)
-
-        # Sigma_8
-        true_line = np.linspace(0.4, 1.3, 100)
-        plt.figure(figsize=(12, 8))
-        plt.title('Sigma8 predictioin compared to Label')
-        plt.xlabel("Label", fontsize=14)
-        plt.ylabel("Prediction", fontsize=14)
-        plt.plot(labels[:, 6], predictions[:, 6], marker='o', alpha=0.5, ls='')
-        plt.plot(true_line, true_line, alpha=0.3)
-
-        figure_name = f"Sigma8_comparison_date-time={date_time}_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}_num={index + 1}.png"
-        path_to_plot_dir = os.path.join(os.path.expandvars("$HOME"), "Plots")
-        os.makedirs(path_to_plot_dir, exist_ok=True)
-        figure_path = os.path.join(path_to_plot_dir, figure_name)
-        plt.savefig(figure_path)
+    path_to_plot_dir = os.path.join(os.path.expandvars("$HOME"), "Plots",
+                                    date_time)
+    os.makedirs(path_to_plot_dir, exist_ok=True)
+    omega_m_name = f"OmegaM_comparison_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.png"
+    sigma_8_name = f"Sigma8_comparison_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.png"
+    omega_m_path = os.path.join(path_to_plot_dir, omega_m_name)
+    sigma_8_path = os.path.join(path_to_plot_dir, sigma_8_name)
+    omega_m.savefig(omega_m_path)
+    sigma_8.savefig(sigma_8_path)
 
 
 if __name__ == "__main__":
