@@ -174,7 +174,7 @@ def regression_model_trainer(data_path,
     true_line = np.linspace(0.1, 0.5, 100)
     omega_m_ax.plot(true_line, true_line, alpha=0.3, color="red")
 
-    sigma_8_ax = omega_m.add_axes([0.1, 0.35, 0.8, 0.6],
+    sigma_8_ax = sigma_8.add_axes([0.1, 0.35, 0.8, 0.6],
                                   ylabel="Predictions",
                                   xlabel="Labels",
                                   title="Sigma8 prediction compared to Label")
