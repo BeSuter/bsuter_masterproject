@@ -154,7 +154,7 @@ def regression_model_trainer(data_path,
 
     if HOME:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
-                                   save_weights_dir)
+                                   save_weights_dir, date_time)
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
                                    save_weights_dir, date_time)
@@ -220,7 +220,7 @@ def regression_model_trainer(data_path,
     omega_m.savefig(omega_m_path)
     sigma_8.savefig(sigma_8_path)
 
-    l2_color_plot(color_predictions, color_labels, target=None, HOME=True)
+    l2_color_plot(np.asarray(color_predictions), np.asarray(color_labels), target=None, HOME=True)
 
 
 if __name__ == "__main__":
