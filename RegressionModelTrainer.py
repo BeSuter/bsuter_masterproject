@@ -10,6 +10,7 @@ from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
+from Plotter import l2_color_plot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -181,12 +182,19 @@ def regression_model_trainer(data_path,
     true_line = np.linspace(0.4, 1.3, 100)
     sigma_8_ax.plot(true_line, true_line, alpha=0.3, color="red")
 
+    color_predictions = []
+    color_labels = []
     for index, set in test_dset.enumerate():
         kappa_data = tf.expand_dims(tf.boolean_mask(set[0], bool_mask, axis=1),
                                     axis=-1)
         labels = set[1]
 
         predictions = model(kappa_data)
+
+        for prediction in predictions.numpy()[:,[0,6]]:
+            color_predictions.append(prediction)
+        for label in labels.numpy()[:,[0,6]]:
+            color_labels.append(label)
 
         logger.info(f"Plotting predictions {index+1}")
         omega_m_ax.plot(labels[:, 0],
@@ -211,6 +219,8 @@ def regression_model_trainer(data_path,
     sigma_8_path = os.path.join(path_to_plot_dir, sigma_8_name)
     omega_m.savefig(omega_m_path)
     sigma_8.savefig(sigma_8_path)
+
+    l2_color_plot(color_predictions, color_labels, target=None, HOME=True)
 
 
 if __name__ == "__main__":
