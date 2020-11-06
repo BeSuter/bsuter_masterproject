@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-def _l2_norm(predictions, labels):
+def _l2_norm_and_labels_ordered(predictions, labels):
     """
-    :params x: ndarray
-    :params y: ndarray
+    :params predictions: ndarray
+    :params labels: ndarray
     """
     l2 = collections.OrderedDict()
     for i in range(len(predictions)):
@@ -21,20 +21,12 @@ def _l2_norm(predictions, labels):
                 np.sum(np.power((predictions[i] - labels[i]), 2))
             ]
     l2_mean = []
+    labels = []
     for key in l2.keys():
+        labels.append(key)
         l2_mean.append(sum(l2[key]) / len(l2[key]))
 
-    return np.asarray(l2_mean)
-
-
-def _stupid_way_of_preserving_tuple_order(labels):
-    no_duplicate_labels = collections.OrderedDict()
-    for i in range(len(labels)):
-        no_duplicate_labels[(labels[i][0], labels[i][1])] = None
-    labels = []
-    for key in no_duplicate_labels.keys():
-        labels.append(key)
-    return np.asarray(labels)
+    return np.asarray(l2_mean), np.asarray(labels)
 
 
 def l2_color_plot(predictions, labels, target=None):
@@ -57,10 +49,10 @@ def l2_color_plot(predictions, labels, target=None):
         file_path = os.path.join(tmp_path,
                                  f"L2ColorPlot_date_time={date_time}.png")
 
-    l2_values = _l2_norm(predictions, labels)
+    l2_values, no_duplicate_labels = _l2_norm_and_labels_ordered(
+        predictions, labels)
 
     cm = plt.cm.get_cmap("magma")
-    no_duplicate_labels = _stupid_way_of_preserving_tuple_order(labels)
     print(np.asarray(no_duplicate_labels))
     sc = plt.scatter(no_duplicate_labels[:, 0],
                      no_duplicate_labels[:, 1],
