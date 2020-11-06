@@ -10,7 +10,7 @@ from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
-from Plotter import L2ColorPlot
+from Plotter import PredictionLabelComparisonPlot, l2_color_plot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -165,22 +165,8 @@ def regression_model_trainer(data_path,
     model.save_weights(save_weights_to)
 
     # Evaluate the model and plot the results
-    omega_m = plt.figure(figsize=(12, 8))
-    sigma_8 = plt.figure(figsize=(12, 8))
-
-    omega_m_ax = omega_m.add_axes([0.1, 0.35, 0.8, 0.6],
-                                  ylabel="Predictions",
-                                  xlabel="Labels",
-                                  title="OmegaM prediction compared to Label")
-    true_line = np.linspace(0.1, 0.5, 100)
-    omega_m_ax.plot(true_line, true_line, alpha=0.3, color="red")
-
-    sigma_8_ax = sigma_8.add_axes([0.1, 0.35, 0.8, 0.6],
-                                  ylabel="Predictions",
-                                  xlabel="Labels",
-                                  title="Sigma8 prediction compared to Label")
-    true_line = np.linspace(0.4, 1.3, 100)
-    sigma_8_ax.plot(true_line, true_line, alpha=0.3, color="red")
+    omega_m = PredictionLabelComparisonPlot("Omega_M")
+    sigma_8 = PredictionLabelComparisonPlot("Sigma_8")
 
     color_predictions = []
     color_labels = []
@@ -188,7 +174,6 @@ def regression_model_trainer(data_path,
         kappa_data = tf.expand_dims(tf.boolean_mask(set[0], bool_mask, axis=1),
                                     axis=-1)
         labels = set[1]
-
         predictions = model(kappa_data)
 
         for prediction in predictions.numpy()[:, [0, 6]]:
@@ -196,34 +181,13 @@ def regression_model_trainer(data_path,
         for label in labels.numpy()[:, [0, 6]]:
             color_labels.append(label)
 
-        logger.info(f"Plotting predictions {index+1}")
-        omega_m_ax.plot(labels[:, 0],
-                        predictions[:, 0],
-                        marker='o',
-                        alpha=0.5,
-                        ls='',
-                        color="blue")
-        sigma_8_ax.plot(labels[:, 6],
-                        predictions[:, 6],
-                        marker='o',
-                        alpha=0.5,
-                        ls='',
-                        color="blue")
+        omega_m.add_to_plot(predictions[:, 0], labels[:, 0])
+        sigma_8.add_to_plot(predictions[:, 6], labels[:, 6])
 
-    path_to_plot_dir = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                    date_time)
-    os.makedirs(path_to_plot_dir, exist_ok=True)
-    omega_m_name = f"OmegaM_comparison_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.png"
-    sigma_8_name = f"Sigma8_comparison_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.png"
-    omega_m_path = os.path.join(path_to_plot_dir, omega_m_name)
-    sigma_8_path = os.path.join(path_to_plot_dir, sigma_8_name)
-    omega_m.savefig(omega_m_path)
-    sigma_8.savefig(sigma_8_path)
+    omega_m.save_plot()
+    sigma_8.save_plot()
 
-    l2_color_plot = L2ColorPlot()
-    l2_color_plot.add_to_plot(np.asarray(color_predictions),
-                              np.asarray(color_labels))
-    l2_color_plot.save_plot()
+    l2_color_plot(np.asarray(color_predictions), np.asarray(color_labels))
 
 
 if __name__ == "__main__":
