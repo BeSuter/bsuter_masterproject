@@ -92,5 +92,5 @@ def LSF_tfrecord_writer(job_index,
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    job_index = str(os.environ[str(args[0])])
+    job_index = str(args[0])
     LSF_tfrecord_writer(job_index)

@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import configparser
 import numpy as np
 import healpy as hp
 
