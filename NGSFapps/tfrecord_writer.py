@@ -63,11 +63,12 @@ def LSF_tfrecord_writer(job_index,
         if not file.startswith(".")
     ]
     batch_size = int(len(f_names) / file_count)
-    start = int(array_idx * batch_size)
     if array_idx + 1 == file_count:
+        start = int((array_idx - 1) * batch_size + 1)
         name_batch = f_names[start:]
         logger.info(f"Serializing maps {start} to end")
     else:
+        start = int(array_idx * batch_size)
         end = int(start + batch_size)
         name_batch = f_names[start:end]
         logger.info(f"Serializing maps {start} to {end}")
