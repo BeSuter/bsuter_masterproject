@@ -12,5 +12,5 @@ if __name__ == "__main__":
     for idx, file in enumerate(lightcone_files):
         config.set("z=0.0_0", str(idx), file)
 
-    with open("noise.ini", "w") as configfile:
+    with open("LIGHTCONE.ini", "w") as configfile:
         config.write(configfile)
