@@ -11,15 +11,16 @@ if __name__ == "__main__":
             os.path.join(path, file) for file in os.listdir(path)
             if file.endswith(f"tomo={str(tomo+1)}x{str(tomo+1)}.npy")
         ]
-        variance = 0.0
+        std = 0.0
         mean = 0.0
         for file in noise_files:
-            all_cuts = np.sum(np.load(file)[:, 1:][11::12].astype(float), axis=0)
-            variance += all_cuts[0]
-            mean += all_cuts[1]
-        variance /= 8.0 * len(noise_files)
+            std_all_cuts = np.sum(np.sqrt(np.load(file)[:, 1][11::12].astype(float)))
+            mean_all_cuts = np.sum(np.load(file)[:, 2][11::12].astype(float))
+            std += std_all_cuts[0]
+            mean += mean_all_cuts[1]
+        std /= 8.0 * len(noise_files)
         mean /= 8. * len(noise_files)
-        config.set(str(tomo+1), "variance", str(variance))
+        config.set(str(tomo+1), "std", str(std))
         config.set(str(tomo+1), "mean", str(mean))
 
     with open("noise.ini", "w") as configfile:
