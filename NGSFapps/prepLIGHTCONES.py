@@ -60,7 +60,7 @@ def _rotate_maps(map, ctx, downsampling=False):
     return rotated_map
 
 
-def LSF_map_rotator(job_index,
+def LSF_prep_map(job_index,
                     path="/cluster/work/refregier/besuter/data/LIGHTCONES",
                     mask_path = "/cluster/work/refregier/besuter/data/mask",
                     target="NGSF_LIGHTCONES",
@@ -111,3 +111,8 @@ def LSF_map_rotator(job_index,
             outfile_name = cosmo_file[:-5] + f"_cut={cut}_scale={scale}.npy"
             final_target_path = os.path.join(target_path, outfile_name)
             np.save(final_target_path, k_map)
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    job_index = str(os.environ[str(args[0])])
+    LSF_prep_map(job_index)

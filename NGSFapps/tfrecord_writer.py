@@ -84,3 +84,8 @@ def LSF_tfrecord_writer(job_index,
     target_path = os.path.join(target_path, tfrecord_name)
     _write_tfr(serialized_example_dump, target_path)
     serialized_example_dump.clear()
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    job_index = str(os.environ[str(args[0])])
+    LSF_tfrecord_writer(job_index)
