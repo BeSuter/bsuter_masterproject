@@ -6,7 +6,6 @@ import healpy as hp
 
 from DeepSphere.utils import extend_indices
 from estats.catalog import catalog
-from utils import _get_config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -17,6 +16,12 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
+
+
+def _get_config(filename):
+    parser = configparser.ConfigParser()
+    parser.read(filename)
+    return parser._sections
 
 
 def _rotate_maps(map, ctx, downsampling=False):

@@ -4,12 +4,9 @@ import sys
 import uuid
 import logging
 import numpy as np
-import healpy as hp
 
+import tensorflow as tf
 from DeepSphere import data
-from DeepSphere.utils import extend_indices
-#from estats.catalog import catalog
-from utils import _write_tfr
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,6 +17,14 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
+
+
+def _write_tfr(serialized_dump, target_path):
+    batch_size = len(serialized_dump)
+    with tf.io.TFRecordWriter(target_path) as writer:
+        for index, serialized_example in enumerate(serialized_dump):
+            logger.info(f"Writing serialized_example {index + 1}/{batch_size}")
+            writer.write(serialized_example)
 
 
 def _label_finder(str):
