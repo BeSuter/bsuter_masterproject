@@ -16,8 +16,8 @@ if __name__ == "__main__":
         for file in noise_files:
             std_all_cuts = np.sum(np.sqrt(np.load(file)[:, 1][11::12].astype(float)))
             mean_all_cuts = np.sum(np.load(file)[:, 2][11::12].astype(float))
-            std += std_all_cuts[0]
-            mean += mean_all_cuts[1]
+            std += std_all_cuts
+            mean += mean_all_cuts
         std /= 8.0 * len(noise_files)
         mean /= 8. * len(noise_files)
         config.set(str(tomo+1), "std", str(std))
