@@ -36,7 +36,7 @@ def _label_finder(str):
 def _noise_info(str):
     tomo = re.search(r"(?<=tomo=).+(?=_z)", str).group(0)
     scale = re.search(r"(?<=scale=).+(?=.n)", str).group(0)
-    return float(tomo)
+    return (float(tomo), float(scale))
 
 
 def LSF_tfrecord_writer(job_index,
@@ -57,6 +57,7 @@ def LSF_tfrecord_writer(job_index,
     else:
         map_path = path
         target_path = target
+    os.makedirs(target_path, exist_ok=True)
     f_names = [
         os.path.join(map_path, file) for file in os.listdir(map_path)
         if not file.startswith(".")
