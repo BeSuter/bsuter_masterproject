@@ -103,7 +103,7 @@ def LSF_prep_map(job_index,
         sys.exit(1)
 
     for cut in range(mask_count):
-        ctx["index_counter"] = cut
+        ctx["index_counter"] = cut + 1
         logger.info(
             f"Applying mask cut={cut} and rotating map back.")
         for scale in ctx["scales"]:
