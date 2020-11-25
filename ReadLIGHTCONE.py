@@ -10,7 +10,7 @@ if __name__ == "__main__":
         if file.endswith("z=0.0_0.fits") and file.startswith("LIGHTCONE")
     ]
     for idx, file in enumerate(lightcone_files):
-        config.set("z=0.0_0", str(idx), file)
+        config.set("z=0.0_0", str(idx+1), file)
 
     with open("LIGHTCONE.ini", "w") as configfile:
         config.write(configfile)
