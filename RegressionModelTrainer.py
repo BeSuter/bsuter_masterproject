@@ -13,7 +13,7 @@ from DeepSphere import gnn_layers
 from Plotter import l2_color_plot, histo_plot
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
