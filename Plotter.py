@@ -54,10 +54,10 @@ def histo_plot(data, label, target=None, epoch=None):
                                  f"HistoPlot_for_{label}_date_time={date_time}")
     else:
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                label)
+                                label, date_time)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path,
-                                 f"HistoPlot_date_time={date_time}")
+                                 f"HistoPlot_{label}")
     if epoch:
         epoch -=1
         file_path += f"_epoch={epoch}.png"
@@ -104,15 +104,15 @@ def l2_color_plot(predictions, labels, target=None, epoch=None):
                                  f"L2ColorPlot_date_time={date_time}.png")
     else:
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                "L2_color_plot")
+                                "L2_color_plot", date_time)
         os.makedirs(tmp_path, exist_ok=True)
         if epoch:
             epoch -= 1
             file_path = os.path.join(tmp_path,
-                                     f"L2ColorPlot_date_time={date_time}_epoch={epoch}.png")
+                                     f"L2ColorPlot_epoch={epoch}.png")
         else:
             file_path = os.path.join(tmp_path,
-                                     f"L2ColorPlot_date_time={date_time}.png")
+                                     f"L2ColorPlot.png")
 
     l2_values, no_duplicate_labels = _l2_norm_and_labels_ordered(
         predictions, labels)
