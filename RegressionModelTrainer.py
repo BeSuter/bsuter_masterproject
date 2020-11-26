@@ -10,7 +10,7 @@ from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
-from Plotter import l2_color_plot, histo_plot
+from Plotter import l2_color_plot, histo_plot, stats
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -211,6 +211,8 @@ def regression_model_trainer(data_path,
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
                           epoch=epoch_non_zero)
+    stats(train_loss_results, "training_loss")
+    stats(global_norm_results, "global_norm")
 
     if HOME:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),

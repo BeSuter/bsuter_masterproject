@@ -6,6 +6,36 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
+def stats(data, label, target=None, epoch=None):
+    """
+    :params data: ndarray
+    :params label: str
+    """
+    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
+
+    plt.figure(figsize=(12,8))
+    plt.plot(data, label=label)
+    plt.title(f"Monitoring {label}")
+    plt.legend()
+
+    if target:
+        os.makedirs(target, exist_ok=True)
+        file_path = os.path.join(target,
+                                 f"Monitoring_{label}_date_time={date_time}")
+    else:
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Monitoring",
+                                label)
+        os.makedirs(tmp_path, exist_ok=True)
+        file_path = os.path.join(tmp_path,
+                                 f"Monitoring_date_time={date_time}")
+    if epoch:
+        epoch -=1
+        file_path += f"_epoch={epoch}.png"
+    else:
+        file_path += ".png"
+    plt.savefig(file_path)
+
+
 def histo_plot(data, label, target=None, epoch=None):
     """
     :params data: ndarray
