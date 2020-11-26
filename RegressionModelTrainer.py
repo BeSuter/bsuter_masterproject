@@ -53,10 +53,8 @@ def preprocess_dataset(dset, batch_size, shuffle_size, split=False):
         )
         return train_dataset, test_dataset
     else:
-        logger.info(
-            "Using all maps for training and evaluation"
-        )
-        dset
+        logger.info("Using all maps for training and evaluation")
+        return dset
 
 
 def mask_maker(dset):
@@ -71,9 +69,9 @@ def mask_maker(dset):
 def _make_noise(map, ctx, tomo_num=4):
     noises = []
     for tomo in range(tomo_num):
-        noise = tf.random.normal(map[0,:,tomo].shape, mean=0.0, stddev=1.0)
-        noise *= ctx[tomo+1][0]
-        noise += ctx[tomo+1][1]
+        noise = tf.random.normal(map[0, :, tomo].shape, mean=0.0, stddev=1.0)
+        noise *= ctx[tomo + 1][0]
+        noise += ctx[tomo + 1][1]
         noises.append(noise)
 
     return tf.stack(noises, axis=1)
@@ -117,8 +115,7 @@ def regression_model_trainer(data_path,
     bool_mask, indices_ext = mask_maker(raw_dset)
 
     # Use all the maps to train the model
-    train_dset = preprocess_dataset(raw_dset, batch_size,
-                                    shuffle_size)
+    train_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
 
     # Define the layers of our model
     optimizer = tf.keras.optimizers.Adam(learning_rate=l_rate)
@@ -150,9 +147,11 @@ def regression_model_trainer(data_path,
         for set in train_dset:
             # Ensure that we have shape (batch_size, pex_len, 4)
             logger.debug("Setting input shape")
-            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0,2,1]), bool_mask, axis=1)
+            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
+                                         bool_mask,
+                                         axis=1)
             logger.debug(f"Input shape set to {kappa_data.shape}")
-            labels = set[1][:,0,:]
+            labels = set[1][:, 0, :]
 
             # Add noise
             logger.debug("Adding noise")
@@ -185,10 +184,12 @@ def regression_model_trainer(data_path,
             om_histo = []
             s8_histo = []
 
-            test_dset = preprocess_dataset(raw_dset, batch_size,
-                                           shuffle_size)
+            test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
             for set in test_dset:
-                kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]), bool_mask, axis=1)
+                kappa_data = tf.boolean_mask(tf.transpose(set[0],
+                                                          perm=[0, 2, 1]),
+                                             bool_mask,
+                                             axis=1)
                 labels = set[1][:, 0, :]
                 labels = labels.numpy()
 
@@ -204,9 +205,11 @@ def regression_model_trainer(data_path,
 
                     om_histo.append(prediction[0] - labels[ii, 0])
                     s8_histo.append(prediction[1] - labels[ii, 1])
-            histo_plot(om_histo, "Om")
-            histo_plot(s8_histo, "S8")
-            l2_color_plot(np.asarray(color_predictions), np.asarray(color_labels))
+            histo_plot(om_histo, "Om", epoch=epoch)
+            histo_plot(s8_histo, "S8", epoch=epoch)
+            l2_color_plot(np.asarray(color_predictions),
+                          np.asarray(color_labels),
+                          epoch=epoch)
 
     if HOME:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
@@ -231,8 +234,5 @@ if __name__ == "__main__":
     ARGS = parser.parse_args()
 
     print("Starting RegressionModelTrainer")
-    regression_model_trainer(ARGS.data_dir,
-                             ARGS.batch_size,
-                             ARGS.shuffle_size,
-                             ARGS.epochs,
-                             ARGS.weights_dir)
+    regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
+                             ARGS.epochs, ARGS.weights_dir)
