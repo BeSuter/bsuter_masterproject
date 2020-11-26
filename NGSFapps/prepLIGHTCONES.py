@@ -88,35 +88,46 @@ def LSF_prep_map(job_index,
         "scales": [2.6]
     }
     # Change the cosmo_files!  --> We want to use the LIGHTCONES.
-    cosmo_file = _get_config("/cluster/work/refregier/besuter/LIGHTCONE.ini")[cosmo_conf][str(
-        job_index)]
-    map_path = os.path.join(path, cosmo_file)
+    om_label = float(_get_config("/cluster/work/refregier/besuter/LIGHTCONE.ini")["z=0.0_0 Om"][str(
+        job_index)])
+    s8_label = float(_get_config("/cluster/work/refregier/besuter/LIGHTCONE.ini")["z=0.0_0 s8"][str(
+        job_index)])
+
     if SCRATCH:
         target_path = os.path.join(os.path.expandvars("$SCRATCH"), target)
     else:
         target_path = target
     os.makedirs(target_path, exist_ok=True)
-    try:
-        k_map_unsmoothed = hp.read_map(map_path)
-    except IOError as e:
-        logger.critical(e)
-        sys.exit(1)
 
-    for cut in range(mask_count):
-        ctx["index_counter"] = cut
-        logger.info(
-            f"Applying mask cut={cut} and rotating map back.")
-        for scale in ctx["scales"]:
-            k_map = hp.sphtfunc.smoothing(
-                k_map_unsmoothed, fwhm=np.radians(float(scale) / 60.))
-            mask = hp.read_map(os.path.join(mask_path, f"TRIMMED-MASK_cut={cut}_tomo=1.fits"))
-            mask = np.logical_not(mask)
-            k_map[mask] = hp.pixelfunc.UNSEEN
-            k_map = _rotate_maps(k_map, ctx, downsampling=downsampling)
+    for scale in ctx["scales"]:
+        for cut in range(mask_count):
+            ctx["index_counter"] = cut
+            logger.info(
+                f"Applying mask cut={cut} and rotating map back.")
+
+            all_maps = []
+            for tomo in range(4):
+                logger.info(f"Hitting on tomo={tomo+1}")
+                cosmo_file = f"LIGHTCONE_IA=0.0_Om={om_label}_eta=0.0_m=0.0_s8={s8_label}_tomo={tomo+1}_z=0.0_0.fits"
+                map_path = os.path.join(path, cosmo_file)
+                try:
+                    k_map_unsmoothed = hp.read_map(map_path)
+                except IOError as e:
+                    logger.critical(e)
+                    sys.exit(1)
+
+                k_map = hp.sphtfunc.smoothing(
+                    k_map_unsmoothed, fwhm=np.radians(float(scale) / 60.))
+                mask = hp.read_map(os.path.join(mask_path, f"TRIMMED-MASK_cut={cut}_tomo=1.fits"))
+                mask = np.logical_not(mask)
+                k_map[mask] = hp.pixelfunc.UNSEEN
+                k_map = _rotate_maps(k_map, ctx, downsampling=downsampling)
+
+                all_maps.append(k_map)
 
             outfile_name = cosmo_file[:-5] + f"_cut={cut}_scale={scale}.npy"
             final_target_path = os.path.join(target_path, outfile_name)
-            np.save(final_target_path, k_map)
+            np.save(final_target_path, np.asarray(all_maps))
 
 if __name__ == "__main__":
     args = sys.argv[1:]
