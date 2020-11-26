@@ -125,7 +125,7 @@ def LSF_prep_map(job_index,
 
                 all_maps.append(k_map)
 
-            outfile_name = cosmo_file[:-5] + f"_cut={cut}_scale={scale}.npy"
+            outfile_name = f"LIGHTCONE_IA=0.0_Om={om_label}_eta=0.0_m=0.0_s8={s8_label}_z=0.0_0_cut={cut}_scale={scale}.npy"
             final_target_path = os.path.join(target_path, outfile_name)
             np.save(final_target_path, np.asarray(all_maps))
 
