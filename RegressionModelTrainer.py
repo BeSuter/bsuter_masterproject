@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import logging
 import numpy as np
 import healpy as hp
@@ -221,7 +222,17 @@ def regression_model_trainer(data_path,
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_dir', type=str, action='store')
+    parser.add_argument('--weights_dir', type=str, action='store')
+    parser.add_argument('--batch_size', type=int, action='store')
+    parser.add_argument('--shuffle_size', type=int, action='store')
+    parser.add_argument('--epochs', type=int, action='store')
+    ARGS = parser.parse_args()
+
     print("Starting RegressionModelTrainer")
-    args = sys.argv[1:]
-    regression_model_trainer(args[0], int(args[1]), int(args[2]), int(args[3]),
-                             args[4])
+    regression_model_trainer(ARGS.data_dir,
+                             ARGS.batch_size,
+                             ARGS.shuffle_size,
+                             ARGS.epochs,
+                             ARGS.weights_dir)
