@@ -42,8 +42,8 @@ def _label_finder(str):
 
 
 def _shape_finder(str):
-    shapes = re.search(r"(?<=shapes=).+(?=\_total)", str).group(0)
-    shapes = [(int(item), ) for item in shapes.split(",")]
+    shapes = re.search(r"(?<=shapes=).+(?=_)", str).group(0)
+    shapes = [(int(item.split(",")[0]), int(item.split(",")[1])) for item in shapes.split("&")]
     return shapes
 
 
@@ -186,9 +186,11 @@ def tfrecord_writer(path,
             if euler_angles:
                 for angles in all_angles:
                     rotated_k_map = rotate_map(k_map, angles)
-                    masked_k_map = _get_masked_map(rotated_k_map, mask_pixels, padded_pixels)
+                    masked_k_map = _get_masked_map(rotated_k_map, mask_pixels,
+                                                   padded_pixels)
 
-                    masked_k_map = _reorder_map(masked_k_map, downsampling=downsampling)
+                    masked_k_map = _reorder_map(masked_k_map,
+                                                downsampling=downsampling)
 
                     serialized_example_dump.append(
                         data.serialize_labeled_example(masked_k_map,
@@ -234,7 +236,8 @@ def LSF_map_rotator(job_index,
     """
     This function is meant to be used in the context of lsf job array.
     """
-    cosmo_file = _get_config("./LSF_cosmo_conf.ini")[cosmo_conf][str(job_index)]
+    cosmo_file = _get_config("./LSF_cosmo_conf.ini")[cosmo_conf][str(
+        job_index)]
     if SCRATCH:
         tem_path = os.path.join(os.path.expandvars("$SCRATCH"), path)
         map_path = os.path.join(tem_path, cosmo_file)
@@ -254,9 +257,11 @@ def LSF_map_rotator(job_index,
     mask_pixels, padded_pixels = get_mask(mask)
 
     for angles in all_angles:
-        logger.info(f"Rotating map, euler_angle={angles[0]},{angles[1]},{angles[2]}")
+        logger.info(
+            f"Rotating map, euler_angle={angles[0]},{angles[1]},{angles[2]}")
         rotated_k_map = rotate_map(k_map, angles)
-        masked_k_map = _get_masked_map(rotated_k_map, mask_pixels, padded_pixels)
+        masked_k_map = _get_masked_map(rotated_k_map, mask_pixels,
+                                       padded_pixels)
         masked_k_map = _reorder_map(masked_k_map, downsampling=downsampling)
         outfile_name = cosmo_file[:-4] + f"_angles={angles[0]},{angles[1]},{angles[2]}.npy"
         final_target_path = os.path.join(target_path, outfile_name)
@@ -267,8 +272,7 @@ def LSF_tfrecord_writer(job_index,
                         path=".cache",
                         target="TFRecordsMasked",
                         file_count=32,
-                        SCRATCH=True
-                        ):
+                        SCRATCH=True):
     """
     ToDo: Find better way of generating the cosmology labels
     This function is meant to be used in the context of lsf job array.
@@ -287,11 +291,13 @@ def LSF_tfrecord_writer(job_index,
         if not file.startswith(".")
     ]
     batch_size = int(len(f_names) / file_count)
-    start = int(array_idx*batch_size)
-    if array_idx+1 == file_count:
+    if array_idx + 1 == file_count:
+        start = int((array_idx - 1) * batch_size + 1)
+        end = len(f_names) + 1
         name_batch = f_names[start:]
         logger.info(f"Serializing maps {start} to end")
     else:
+        start = int(array_idx * batch_size)
         end = int(start + batch_size)
         name_batch = f_names[start:end]
         logger.info(f"Serializing maps {start} to {end}")
@@ -303,9 +309,9 @@ def LSF_tfrecord_writer(job_index,
             logger.critical(e)
             continue
         labels = _label_finder(file)
-        cosmo_labels = np.array([labels[0], -1.0, -1.0,
-                                 0.0, 0.0493, 0.6736,
-                                 labels[1], 0.9649, 0.02])
+        cosmo_labels = np.array([
+            labels[0], -1.0, -1.0, 0.0, 0.0493, 0.6736, labels[1], 0.9649, 0.02
+        ])
         serialized_example_dump.append(
             data.serialize_labeled_example(k_map, cosmo_labels))
     logger.info("Dumping maps")
@@ -313,12 +319,6 @@ def LSF_tfrecord_writer(job_index,
     target_path = os.path.join(target_path, tfrecord_name)
     _write_tfr(serialized_example_dump, target_path)
     serialized_example_dump.clear()
-
-
-
-
-
-
 
 
 def get_dataset(path):
