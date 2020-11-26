@@ -14,7 +14,7 @@ def histo_plot(data, label, target=None, epoch=None):
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
     plt.figure(figsize=(12,8))
-    plt.hist(data, bins=75, label=label, density=True)
+    plt.hist(data, bins=75, label=label, range=(-0.275,0.275), density=True)
     plt.title("Histogram of prediction - label")
     plt.legend()
 
