@@ -6,6 +6,35 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
+def histo_plot(data, label, target=None, epoch=None):
+    """
+    :params data: ndarray
+    :params label: str
+    """
+    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
+
+    plt.figure(figsize=(12,8))
+    plt.hist(data, bins=75, label=label, density=True)
+    plt.title("Histogram of prediction - label")
+    plt.legend()
+
+    if target:
+        os.makedirs(target, exist_ok=True)
+        file_path = os.path.join(target,
+                                 f"HistoPlot_for_{label}_date_time={date_time}")
+    else:
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+                                label)
+        os.makedirs(tmp_path, exist_ok=True)
+        file_path = os.path.join(tmp_path,
+                                 f"HistoPlot_date_time={date_time}")
+    if epoch:
+        file_path += f"_epoch={epoch}.png"
+    else:
+        file_path += ".png"
+    plt.savefig(file_path)
+
+
 def _l2_norm_and_labels_ordered(predictions, labels):
     """
     :params predictions: ndarray
@@ -29,7 +58,7 @@ def _l2_norm_and_labels_ordered(predictions, labels):
     return np.asarray(l2_mean), np.asarray(labels)
 
 
-def l2_color_plot(predictions, labels, target=None):
+def l2_color_plot(predictions, labels, target=None, epoch=None):
     """Plots mean L2 Norm between all predictions and unique labels"""
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
     fig = plt.figure(figsize=(12, 8))
@@ -46,8 +75,12 @@ def l2_color_plot(predictions, labels, target=None):
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
                                 "L2_color_plot")
         os.makedirs(tmp_path, exist_ok=True)
-        file_path = os.path.join(tmp_path,
-                                 f"L2ColorPlot_date_time={date_time}.png")
+        if epoch:
+            file_path = os.path.join(tmp_path,
+                                     f"L2ColorPlot_date_time={date_time}_epoch={epoch}.png")
+        else:
+            file_path = os.path.join(tmp_path,
+                                     f"L2ColorPlot_date_time={date_time}.png")
 
     l2_values, no_duplicate_labels = _l2_norm_and_labels_ordered(
         predictions, labels)
