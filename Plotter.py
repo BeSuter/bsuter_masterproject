@@ -29,6 +29,7 @@ def histo_plot(data, label, target=None, epoch=None):
         file_path = os.path.join(tmp_path,
                                  f"HistoPlot_date_time={date_time}")
     if epoch:
+        epoch -=1
         file_path += f"_epoch={epoch}.png"
     else:
         file_path += ".png"
@@ -76,6 +77,7 @@ def l2_color_plot(predictions, labels, target=None, epoch=None):
                                 "L2_color_plot")
         os.makedirs(tmp_path, exist_ok=True)
         if epoch:
+            epoch -= 1
             file_path = os.path.join(tmp_path,
                                      f"L2ColorPlot_date_time={date_time}_epoch={epoch}.png")
         else:

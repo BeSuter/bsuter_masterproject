@@ -205,11 +205,12 @@ def regression_model_trainer(data_path,
 
                     om_histo.append(prediction[0] - labels[ii, 0])
                     s8_histo.append(prediction[1] - labels[ii, 1])
-            histo_plot(om_histo, "Om", epoch=epoch)
-            histo_plot(s8_histo, "S8", epoch=epoch)
+            epoch_non_zero = epoch + 1
+            histo_plot(om_histo, "Om", epoch=epoch_non_zero)
+            histo_plot(s8_histo, "S8", epoch=epoch_non_zero)
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
-                          epoch=epoch)
+                          epoch=epoch_non_zero)
 
     if HOME:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
