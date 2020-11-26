@@ -11,7 +11,7 @@ def stats(data, label, target=None, epoch=None):
     :params data: ndarray
     :params label: str
     """
-    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
+    date_time = datetime.now().strftime("%m-%d-%Y")
 
     plt.figure(figsize=(12,8))
     plt.plot(data, label=label)
@@ -41,7 +41,7 @@ def histo_plot(data, label, target=None, epoch=None):
     :params data: ndarray
     :params label: str
     """
-    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
+    date_time = datetime.now().strftime("%m-%d-%Y")
 
     plt.figure(figsize=(12,8))
     plt.hist(data, bins=75, label=label, range=(-0.275,0.275), density=True)
@@ -54,7 +54,7 @@ def histo_plot(data, label, target=None, epoch=None):
                                  f"HistoPlot_for_{label}_date_time={date_time}")
     else:
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                label, date_time)
+                                label)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path,
                                  f"HistoPlot_{label}")
@@ -91,7 +91,7 @@ def _l2_norm_and_labels_ordered(predictions, labels):
 
 def l2_color_plot(predictions, labels, target=None, epoch=None):
     """Plots mean L2 Norm between all predictions and unique labels"""
-    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
+    date_time = datetime.now().strftime("%m-%d-%Y")
     fig = plt.figure(figsize=(12, 8))
     fig.add_axes([0.1, 0.35, 0.8, 0.6],
                  ylabel="Sigma_8",
@@ -104,7 +104,7 @@ def l2_color_plot(predictions, labels, target=None, epoch=None):
                                  f"L2ColorPlot_date_time={date_time}.png")
     else:
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                "L2_color_plot", date_time)
+                                "L2_color_plot")
         os.makedirs(tmp_path, exist_ok=True)
         if epoch:
             epoch -= 1
