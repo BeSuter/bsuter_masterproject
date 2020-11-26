@@ -36,7 +36,7 @@ def _label_finder(str):
 def _noise_info(str):
     tomo = re.search(r"(?<=tomo=).+(?=_z)", str).group(0)
     scale = re.search(r"(?<=scale=).+(?=.n)", str).group(0)
-    return (float(tomo), float(scale))
+    return (int(tomo), float(scale))
 
 
 def LSF_tfrecord_writer(job_index,
@@ -62,10 +62,11 @@ def LSF_tfrecord_writer(job_index,
         os.path.join(map_path, file) for file in os.listdir(map_path)
         if not file.startswith(".")
     ]
+    f_names.sort()
     batch_size = int(len(f_names) / file_count)
     if array_idx + 1 == file_count:
         start = int((array_idx - 1) * batch_size + 1)
-        end = len(f_names)
+        end = len(f_names) + 1
         name_batch = f_names[start:]
         logger.info(f"Serializing maps {start} to end")
     else:
@@ -88,7 +89,9 @@ def LSF_tfrecord_writer(job_index,
         serialized_example_dump.append(
             data.serialize_labeled_example(k_map, cosmo_labels))
     logger.info("Dumping maps")
-    tfrecord_name = f"kappa_map_cosmo={start}-{end-1}_shapes={np.shape(k_map)},{np.shape(cosmo_labels)}_total_{uuid.uuid4().hex}.tfrecord"
+    map_shape = ','.join(map(str,np.shape(k_map)))
+    label_shape = ','.join(map(str,np.shape(cosmo_labels)))
+    tfrecord_name = f"kappa_map_cosmo={start}-{end-1}_shapes={map_shape}&{label_shape}_{uuid.uuid4().hex}.tfrecord"
     target_path = os.path.join(target_path, tfrecord_name)
     _write_tfr(serialized_example_dump, target_path)
     serialized_example_dump.clear()
