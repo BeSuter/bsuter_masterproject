@@ -6,6 +6,44 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
+def S8plot(data, label, target=None, epoch=None):
+    """
+    :params data: OrderedDict:
+    :params label: str
+    """
+    date_time = datetime.now().strftime("%m-%d-%Y")
+
+    S8_values = []
+    prediction_values = []
+    error_values = []
+    for key, value in data.items():
+        S8_values.append(key[1]*np.sqrt(key[0]/0.3))
+        error_values.append(np.std(value, axis=0))
+        prediction_values.append(np.mean(value, axis=0))
+
+    plt.figure(figsize=(12,8))
+    plt.errorbar(S8_values, prediction_values, yerr=error_values, marker='o', linestyle='')
+    plt.xlabel("sigma8*sqrt(Om/0.3)")
+    plt.ylabel(label)
+
+    if target:
+        os.makedirs(target, exist_ok=True)
+        file_path = os.path.join(target,
+                                 f"S8plot_{label}_date_time={date_time}")
+    else:
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "S8plot",
+                                label)
+        os.makedirs(tmp_path, exist_ok=True)
+        file_path = os.path.join(tmp_path,
+                                 f"S8plot_date_time={date_time}")
+    if epoch:
+        epoch -=1
+        file_path += f"_epoch={epoch}.png"
+    else:
+        file_path += ".png"
+    plt.savefig(file_path)
+
+
 def stats(data, label, target=None, epoch=None):
     """
     :params data: ndarray
