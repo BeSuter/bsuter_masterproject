@@ -11,7 +11,7 @@ from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
-from Plotter import l2_color_plot, histo_plot, S8plot
+from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -126,6 +126,9 @@ def regression_model_trainer(data_path,
     all_results["om"] = collections.OrderedDict()
     all_results["s8"] = collections.OrderedDict()
 
+    om_pred_check = PredictionLabelComparisonPlot("Omega m")
+    s8_pred_check = PredictionLabelComparisonPlot("Sigma 8")
+
 
     for set in test_dset:
         kappa_data = tf.boolean_mask(tf.transpose(set[0],
@@ -141,6 +144,9 @@ def regression_model_trainer(data_path,
         predictions = model(kappa_data)
 
         for ii, prediction in enumerate(predictions.numpy()):
+            om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
+            s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
+
             color_predictions.append(prediction)
             color_labels.append(labels[ii, :])
 
@@ -170,6 +176,8 @@ def regression_model_trainer(data_path,
                   np.asarray(color_labels))
     S8plot(all_results["om"], "Om")
     S8plot(all_results["s8"], "sigma8")
+    om_pred_check.save_plot()
+    s8_pred_check.save_plot()
 
 
 
