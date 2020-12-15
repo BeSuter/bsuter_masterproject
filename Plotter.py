@@ -7,24 +7,32 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-def noise_plotter(noise, indices_ext, nside, tomo_num=4, target=None, layer="Undefined_Layer"):
+def noise_plotter(noise,
+                  indices_ext,
+                  nside,
+                  tomo_num=4,
+                  target=None,
+                  layer="Undefined_Layer"):
     date_time = datetime.now().strftime("%m-%d-%Y")
     total_noise_map = np.full(hp.nside2npix(nside), hp.UNSEEN)
     for tomo in range(tomo_num):
         for idx, pixel in enumerate(indices_ext):
             total_noise_map[pixel] = noise[0, idx, tomo]
 
-        hp.mollview(total_noise_map, nest=True, title=f"Noise only, tomographic bin {tomo + 1}")
+        hp.mollview(total_noise_map,
+                    nest=True,
+                    title=f"Noise only, tomographic bin {tomo + 1}")
 
         if target:
             os.makedirs(target, exist_ok=True)
-            file_path = os.path.join(target,
-                                     f"Noise_tomo={tomo + 1}_date_time={date_time}.plt")
+            file_path = os.path.join(
+                target, f"Noise_tomo={tomo + 1}_date_time={date_time}.plt")
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Noise", layer)
+            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+                                    "Noise", layer)
             os.makedirs(tmp_path, exist_ok=True)
-            file_path = os.path.join(tmp_path,
-                                     f"Noise_tomo={tomo + 1}_date_time={date_time}.pdf")
+            file_path = os.path.join(
+                tmp_path, f"Noise_tomo={tomo + 1}_date_time={date_time}.pdf")
         plt.savefig(file_path)
 
 
@@ -39,12 +47,16 @@ def S8plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     prediction_values = []
     error_values = []
     for key, value in data.items():
-        S8_values.append(key[1]*np.sqrt(key[0]/0.3))
+        S8_values.append(key[1] * np.sqrt(key[0] / 0.3))
         error_values.append(np.std(value, axis=0))
         prediction_values.append(np.mean(value, axis=0))
 
-    plt.figure(figsize=(12,8))
-    plt.errorbar(S8_values, prediction_values, yerr=error_values, marker='o', linestyle='')
+    plt.figure(figsize=(12, 8))
+    plt.errorbar(S8_values,
+                 prediction_values,
+                 yerr=error_values,
+                 marker='o',
+                 linestyle='')
     plt.xlabel("sigma8*sqrt(Om/0.3)")
     plt.ylabel(label)
 
@@ -56,8 +68,7 @@ def S8plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "S8plot",
                                 label, layer)
         os.makedirs(tmp_path, exist_ok=True)
-        file_path = os.path.join(tmp_path,
-                                 f"S8plot_date_time={date_time}")
+        file_path = os.path.join(tmp_path, f"S8plot_date_time={date_time}")
     if epoch:
         epoch -= 1
         file_path += f"_epoch={epoch}.png"
@@ -73,7 +84,7 @@ def stats(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     """
     date_time = datetime.now().strftime("%m-%d-%Y")
 
-    plt.figure(figsize=(12,8))
+    plt.figure(figsize=(12, 8))
     plt.plot(data, label=label)
     plt.title(f"Monitoring {label}")
     plt.legend()
@@ -83,11 +94,10 @@ def stats(data, label, target=None, epoch=None, layer="Undefined_Layer"):
         file_path = os.path.join(target,
                                  f"Monitoring_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Monitoring",
-                                label, layer)
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+                                "Monitoring", label, layer)
         os.makedirs(tmp_path, exist_ok=True)
-        file_path = os.path.join(tmp_path,
-                                 f"Monitoring_date_time={date_time}")
+        file_path = os.path.join(tmp_path, f"Monitoring_date_time={date_time}")
     if epoch:
         epoch -= 1
         file_path += f"_epoch={epoch}.png"
@@ -103,23 +113,22 @@ def histo_plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     """
     date_time = datetime.now().strftime("%m-%d-%Y")
 
-    plt.figure(figsize=(12,8))
-    plt.hist(data, bins=75, label=label, range=(-0.275,0.275), density=True)
+    plt.figure(figsize=(12, 8))
+    plt.hist(data, bins=75, label=label, range=(-0.275, 0.275), density=True)
     plt.title("Histogram of prediction - label")
     plt.legend()
 
     if target:
         os.makedirs(target, exist_ok=True)
-        file_path = os.path.join(target,
-                                 f"HistoPlot_for_{label}_date_time={date_time}")
+        file_path = os.path.join(
+            target, f"HistoPlot_for_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                label, layer)
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", label,
+                                layer)
         os.makedirs(tmp_path, exist_ok=True)
-        file_path = os.path.join(tmp_path,
-                                 f"HistoPlot_{label}")
+        file_path = os.path.join(tmp_path, f"HistoPlot_{label}")
     if epoch:
-        epoch -=1
+        epoch -= 1
         file_path += f"_epoch={epoch}.png"
     else:
         file_path += ".png"
@@ -149,7 +158,11 @@ def _l2_norm_and_labels_ordered(predictions, labels):
     return np.asarray(l2_mean), np.asarray(labels)
 
 
-def l2_color_plot(predictions, labels, target=None, epoch=None, layer="Undefined_Layer"):
+def l2_color_plot(predictions,
+                  labels,
+                  target=None,
+                  epoch=None,
+                  layer="Undefined_Layer"):
     """Plots mean L2 Norm between all predictions and unique labels"""
     date_time = datetime.now().strftime("%m-%d-%Y")
     fig = plt.figure(figsize=(12, 8))
@@ -171,8 +184,7 @@ def l2_color_plot(predictions, labels, target=None, epoch=None, layer="Undefined
             file_path = os.path.join(tmp_path,
                                      f"L2ColorPlot_epoch={epoch}.png")
         else:
-            file_path = os.path.join(tmp_path,
-                                     f"L2ColorPlot.png")
+            file_path = os.path.join(tmp_path, f"L2ColorPlot.png")
 
     l2_values, no_duplicate_labels = _l2_norm_and_labels_ordered(
         predictions, labels)
@@ -214,9 +226,11 @@ class PredictionLabelComparisonPlot:
             os.makedirs(target, exist_ok=True)
             self.file_path = os.path.join(target, plot_name + ".png")
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", layer)
+            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+                                    layer)
             os.makedirs(tmp_path, exist_ok=True)
-            self.file_path = os.path.join(tmp_path, plot_name + f"_date_time={date_time}" + ".png")
+            self.file_path = os.path.join(
+                tmp_path, plot_name + f"_date_time={date_time}" + ".png")
 
     def add_to_plot(self, predictions, labels):
         self.fig_ax.plot(labels,

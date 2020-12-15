@@ -35,30 +35,67 @@ def get_layers(layer):
             tf.keras.layers.Dense(2)
         ]
     if layer == "layer_2":
-        layers = [gnn_layers.HealpyPseudoConv(p=1, Fout=32, activation=tf.nn.relu),
-                  gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
-                  gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
-                  hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
-                  tf.keras.layers.LayerNormalization(axis=-1),
-                  gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
-                  hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
-                  tf.keras.layers.LayerNormalization(axis=-1),
-                  gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
-                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
-                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
-                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
-                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
-                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
-                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
-                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
-                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
-                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
-                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
-                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
-                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
-                  tf.keras.layers.Flatten(),
-                  tf.keras.layers.LayerNormalization(axis=-1),
-                  tf.keras.layers.Dense(2)]
+        layers = [
+            gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
+            gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
+            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            tf.keras.layers.LayerNormalization(axis=-1),
+            gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            tf.keras.layers.LayerNormalization(axis=-1),
+            gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+            hp_nn.Healpy_ResidualLayer("CHEBY",
+                                       layer_kwargs={
+                                           "K": 5,
+                                           "activation": tf.nn.relu
+                                       },
+                                       use_bn=True,
+                                       bn_kwargs={"axis": 1},
+                                       norm_type="layer_norm"),
+            hp_nn.Healpy_ResidualLayer("CHEBY",
+                                       layer_kwargs={
+                                           "K": 5,
+                                           "activation": tf.nn.relu
+                                       },
+                                       use_bn=True,
+                                       bn_kwargs={"axis": 1},
+                                       norm_type="layer_norm"),
+            hp_nn.Healpy_ResidualLayer("CHEBY",
+                                       layer_kwargs={
+                                           "K": 5,
+                                           "activation": tf.nn.relu
+                                       },
+                                       use_bn=True,
+                                       bn_kwargs={"axis": 1},
+                                       norm_type="layer_norm"),
+            hp_nn.Healpy_ResidualLayer("CHEBY",
+                                       layer_kwargs={
+                                           "K": 5,
+                                           "activation": tf.nn.relu
+                                       },
+                                       use_bn=True,
+                                       bn_kwargs={"axis": 1},
+                                       norm_type="layer_norm"),
+            hp_nn.Healpy_ResidualLayer("CHEBY",
+                                       layer_kwargs={
+                                           "K": 5,
+                                           "activation": tf.nn.relu
+                                       },
+                                       use_bn=True,
+                                       bn_kwargs={"axis": 1},
+                                       norm_type="layer_norm"),
+            hp_nn.Healpy_ResidualLayer("CHEBY",
+                                       layer_kwargs={
+                                           "K": 5,
+                                           "activation": tf.nn.relu
+                                       },
+                                       use_bn=True,
+                                       bn_kwargs={"axis": 1},
+                                       norm_type="layer_norm"),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.LayerNormalization(axis=-1),
+            tf.keras.layers.Dense(2)
+        ]
     return layers
 
 
@@ -109,13 +146,18 @@ def _make_pixel_noise(map, noise_dir, tomo_num=4):
     noises = []
     for tomo in range(tomo_num):
         try:
-            noise_path = os.path.join(noise_dir, f"PixelNoise_tomo={tomo + 1}.npz")
+            noise_path = os.path.join(noise_dir,
+                                      f"PixelNoise_tomo={tomo + 1}.npz")
             noise_ctx = np.load(noise_path)
             mean_map = noise_ctx["mean_map"]
             variance_map = noise_ctx["variance_map"]
         except FileNotFoundError:
-            logger.critical("Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?")
-            logger.critical("At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this...")
+            logger.critical(
+                "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?"
+            )
+            logger.critical(
+                "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..."
+            )
             sys.exit(0)
 
         mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
@@ -231,9 +273,12 @@ def regression_model_trainer(data_path,
             all_results["om"] = collections.OrderedDict()
             all_results["s8"] = collections.OrderedDict()
 
-            om_pred_check = PredictionLabelComparisonPlot("Omega_m", epoch=epoch_non_zero, layer=layer)
-            s8_pred_check = PredictionLabelComparisonPlot("Sigma_8", epoch=epoch_non_zero, layer=layer)
-
+            om_pred_check = PredictionLabelComparisonPlot("Omega_m",
+                                                          epoch=epoch_non_zero,
+                                                          layer=layer)
+            s8_pred_check = PredictionLabelComparisonPlot("Sigma_8",
+                                                          epoch=epoch_non_zero,
+                                                          layer=layer)
 
             test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
             for set in test_dset:
@@ -261,29 +306,31 @@ def regression_model_trainer(data_path,
                     s8_histo.append(prediction[1] - labels[ii, 1])
 
                     try:
-                        all_results["om"][(labels[ii][0], labels[ii][1])].append(
-                            prediction[0]
-                        )
+                        all_results["om"][(labels[ii][0],
+                                           labels[ii][1])].append(
+                                               prediction[0])
                     except KeyError:
-                        all_results["om"][(labels[ii][0], labels[ii][1])] = [
-                            prediction[0]
-                        ]
+                        all_results["om"][(labels[ii][0],
+                                           labels[ii][1])] = [prediction[0]]
                     try:
-                        all_results["s8"][(labels[ii][0], labels[ii][1])].append(
-                            prediction[1]
-                        )
+                        all_results["s8"][(labels[ii][0],
+                                           labels[ii][1])].append(
+                                               prediction[1])
                     except KeyError:
-                        all_results["s8"][(labels[ii][0], labels[ii][1])] = [
-                            prediction[1]
-                        ]
+                        all_results["s8"][(labels[ii][0],
+                                           labels[ii][1])] = [prediction[1]]
 
             histo_plot(om_histo, "Om", epoch=epoch_non_zero, layer=layer)
             histo_plot(s8_histo, "S8", epoch=epoch_non_zero, layer=layer)
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
-                          epoch=epoch_non_zero, layer=layer)
+                          epoch=epoch_non_zero,
+                          layer=layer)
             S8plot(all_results["om"], "Om", epoch=epoch_non_zero, layer=layer)
-            S8plot(all_results["s8"], "sigma8", epoch=epoch_non_zero, layer=layer)
+            S8plot(all_results["s8"],
+                   "sigma8",
+                   epoch=epoch_non_zero,
+                   layer=layer)
             om_pred_check.save_plot()
             s8_pred_check.save_plot()
     stats(train_loss_results, "training_loss", layer=layer)
@@ -315,4 +362,5 @@ if __name__ == "__main__":
 
     print("Starting RegressionModelTrainer")
     regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
-                             ARGS.epochs, ARGS.weights_dir, ARGS.noise_dir, ARGS.layer)
+                             ARGS.epochs, ARGS.weights_dir, ARGS.noise_dir,
+                             ARGS.layer)
