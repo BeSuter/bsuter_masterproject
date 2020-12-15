@@ -69,9 +69,8 @@ def mask_maker(dset):
 def _make_pixel_noise(map, noise_dir, tomo_num=4):
     noises = []
     for tomo in range(tomo_num):
-        tomo = tomo + 1
         try:
-            noise_path = os.path.join(noise_dir, f"PixelNoise_tomo={tomo}.npz")
+            noise_path = os.path.join(noise_dir, f"PixelNoise_tomo={tomo + 1}.npz")
             noise_ctx = np.load(noise_path)
             mean_map = noise_ctx["mean_map"]
             variance_map = noise_ctx["variance_map"]
@@ -82,13 +81,14 @@ def _make_pixel_noise(map, noise_dir, tomo_num=4):
 
         mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
         stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
-        noise = tf.random.normal(map[:, :, 0:1].shape, mean=0.0, stddev=1.0)
+        noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+        logger.info(f"Noise shape is {noise.shape}")
         noise = tf.math.multiply(noise, stddev)
         noise = tf.math.add(noise, mean)
 
         noises.append(noise)
 
-    return tf.concat(noises, axis=-1)
+    return tf.stack(noises, axis=-1)
 
 
 def regression_model_trainer(data_path,
