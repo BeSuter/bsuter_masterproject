@@ -79,18 +79,14 @@ def _make_pixel_noise(map, noise_dir, tomo_num=4):
             logger.critical("Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?")
             logger.critical("At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this...")
             sys.exit(0)
-        for pixel in tf.range(len(mean_map)):
-            mean = mean_map[pixel]
-            stddev = np.sqrt(variance_map[pixel])
-            noise = tf.random.normal(map[:, 0:1, 0:1].shape, mean=0.0, stddev=1.0)
-            noise *= stddev
-            noise += mean
 
-            if pixel == 0:
-                new_noise_map = noise
-            else:
-                new_noise_map = tf.concat([new_noise_map, noise], axis=1)
-        noises.append(new_noise_map)
+        mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
+        stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
+        noise = tf.random.normal(map[:, :, 0:1].shape, mean=0.0, stddev=1.0)
+        noise = tf.math.multiply(noise, stddev)
+        noise = tf.math.add(noise, mean)
+
+        noises.append(noise)
 
     return tf.concat(noises, axis=-1)
 
