@@ -14,17 +14,17 @@ def noise_plotter(noise, indices_ext, nside, tomo_num=4, target=None):
         for idx, pixel in enumerate(indices_ext):
             total_noise_map[pixel] = noise[0, idx, tomo]
 
-        hp.mollview(total_noise_map, nest=True, title=f"Noise only, tomographic bin {tomo}")
+        hp.mollview(total_noise_map, nest=True, title=f"Noise only, tomographic bin {tomo + 1}")
 
         if target:
             os.makedirs(target, exist_ok=True)
             file_path = os.path.join(target,
-                                     f"Noise_tomo={tomo}_date_time={date_time}.plt")
+                                     f"Noise_tomo={tomo + 1}_date_time={date_time}.plt")
         else:
             tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Noise")
             os.makedirs(tmp_path, exist_ok=True)
             file_path = os.path.join(tmp_path,
-                                     f"Noise_tomo={tomo}_date_time={date_time}.pdf")
+                                     f"Noise_tomo={tomo + 1}_date_time={date_time}.pdf")
         plt.savefig(file_path)
 
 
