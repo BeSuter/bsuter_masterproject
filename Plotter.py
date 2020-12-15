@@ -1,9 +1,30 @@
 import os
 import collections
 import numpy as np
+import healpy as hp
 import matplotlib.pyplot as plt
 
 from datetime import datetime
+
+
+def noise_plotter(noise, indices_ext, nside, target=None):
+    date_time = datetime.now().strftime("%m-%d-%Y")
+    total_noise_map = np.full(hp.nside2npix(nside), hp.UNSEEN)
+    for idx, pixel in enumerate(indices_ext):
+        total_noise_map[pixel] = noise[idx]
+
+    hp.mollview(total_noise_map, nest=True, title="Noise only")
+
+    if target:
+        os.makedirs(target, exist_ok=True)
+        file_path = os.path.join(target,
+                                 f"Noise_date_time={date_time}.plt")
+    else:
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Noise")
+        os.makedirs(tmp_path, exist_ok=True)
+        file_path = os.path.join(tmp_path,
+                                 f"Noise_date_time={date_time}.plt")
+    plt.savefig(file_path)
 
 
 def S8plot(data, label, target=None, epoch=None):
@@ -37,7 +58,7 @@ def S8plot(data, label, target=None, epoch=None):
         file_path = os.path.join(tmp_path,
                                  f"S8plot_date_time={date_time}")
     if epoch:
-        epoch -=1
+        epoch -= 1
         file_path += f"_epoch={epoch}.png"
     else:
         file_path += ".png"
@@ -67,7 +88,7 @@ def stats(data, label, target=None, epoch=None):
         file_path = os.path.join(tmp_path,
                                  f"Monitoring_date_time={date_time}")
     if epoch:
-        epoch -=1
+        epoch -= 1
         file_path += f"_epoch={epoch}.png"
     else:
         file_path += ".png"
@@ -192,10 +213,9 @@ class PredictionLabelComparisonPlot:
             os.makedirs(target, exist_ok=True)
             self.file_path = os.path.join(target, plot_name)
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                    date_time)
+            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots")
             os.makedirs(tmp_path, exist_ok=True)
-            self.file_path = os.path.join(tmp_path, plot_name)
+            self.file_path = os.path.join(tmp_path, plot_name + f"_date_time={date_time}")
 
     def add_to_plot(self, predictions, labels):
         self.fig_ax.plot(labels,

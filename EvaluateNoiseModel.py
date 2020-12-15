@@ -11,7 +11,7 @@ from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
-from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot
+from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot, noise_plotter
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -67,6 +67,35 @@ def mask_maker(dset):
 
 
 @tf.function
+def _make_pixel_noise(map, noise_dir, tomo_num=4):
+    noises = []
+    for tomo in range(tomo_num):
+        tomo = tomo + 1
+        try:
+            noise_path = os.path.join(noise_dir, f"PixelNoise_tomo={tomo}.npz")
+            noise_ctx = np.load(noise_path)
+            mean_map = noise_ctx["mean_map"]
+            variance_map = noise_ctx["variance_map"]
+        except FileNotFoundError:
+            logger.critical("Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?")
+            logger.critical("At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this...")
+            sys.exit(0)
+        for pixel, mean in mean_map:
+            stddev = np.sqrt(variance_map[pixel])
+            noise = tf.random.normal(map[:, 0:1, 0:1].shape, mean=0.0, stddev=1.0)
+            noise *= stddev
+            noise += mean
+
+            if pixel == 0:
+                new_noise_map = noise
+            else:
+                new_noise_map = np.hstack((new_noise_map, noise))
+        noises.append(new_noise_map)
+
+    return tf.stack(noises, axis=1)
+
+
+@tf.function
 def _make_noise(map, ctx, tomo_num=4):
     noises = []
     for tomo in range(tomo_num):
@@ -82,13 +111,8 @@ def regression_model_trainer(data_path,
                              batch_size,
                              shuffle_size,
                              weights_dir,
+                             noise_dir,
                              nside=512):
-    noise_ctx = {
-        1: [0.060280509803501296, 2.6956629531655215e-07],
-        2: [0.06124986702256547, -1.6575954273040043e-07],
-        3: [0.06110073383083452, -1.4452612096534303e-07],
-        4: [0.06125788725968831, 1.2850254404014072e-07]
-    }
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
     scratch_path = os.path.expandvars("$SCRATCH")
@@ -130,7 +154,7 @@ def regression_model_trainer(data_path,
     s8_pred_check = PredictionLabelComparisonPlot("Sigma 8")
 
 
-    for set in test_dset:
+    for idx, set in enumerate(test_dset):
         kappa_data = tf.boolean_mask(tf.transpose(set[0],
                                                   perm=[0, 2, 1]),
                                      bool_mask,
@@ -138,8 +162,12 @@ def regression_model_trainer(data_path,
         labels = set[1][:, 0, :]
         labels = labels.numpy()
 
+        # Generate noise
+        noise = _make_pixel_noise(kappa_data, noise_dir)
+        # Plot the noise once
+        if idx == 0:
+            noise_plotter(noise, indices_ext, nside)
         # Add noise
-        noise = _make_noise(kappa_data, noise_ctx)
         kappa_data = tf.math.add(kappa_data, noise)
         predictions = model(kappa_data)
 
@@ -185,10 +213,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, action='store')
     parser.add_argument('--weights_dir', type=str, action='store')
+    parser.add_argument('--noise_dir', type=str, action='store')
     parser.add_argument('--batch_size', type=int, action='store')
     parser.add_argument('--shuffle_size', type=int, action='store')
     ARGS = parser.parse_args()
 
     print("Starting Model Evaluation")
     regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
-                             ARGS.weights_dir)
+                             ARGS.weights_dir, ARGS.noise_dir)
