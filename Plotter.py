@@ -7,24 +7,25 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-def noise_plotter(noise, indices_ext, nside, target=None):
+def noise_plotter(noise, indices_ext, nside, tomo_num=4, target=None):
     date_time = datetime.now().strftime("%m-%d-%Y")
     total_noise_map = np.full(hp.nside2npix(nside), hp.UNSEEN)
-    for idx, pixel in enumerate(indices_ext):
-        total_noise_map[pixel] = noise[idx]
+    for tomo in range(tomo_num):
+        for idx, pixel in enumerate(indices_ext):
+            total_noise_map[pixel] = noise[0, idx, tomo]
 
-    hp.mollview(total_noise_map, nest=True, title="Noise only")
+        hp.mollview(total_noise_map, nest=True, title=f"Noise only, tomographic bin {tomo}")
 
-    if target:
-        os.makedirs(target, exist_ok=True)
-        file_path = os.path.join(target,
-                                 f"Noise_date_time={date_time}.plt")
-    else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Noise")
-        os.makedirs(tmp_path, exist_ok=True)
-        file_path = os.path.join(tmp_path,
-                                 f"Noise_date_time={date_time}.plt")
-    plt.savefig(file_path)
+        if target:
+            os.makedirs(target, exist_ok=True)
+            file_path = os.path.join(target,
+                                     f"Noise_tomo={tomo}_date_time={date_time}.plt")
+        else:
+            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "Noise")
+            os.makedirs(tmp_path, exist_ok=True)
+            file_path = os.path.join(tmp_path,
+                                     f"Noise_tomo={tomo}_date_time={date_time}.plt")
+        plt.savefig(file_path)
 
 
 def S8plot(data, label, target=None, epoch=None):

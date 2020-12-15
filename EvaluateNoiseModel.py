@@ -82,7 +82,7 @@ def _make_pixel_noise(map, noise_dir, tomo_num=4):
         mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
         stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
         noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
-        logger.info(f"Noise shape is {noise.shape}")
+        logger.info(f"Single noise map has shape {noise.shape}")
         noise = tf.math.multiply(noise, stddev)
         noise = tf.math.add(noise, mean)
 
@@ -147,6 +147,7 @@ def regression_model_trainer(data_path,
 
         # Generate noise
         noise = _make_pixel_noise(kappa_data, noise_dir)
+        logger.info(f"Total noise map has shape {noise.shape}")
         # Plot the noise once
         if idx == 0:
             noise_plotter(noise, indices_ext, nside)
