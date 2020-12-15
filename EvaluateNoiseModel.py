@@ -49,7 +49,6 @@ def get_layers(layer):
                                            "activation": tf.nn.relu
                                        },
                                        use_bn=True,
-                                       bn_kwargs={"axis": 1},
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -57,7 +56,6 @@ def get_layers(layer):
                                            "activation": tf.nn.relu
                                        },
                                        use_bn=True,
-                                       bn_kwargs={"axis": 1},
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -65,7 +63,6 @@ def get_layers(layer):
                                            "activation": tf.nn.relu
                                        },
                                        use_bn=True,
-                                       bn_kwargs={"axis": 1},
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -73,7 +70,6 @@ def get_layers(layer):
                                            "activation": tf.nn.relu
                                        },
                                        use_bn=True,
-                                       bn_kwargs={"axis": 1},
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -81,7 +77,6 @@ def get_layers(layer):
                                            "activation": tf.nn.relu
                                        },
                                        use_bn=True,
-                                       bn_kwargs={"axis": 1},
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -89,7 +84,6 @@ def get_layers(layer):
                                            "activation": tf.nn.relu
                                        },
                                        use_bn=True,
-                                       bn_kwargs={"axis": 1},
                                        norm_type="layer_norm"),
             tf.keras.layers.Flatten(),
             tf.keras.layers.LayerNormalization(axis=-1),
