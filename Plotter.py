@@ -208,15 +208,14 @@ class PredictionLabelComparisonPlot:
         epochs = kwargs.pop("epochs", None)
         if epochs:
             plot_name += f"_epochs={epochs}"
-        plot_name += ".png"
 
         if target:
             os.makedirs(target, exist_ok=True)
-            self.file_path = os.path.join(target, plot_name)
+            self.file_path = os.path.join(target, plot_name + ".png")
         else:
             tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots")
             os.makedirs(tmp_path, exist_ok=True)
-            self.file_path = os.path.join(tmp_path, plot_name + f"_date_time={date_time}")
+            self.file_path = os.path.join(tmp_path, plot_name + f"_date_time={date_time}" + ".png")
 
     def add_to_plot(self, predictions, labels):
         self.fig_ax.plot(labels,
