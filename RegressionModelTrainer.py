@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import logging
+import collections
 import numpy as np
 import healpy as hp
 import tensorflow as tf
@@ -10,7 +11,7 @@ from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
-from Plotter import l2_color_plot, histo_plot, stats
+from Plotter import l2_color_plot, histo_plot, stats, S8plot, PredictionLabelComparisonPlot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,6 +22,44 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
+
+
+def get_layers(layer):
+    if layer == "layer_1":
+        layers = [
+            hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
+            gnn_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
+            hp_nn.HealpyMonomial(K=5, activation=tf.nn.elu),
+            gnn_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(2)
+        ]
+    if layer == "layer_2":
+        layers = [gnn_layers.HealpyPseudoConv(p=1, Fout=32, activation=tf.nn.relu),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
+                  hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+                  tf.keras.layers.LayerNormalization(axis=-1),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+                  hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+                  tf.keras.layers.LayerNormalization(axis=-1),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  tf.keras.layers.Flatten(),
+                  tf.keras.layers.LayerNormalization(axis=-1),
+                  tf.keras.layers.Dense(2)]
+    return layers
 
 
 def is_test(x, y):
@@ -66,15 +105,28 @@ def mask_maker(dset):
 
 
 @tf.function
-def _make_noise(map, ctx, tomo_num=4):
+def _make_pixel_noise(map, noise_dir, tomo_num=4):
     noises = []
     for tomo in range(tomo_num):
-        noise = tf.random.normal(map[0, :, tomo].shape, mean=0.0, stddev=1.0)
-        noise *= ctx[tomo + 1][0]
-        noise += ctx[tomo + 1][1]
+        try:
+            noise_path = os.path.join(noise_dir, f"PixelNoise_tomo={tomo + 1}.npz")
+            noise_ctx = np.load(noise_path)
+            mean_map = noise_ctx["mean_map"]
+            variance_map = noise_ctx["variance_map"]
+        except FileNotFoundError:
+            logger.critical("Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?")
+            logger.critical("At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this...")
+            sys.exit(0)
+
+        mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
+        stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
+        noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+        noise = tf.math.multiply(noise, stddev)
+        noise = tf.math.add(noise, mean)
+
         noises.append(noise)
 
-    return tf.stack(noises, axis=1)
+    return tf.stack(noises, axis=-1)
 
 
 def loss(model, x, y, training):
@@ -97,15 +149,11 @@ def regression_model_trainer(data_path,
                              shuffle_size,
                              epochs,
                              save_weights_dir,
+                             noise_dir,
+                             layer,
                              nside=512,
                              l_rate=0.008,
                              HOME=True):
-    noise_ctx = {
-        1: [0.060280509803501296, 2.6956629531655215e-07],
-        2: [0.06124986702256547, -1.6575954273040043e-07],
-        3: [0.06110073383083452, -1.4452612096534303e-07],
-        4: [0.06125788725968831, 1.2850254404014072e-07]
-    }
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
     scratch_path = os.path.expandvars("$SCRATCH")
@@ -120,16 +168,9 @@ def regression_model_trainer(data_path,
     # Define the layers of our model
     optimizer = tf.keras.optimizers.Adam(learning_rate=l_rate)
 
-    layers = [
-        hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
-        gnn_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
-        hp_nn.HealpyMonomial(K=5, activation=tf.nn.elu),
-        gnn_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(2)
-    ]
-
     tf.keras.backend.clear_session()
+
+    layers = get_layers(layer)
 
     model = hp_nn.HealpyGCNN(nside=nside, indices=indices_ext, layers=layers)
     model.build(input_shape=(batch_size, len(indices_ext), 4))
@@ -155,7 +196,7 @@ def regression_model_trainer(data_path,
 
             # Add noise
             logger.debug("Adding noise")
-            noise = _make_noise(kappa_data, noise_ctx)
+            noise = _make_pixel_noise(kappa_data, noise_dir)
             logger.debug(f"Noise has shape {noise.shape}")
             kappa_data = tf.math.add(kappa_data, noise)
             logger.debug(f"Noisy data has shape {kappa_data.shape}")
@@ -178,11 +219,21 @@ def regression_model_trainer(data_path,
                 epoch, epoch_loss_avg.result()))
         if epoch % int(num_epochs // 9) == 0:
             # Evaluate the model and plot the results
+            epoch_non_zero = epoch + 1
+
             color_predictions = []
             color_labels = []
 
             om_histo = []
             s8_histo = []
+
+            all_results = {}
+            all_results["om"] = collections.OrderedDict()
+            all_results["s8"] = collections.OrderedDict()
+
+            om_pred_check = PredictionLabelComparisonPlot("Omega_m", epoch=epoch_non_zero, layer=layer)
+            s8_pred_check = PredictionLabelComparisonPlot("Sigma_8", epoch=epoch_non_zero, layer=layer)
+
 
             test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
             for set in test_dset:
@@ -194,32 +245,56 @@ def regression_model_trainer(data_path,
                 labels = labels.numpy()
 
                 # Add noise
-                noise = _make_noise(kappa_data, noise_ctx)
+                noise = _make_pixel_noise(kappa_data, noise_dir)
                 kappa_data = tf.math.add(kappa_data, noise)
 
                 predictions = model(kappa_data)
 
                 for ii, prediction in enumerate(predictions.numpy()):
+                    om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
+                    s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
+
                     color_predictions.append(prediction)
                     color_labels.append(labels[ii, :])
 
                     om_histo.append(prediction[0] - labels[ii, 0])
                     s8_histo.append(prediction[1] - labels[ii, 1])
-            epoch_non_zero = epoch + 1
-            histo_plot(om_histo, "Om", epoch=epoch_non_zero)
-            histo_plot(s8_histo, "S8", epoch=epoch_non_zero)
+
+                    try:
+                        all_results["om"][(labels[ii][0], labels[ii][1])].append(
+                            prediction[0]
+                        )
+                    except KeyError:
+                        all_results["om"][(labels[ii][0], labels[ii][1])] = [
+                            prediction[0]
+                        ]
+                    try:
+                        all_results["s8"][(labels[ii][0], labels[ii][1])].append(
+                            prediction[1]
+                        )
+                    except KeyError:
+                        all_results["s8"][(labels[ii][0], labels[ii][1])] = [
+                            prediction[1]
+                        ]
+
+            histo_plot(om_histo, "Om", epoch=epoch_non_zero, layer=layer)
+            histo_plot(s8_histo, "S8", epoch=epoch_non_zero, layer=layer)
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
-                          epoch=epoch_non_zero)
-    stats(train_loss_results, "training_loss")
-    stats(global_norm_results, "global_norm")
+                          epoch=epoch_non_zero, layer=layer)
+            S8plot(all_results["om"], "Om", epoch=epoch_non_zero, layer=layer)
+            S8plot(all_results["s8"], "sigma8", epoch=epoch_non_zero, layer=layer)
+            om_pred_check.save_plot()
+            s8_pred_check.save_plot()
+    stats(train_loss_results, "training_loss", layer=layer)
+    stats(global_norm_results, "global_norm", layer=layer)
 
     if HOME:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
-                                   save_weights_dir, date_time)
+                                   save_weights_dir, layer, date_time)
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
-                                   save_weights_dir, date_time)
+                                   save_weights_dir, layer, date_time)
     os.makedirs(path_to_dir, exist_ok=True)
     weight_file_name = f"kappa_batch={batch_size}_shuffle={shuffle_size}_epoch={epochs}.tf"
     save_weights_to = os.path.join(path_to_dir, weight_file_name)
@@ -231,11 +306,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', type=str, action='store')
     parser.add_argument('--weights_dir', type=str, action='store')
+    parser.add_argument('--noise_dir', type=str, action='store')
     parser.add_argument('--batch_size', type=int, action='store')
     parser.add_argument('--shuffle_size', type=int, action='store')
     parser.add_argument('--epochs', type=int, action='store')
+    parser.add_argument('--layer', type=str, action='store')
     ARGS = parser.parse_args()
 
     print("Starting RegressionModelTrainer")
     regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
-                             ARGS.epochs, ARGS.weights_dir)
+                             ARGS.epochs, ARGS.weights_dir, ARGS.noise_dir, ARGS.layer)

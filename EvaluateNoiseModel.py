@@ -23,6 +23,44 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
+def get_layers(layer):
+    if layer == "layer_1":
+        layers = [
+            hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
+            gnn_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
+            hp_nn.HealpyMonomial(K=5, activation=tf.nn.elu),
+            gnn_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(2)
+        ]
+    if layer == "layer_2":
+        layers = [gnn_layers.HealpyPseudoConv(p=1, Fout=32, activation=tf.nn.relu),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
+                  hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+                  tf.keras.layers.LayerNormalization(axis=-1),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+                  hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+                  tf.keras.layers.LayerNormalization(axis=-1),
+                  gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  hp_nn.Healpy_ResidualLayer("CHEBY", layer_kwargs={"K": 5, "activation": tf.nn.relu},
+                                             use_bn=True, bn_kwargs={"axis": 1}, norm_type="layer_norm"),
+                  tf.keras.layers.Flatten(),
+                  tf.keras.layers.LayerNormalization(axis=-1),
+                  tf.keras.layers.Dense(2)]
+    return layers
+
+
 def is_test(x, y):
     return x % 10 == 0
 
@@ -96,7 +134,9 @@ def regression_model_trainer(data_path,
                              shuffle_size,
                              weights_dir,
                              noise_dir,
+                             layer,
                              nside=512):
+    # assert layer in weights_dir, "Weights directory does not match the desired layers!"
 
     scratch_path = os.path.expandvars("$SCRATCH")
     data_path = os.path.join(scratch_path, data_path)
@@ -107,14 +147,7 @@ def regression_model_trainer(data_path,
     # Use all the maps to train the model
     test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
 
-    layers = [
-        hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
-        gnn_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
-        hp_nn.HealpyMonomial(K=5, activation=tf.nn.elu),
-        gnn_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(2)
-    ]
+    layers = get_layers(layer)
 
     tf.keras.backend.clear_session()
 
@@ -133,8 +166,8 @@ def regression_model_trainer(data_path,
     all_results["om"] = collections.OrderedDict()
     all_results["s8"] = collections.OrderedDict()
 
-    om_pred_check = PredictionLabelComparisonPlot("Omega m")
-    s8_pred_check = PredictionLabelComparisonPlot("Sigma 8")
+    om_pred_check = PredictionLabelComparisonPlot("Omega_m", layer=layer)
+    s8_pred_check = PredictionLabelComparisonPlot("Sigma_8", layer=layer)
 
 
     for idx, set in enumerate(test_dset):
@@ -182,12 +215,13 @@ def regression_model_trainer(data_path,
                     prediction[1]
                 ]
 
-    histo_plot(om_histo, "Om")
-    histo_plot(s8_histo, "S8")
+    histo_plot(om_histo, "Om", layer=layer)
+    histo_plot(s8_histo, "S8", layer=layer)
     l2_color_plot(np.asarray(color_predictions),
-                  np.asarray(color_labels))
-    S8plot(all_results["om"], "Om")
-    S8plot(all_results["s8"], "sigma8")
+                  np.asarray(color_labels),
+                  layer=layer)
+    S8plot(all_results["om"], "Om", layer=layer)
+    S8plot(all_results["s8"], "sigma8", layer=layer)
     om_pred_check.save_plot()
     s8_pred_check.save_plot()
 
@@ -200,8 +234,9 @@ if __name__ == "__main__":
     parser.add_argument('--noise_dir', type=str, action='store')
     parser.add_argument('--batch_size', type=int, action='store')
     parser.add_argument('--shuffle_size', type=int, action='store')
+    parser.add_argument('--layer', type=str, action='store')
     ARGS = parser.parse_args()
 
     print("Starting Model Evaluation")
     regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
-                             ARGS.weights_dir, ARGS.noise_dir)
+                             ARGS.weights_dir, ARGS.noise_dir, ARGS.layer)
