@@ -7,7 +7,6 @@ import numpy as np
 import healpy as hp
 import tensorflow as tf
 
-from datetime import datetime
 from utils import get_dataset
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
@@ -89,22 +88,10 @@ def _make_pixel_noise(map, noise_dir, tomo_num=4):
             if pixel == 0:
                 new_noise_map = noise
             else:
-                new_noise_map = np.hstack((new_noise_map, noise))
+                new_noise_map = tf.concat([new_noise_map, noise], axis=1)
         noises.append(new_noise_map)
 
-    return tf.stack(noises, axis=1)
-
-
-@tf.function
-def _make_noise(map, ctx, tomo_num=4):
-    noises = []
-    for tomo in range(tomo_num):
-        noise = tf.random.normal(map[0, :, tomo].shape, mean=0.0, stddev=1.0)
-        noise *= ctx[tomo + 1][0]
-        noise += ctx[tomo + 1][1]
-        noises.append(noise)
-
-    return tf.stack(noises, axis=1)
+    return tf.concat(noises, axis=-1)
 
 
 def regression_model_trainer(data_path,
@@ -113,7 +100,6 @@ def regression_model_trainer(data_path,
                              weights_dir,
                              noise_dir,
                              nside=512):
-    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
     scratch_path = os.path.expandvars("$SCRATCH")
     data_path = os.path.join(scratch_path, data_path)
