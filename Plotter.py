@@ -51,7 +51,7 @@ def S8plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
         error_values.append(np.std(value, axis=0))
         prediction_values.append(np.mean(value, axis=0))
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(num="S8plot", figsize=(12, 8))
     plt.errorbar(S8_values,
                  prediction_values,
                  yerr=error_values,
@@ -75,6 +75,7 @@ def S8plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     else:
         file_path += ".png"
     plt.savefig(file_path)
+    plt.close("S8plot")
 
 
 def stats(data, label, target=None, epoch=None, layer="Undefined_Layer"):
@@ -84,7 +85,7 @@ def stats(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     """
     date_time = datetime.now().strftime("%m-%d-%Y")
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(num="stats", figsize=(12, 8))
     plt.plot(data, label=label)
     plt.title(f"Monitoring {label}")
     plt.legend()
@@ -104,6 +105,7 @@ def stats(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     else:
         file_path += ".png"
     plt.savefig(file_path)
+    plt.close("stats")
 
 
 def histo_plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
@@ -113,7 +115,7 @@ def histo_plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     """
     date_time = datetime.now().strftime("%m-%d-%Y")
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(num="histo_plot", figsize=(12, 8))
     plt.hist(data, bins=75, label=label, range=(-0.275, 0.275), density=True)
     plt.title("Histogram of prediction - label")
     plt.legend()
@@ -133,6 +135,7 @@ def histo_plot(data, label, target=None, epoch=None, layer="Undefined_Layer"):
     else:
         file_path += ".png"
     plt.savefig(file_path)
+    plt.close("histo_plot")
 
 
 def _l2_norm_and_labels_ordered(predictions, labels):
@@ -199,6 +202,7 @@ def l2_color_plot(predictions,
                      edgecolors='black')
     fig.colorbar(sc)
     fig.savefig(file_path)
+    plt.close(fig)
 
 
 class PredictionLabelComparisonPlot:
@@ -246,3 +250,4 @@ class PredictionLabelComparisonPlot:
         self.fig_ax.plot(true_line, true_line, alpha=0.3, color="red")
 
         self.fig.savefig(self.file_path)
+        plt.close(self.fig)
