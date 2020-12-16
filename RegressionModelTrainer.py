@@ -305,7 +305,10 @@ def regression_model_trainer(data_path,
                 labels = labels.numpy()
 
                 # Add noise
-                noise = _make_pixel_noise(kappa_data, noise_dir)
+                if noise_type == "pixel_noise":
+                    noise = _make_pixel_noise(kappa_data, noise_dir)
+                elif noise_type == "old_noise":
+                    noise = _make_noise(kappa_data)
                 kappa_data = tf.math.add(kappa_data, noise)
 
                 predictions = model(kappa_data)
