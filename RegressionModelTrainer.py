@@ -165,6 +165,23 @@ def _make_pixel_noise(map, noise_dir, tomo_num=4):
     return tf.stack(noises, axis=-1)
 
 
+@tf.function
+def _make_noise(map, tomo_num=4):
+    ctx = {
+        1: [0.060280509803501296, 2.6956629531655215e-07],
+        2: [0.06124986702256547, -1.6575954273040043e-07],
+        3: [0.06110073383083452, -1.4452612096534303e-07],
+        4: [0.06125788725968831, 1.2850254404014072e-07]
+    }
+    noises = []
+    for tomo in range(tomo_num):
+        noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+        noise *= ctx[tomo + 1][0]
+        noise += ctx[tomo + 1][1]
+        noises.append(noise)
+    return tf.stack(noises, axis=-1)
+
+
 def loss(model, x, y, training):
     # training=training is needed only if there are layers with different
     # behavior during training versus inference (e.g. Dropout).
@@ -184,6 +201,7 @@ def regression_model_trainer(data_path,
                              batch_size,
                              shuffle_size,
                              epochs,
+                             noise_type,
                              save_weights_dir,
                              noise_dir,
                              layer,
@@ -232,7 +250,10 @@ def regression_model_trainer(data_path,
 
             # Add noise
             logger.debug("Adding noise")
-            noise = _make_pixel_noise(kappa_data, noise_dir)
+            if noise_type == "pixel_noise":
+                noise = _make_pixel_noise(kappa_data, noise_dir)
+            elif noise_type == "old_noise":
+                noise = _make_noise(kappa_data)
             logger.debug(f"Noise has shape {noise.shape}")
             kappa_data = tf.math.add(kappa_data, noise)
             logger.debug(f"Noisy data has shape {kappa_data.shape}")
@@ -352,9 +373,10 @@ if __name__ == "__main__":
     parser.add_argument('--shuffle_size', type=int, action='store')
     parser.add_argument('--epochs', type=int, action='store')
     parser.add_argument('--layer', type=str, action='store')
+    parser.add_argument('--noise_type', type=str, action='store', default="pixel_noise")
     ARGS = parser.parse_args()
 
     print("Starting RegressionModelTrainer")
     regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
-                             ARGS.epochs, ARGS.weights_dir, ARGS.noise_dir,
-                             ARGS.layer)
+                             ARGS.epochs, ARGS.noise_type, ARGS.weights_dir,
+                             ARGS.noise_dir, ARGS.layer)
