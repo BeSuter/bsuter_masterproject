@@ -168,17 +168,11 @@ def _make_pixel_noise(map):
 
 @tf.function
 def _make_noise(map):
-    ctx = {
-        1: [0.060280509803501296, 2.6956629531655215e-07],
-        2: [0.06124986702256547, -1.6575954273040043e-07],
-        3: [0.06110073383083452, -1.4452612096534303e-07],
-        4: [0.06125788725968831, 1.2850254404014072e-07]
-    }
     noises = []
     for tomo in range(const_args["_make_noise"]["tomo_num"]):
         noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
-        noise *= ctx[tomo + 1][0]
-        noise += ctx[tomo + 1][1]
+        noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
+        noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
         noises.append(noise)
     return tf.stack(noises, axis=-1)
 
@@ -402,7 +396,14 @@ if __name__ == "__main__":
         },
         "data_dir": ARGS.data_dir,
         "weights_dir": ARGS.weights_dir,
-        "_make_noise": {"tomo_num": 4},
+        "_make_noise": {"tomo_num": 4,
+                        "ctx": {
+                            1: [0.060280509803501296, 2.6956629531655215e-07],
+                            2: [0.06124986702256547, -1.6575954273040043e-07],
+                            3: [0.06110073383083452, -1.4452612096534303e-07],
+                            4: [0.06125788725968831, 1.2850254404014072e-07]
+                        }
+                        },
         "train_step": {"step": 0},
         "noise_type": ARGS.noise_type,
         "epochs": ARGS.epochs,
