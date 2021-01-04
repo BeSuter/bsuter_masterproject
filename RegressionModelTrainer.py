@@ -259,7 +259,7 @@ def regression_model_trainer():
             labels = set[1][:, 0, :]
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
-            glob_norm = train_step(kappa_data, labels, model, optimizer, epoch_loss_avg, epoch_global_norm)
+            glob_norm = train_step(kappa_data, labels, model, optimizer, epoch_loss_avg)
             epoch_global_norm = epoch_global_norm.write(const_args["train_step"]["step"], glob_norm)
 
         # End epoch
