@@ -25,7 +25,7 @@ logger.addHandler(handler)
 
 
 def get_layers():
-    layer = const_args["get_layers"]["layer"]
+    layer = const_args["get_layer"]["layer"]
     if layer == "layer_1":
         layers = [
             hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
