@@ -195,7 +195,7 @@ def grad(model, inputs, targets):
 
 
 @tf.function
-def train_step(maps, labels, model, optimizer, epoch_loss_avg, epoch_global_norm):
+def train_step(maps, labels, model, optimizer, epoch_loss_avg):
     # Add noise
     logger.debug("Adding noise")
     if const_args["noise_type"] == "pixel_noise":
@@ -212,7 +212,7 @@ def train_step(maps, labels, model, optimizer, epoch_loss_avg, epoch_global_norm
 
     epoch_loss_avg.update_state(loss_value)
 
-    return epoch_global_norm.write(const_args["train_step"]["step"], tf.linalg.global_norm(grads))
+    return tf.linalg.global_norm(grads)
 
 
 def regression_model_trainer():
@@ -259,7 +259,8 @@ def regression_model_trainer():
             labels = set[1][:, 0, :]
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
-            epoch_global_norm = train_step(kappa_data, labels, model, optimizer, epoch_loss_avg, epoch_global_norm)
+            glob_norm = train_step(kappa_data, labels, model, optimizer, epoch_loss_avg, epoch_global_norm)
+            epoch_global_norm = epoch_global_norm.write(const_args["train_step"]["step"], glob_norm)
 
         # End epoch
         train_loss_results = train_loss_results.write(epoch, epoch_loss_avg.result())
