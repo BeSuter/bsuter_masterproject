@@ -39,51 +39,51 @@ def get_layers():
         layers = [
             gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
             gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
-            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.elu),
             tf.keras.layers.LayerNormalization(axis=-1),
             gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
-            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.elu),
             tf.keras.layers.LayerNormalization(axis=-1),
             gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
                                            "K": 5,
-                                           "activation": tf.nn.relu
+                                           "activation": tf.nn.elu
                                        },
                                        use_bn=True,
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
                                            "K": 5,
-                                           "activation": tf.nn.relu
+                                           "activation": tf.nn.elu
                                        },
                                        use_bn=True,
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
                                            "K": 5,
-                                           "activation": tf.nn.relu
+                                           "activation": tf.nn.elu
                                        },
                                        use_bn=True,
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
                                            "K": 5,
-                                           "activation": tf.nn.relu
+                                           "activation": tf.nn.elu
                                        },
                                        use_bn=True,
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
                                            "K": 5,
-                                           "activation": tf.nn.relu
+                                           "activation": tf.nn.elu
                                        },
                                        use_bn=True,
                                        norm_type="layer_norm"),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
                                            "K": 5,
-                                           "activation": tf.nn.relu
+                                           "activation": tf.nn.elu
                                        },
                                        use_bn=True,
                                        norm_type="layer_norm"),
@@ -180,11 +180,11 @@ def _make_noise(map):
 
 
 @tf.function
-def loss(model, x, y, training):
+def loss(model, x, y):
     # training=training is needed only if there are layers with different
     # behavior during training versus inference (e.g. Dropout).
     loss_object = tf.keras.losses.MeanAbsoluteError()
-    y_ = model(x, training=training)
+    y_ = model(x, training=True)
 
     return loss_object(y_true=y, y_pred=y_)
 
@@ -192,7 +192,7 @@ def loss(model, x, y, training):
 @tf.function
 def grad(model, inputs, targets):
     with tf.GradientTape() as tape:
-        loss_value = loss(model, inputs, targets, training=True)
+        loss_value = loss(model, inputs, targets)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
