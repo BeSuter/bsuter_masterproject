@@ -287,10 +287,10 @@ def regression_model_trainer():
 
             om_pred_check = PredictionLabelComparisonPlot("Omega_m",
                                                           epoch=epoch_non_zero,
-                                                          layer=const_args["get_layers"]["layer"])
+                                                          layer=const_args["get_layer"]["layer"])
             s8_pred_check = PredictionLabelComparisonPlot("Sigma_8",
                                                           epoch=epoch_non_zero,
-                                                          layer=const_args["get_layers"]["layer"])
+                                                          layer=const_args["get_layer"]["layer"])
 
             test_dset = preprocess_dataset(raw_dset)
             for set in test_dset:
@@ -335,28 +335,28 @@ def regression_model_trainer():
                         all_results["s8"][(labels[ii][0],
                                            labels[ii][1])] = [prediction[1]]
 
-            histo_plot(om_histo, "Om", epoch=epoch_non_zero, layer=const_args["get_layers"]["layer"])
-            histo_plot(s8_histo, "S8", epoch=epoch_non_zero, layer=const_args["get_layers"]["layer"])
+            histo_plot(om_histo, "Om", epoch=epoch_non_zero, layer=const_args["get_layer"]["layer"])
+            histo_plot(s8_histo, "S8", epoch=epoch_non_zero, layer=const_args["get_layer"]["layer"])
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
                           epoch=epoch_non_zero,
-                          layer=const_args["get_layers"]["layer"])
-            S8plot(all_results["om"], "Om", epoch=epoch_non_zero, layer=const_args["get_layers"]["layer"])
+                          layer=const_args["get_layer"]["layer"])
+            S8plot(all_results["om"], "Om", epoch=epoch_non_zero, layer=const_args["get_layer"]["layer"])
             S8plot(all_results["s8"],
                    "sigma8",
                    epoch=epoch_non_zero,
-                   layer=const_args["get_layers"]["layer"])
+                   layer=const_args["get_layer"]["layer"])
             om_pred_check.save_plot()
             s8_pred_check.save_plot()
-    stats(train_loss_results.stack().numpy(), "training_loss", layer=const_args["get_layers"]["layer"])
-    stats(global_norm_results.stack().numpy(), "global_norm", layer=const_args["get_layers"]["layer"])
+    stats(train_loss_results.stack().numpy(), "training_loss", layer=const_args["get_layer"]["layer"])
+    stats(global_norm_results.stack().numpy(), "global_norm", layer=const_args["get_layer"]["layer"])
 
     if const_args["HOME"]:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
-                                   const_args["weights_dir"], const_args["get_layers"]["layer"], date_time)
+                                   const_args["weights_dir"], const_args["get_layer"]["layer"], date_time)
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
-                                   const_args["weights_dir"], const_args["get_layers"]["layer"], date_time)
+                                   const_args["weights_dir"], const_args["get_layer"]["layer"], date_time)
     os.makedirs(path_to_dir, exist_ok=True)
     weight_file_name = f"kappa_batch={const_args['preprocess_dataset']['batch_size']}" + \
                        f"_shuffle={const_args['preprocess_dataset']['shuffle_size']}_epoch={const_args['epochs']}.tf"
