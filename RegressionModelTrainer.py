@@ -107,7 +107,8 @@ recover = lambda x, y: y
 
 def preprocess_dataset(dset):
     dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
-    dset = dset.batch(const_args["preprocess_dataset"]["batch_size"], drop_remainder=True)
+    dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
+                      drop_remainder=True)
 
     if const_args["preprocess_dataset"]["split"]:
         test_dataset = dset.enumerate().filter(is_test).map(recover)
@@ -141,8 +142,9 @@ def _make_pixel_noise(map):
     noises = []
     for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
         try:
-            noise_path = os.path.join(const_args["_make_pixel_noise"]["noise_dir"],
-                                      f"PixelNoise_tomo={tomo + 1}.npz")
+            noise_path = os.path.join(
+                const_args["_make_pixel_noise"]["noise_dir"],
+                f"PixelNoise_tomo={tomo + 1}.npz")
             noise_ctx = np.load(noise_path)
             mean_map = noise_ctx["mean_map"]
             variance_map = noise_ctx["variance_map"]
@@ -234,18 +236,29 @@ def regression_model_trainer():
 
     layers = get_layers()
 
-    model = hp_nn.HealpyGCNN(nside=const_args["nside"], indices=indices_ext, layers=layers)
+    model = hp_nn.HealpyGCNN(nside=const_args["nside"],
+                             indices=indices_ext,
+                             layers=layers)
     model.build(input_shape=(const_args["preprocess_dataset"]["batch_size"],
                              len(indices_ext),
                              const_args["_make_pixel_noise"]["tomo_num"]))
 
     # Keep results for plotting
-    train_loss_results = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
-    global_norm_results = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
+    train_loss_results = tf.TensorArray(tf.float32,
+                                        size=0,
+                                        dynamic_size=True,
+                                        clear_after_read=False)
+    global_norm_results = tf.TensorArray(tf.float32,
+                                         size=0,
+                                         dynamic_size=True,
+                                         clear_after_read=False)
 
     for epoch in range(const_args["epochs"]):
         epoch_loss_avg = tf.keras.metrics.Mean()
-        epoch_global_norm = tf.TensorArray(tf.float32, size=0, dynamic_size=True, clear_after_read=False)
+        epoch_global_norm = tf.TensorArray(tf.float32,
+                                           size=0,
+                                           dynamic_size=True,
+                                           clear_after_read=False)
 
         for element in train_dset.enumerate():
             const_args["train_step"]["step"] = element[0]
@@ -259,14 +272,17 @@ def regression_model_trainer():
             labels = set[1][:, 0, :]
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
-            glob_norm = train_step(kappa_data, labels, model, optimizer, epoch_loss_avg)
-            epoch_global_norm = epoch_global_norm.write(const_args["train_step"]["step"], glob_norm)
+            glob_norm = train_step(kappa_data, labels, model, optimizer,
+                                   epoch_loss_avg)
+            epoch_global_norm = epoch_global_norm.write(
+                const_args["train_step"]["step"], glob_norm)
 
         # End epoch
-        train_loss_results = train_loss_results.write(epoch, epoch_loss_avg.result())
-        global_norm_results = global_norm_results.write(epoch,
-                                                        (sum(epoch_global_norm.stack()) / len(
-                                                            epoch_global_norm.stack())))
+        train_loss_results = train_loss_results.write(epoch,
+                                                      epoch_loss_avg.result())
+        global_norm_results = global_norm_results.write(
+            epoch,
+            (sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack())))
 
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(
@@ -285,12 +301,16 @@ def regression_model_trainer():
             all_results["om"] = collections.OrderedDict()
             all_results["s8"] = collections.OrderedDict()
 
-            om_pred_check = PredictionLabelComparisonPlot("Omega_m",
-                                                          epoch=epoch_non_zero,
-                                                          layer=const_args["get_layer"]["layer"])
-            s8_pred_check = PredictionLabelComparisonPlot("Sigma_8",
-                                                          epoch=epoch_non_zero,
-                                                          layer=const_args["get_layer"]["layer"])
+            om_pred_check = PredictionLabelComparisonPlot(
+                "Omega_m",
+                epoch=epoch_non_zero,
+                layer=const_args["get_layer"]["layer"],
+                noise_type=const_args["noise_type"])
+            s8_pred_check = PredictionLabelComparisonPlot(
+                "Sigma_8",
+                epoch=epoch_non_zero,
+                layer=const_args["get_layer"]["layer"],
+                noise_type=const_args["noise_type"])
 
             test_dset = preprocess_dataset(raw_dset)
             for set in test_dset:
@@ -323,40 +343,64 @@ def regression_model_trainer():
                     try:
                         all_results["om"][(labels[ii][0],
                                            labels[ii][1])].append(
-                            prediction[0])
+                                               prediction[0])
                     except KeyError:
                         all_results["om"][(labels[ii][0],
                                            labels[ii][1])] = [prediction[0]]
                     try:
                         all_results["s8"][(labels[ii][0],
                                            labels[ii][1])].append(
-                            prediction[1])
+                                               prediction[1])
                     except KeyError:
                         all_results["s8"][(labels[ii][0],
                                            labels[ii][1])] = [prediction[1]]
 
-            histo_plot(om_histo, "Om", epoch=epoch_non_zero, layer=const_args["get_layer"]["layer"])
-            histo_plot(s8_histo, "S8", epoch=epoch_non_zero, layer=const_args["get_layer"]["layer"])
+            histo_plot(om_histo,
+                       "Om",
+                       epoch=epoch_non_zero,
+                       layer=const_args["get_layer"]["layer"],
+                       noise_type=const_args["noise_type"])
+            histo_plot(s8_histo,
+                       "S8",
+                       epoch=epoch_non_zero,
+                       layer=const_args["get_layer"]["layer"],
+                       noise_type=const_args["noise_type"])
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
                           epoch=epoch_non_zero,
-                          layer=const_args["get_layer"]["layer"])
-            S8plot(all_results["om"], "Om", epoch=epoch_non_zero, layer=const_args["get_layer"]["layer"])
+                          layer=const_args["get_layer"]["layer"],
+                          noise_type=const_args["noise_type"])
+            S8plot(all_results["om"],
+                   "Om",
+                   epoch=epoch_non_zero,
+                   layer=const_args["get_layer"]["layer"],
+                   noise_type=const_args["noise_type"])
             S8plot(all_results["s8"],
                    "sigma8",
                    epoch=epoch_non_zero,
-                   layer=const_args["get_layer"]["layer"])
+                   layer=const_args["get_layer"]["layer"],
+                   noise_type=const_args["noise_type"])
             om_pred_check.save_plot()
             s8_pred_check.save_plot()
-    stats(train_loss_results.stack().numpy(), "training_loss", layer=const_args["get_layer"]["layer"])
-    stats(global_norm_results.stack().numpy(), "global_norm", layer=const_args["get_layer"]["layer"])
+    stats(train_loss_results.stack().numpy(),
+          "training_loss",
+          layer=const_args["get_layer"]["layer"],
+          noise_type=const_args["noise_type"])
+    stats(global_norm_results.stack().numpy(),
+          "global_norm",
+          layer=const_args["get_layer"]["layer"],
+          noise_type=const_args["noise_type"])
 
     if const_args["HOME"]:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
-                                   const_args["weights_dir"], const_args["get_layer"]["layer"], date_time)
+                                   const_args["weights_dir"],
+                                   const_args["get_layer"]["layer"],
+                                   const_args["noise_type"], date_time)
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
-                                   const_args["weights_dir"], const_args["get_layer"]["layer"], date_time)
+                                   const_args["weights_dir"],
+                                   const_args["get_layer"]["layer"],
+                                   const_args["noise_type"], date_time)
     os.makedirs(path_to_dir, exist_ok=True)
     weight_file_name = f"kappa_batch={const_args['preprocess_dataset']['batch_size']}" + \
                        f"_shuffle={const_args['preprocess_dataset']['shuffle_size']}_epoch={const_args['epochs']}.tf"
@@ -374,7 +418,10 @@ if __name__ == "__main__":
     parser.add_argument('--shuffle_size', type=int, action='store')
     parser.add_argument('--epochs', type=int, action='store')
     parser.add_argument('--layer', type=str, action='store')
-    parser.add_argument('--noise_type', type=str, action='store', default='pixel_noise')
+    parser.add_argument('--noise_type',
+                        type=str,
+                        action='store',
+                        default='pixel_noise')
     parser.add_argument('--nside', type=int, action='store', default=512)
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
     parser.add_argument('--HOME', action='store_true', default=False)
@@ -385,7 +432,9 @@ if __name__ == "__main__":
     # Define all constants used in helper functions
     # --> When tracing, we do not want to have any constant function arguments!
     const_args = {
-        "get_layer": {"layer": ARGS.layer},
+        "get_layer": {
+            "layer": ARGS.layer
+        },
         "preprocess_dataset": {
             "batch_size": ARGS.batch_size,
             "shuffle_size": ARGS.shuffle_size,
@@ -397,15 +446,18 @@ if __name__ == "__main__":
         },
         "data_dir": ARGS.data_dir,
         "weights_dir": ARGS.weights_dir,
-        "_make_noise": {"tomo_num": 4,
-                        "ctx": {
-                            1: [0.060280509803501296, 2.6956629531655215e-07],
-                            2: [0.06124986702256547, -1.6575954273040043e-07],
-                            3: [0.06110073383083452, -1.4452612096534303e-07],
-                            4: [0.06125788725968831, 1.2850254404014072e-07]
-                        }
-                        },
-        "train_step": {"step": 0},
+        "_make_noise": {
+            "tomo_num": 4,
+            "ctx": {
+                1: [0.060280509803501296, 2.6956629531655215e-07],
+                2: [0.06124986702256547, -1.6575954273040043e-07],
+                3: [0.06110073383083452, -1.4452612096534303e-07],
+                4: [0.06125788725968831, 1.2850254404014072e-07]
+            }
+        },
+        "train_step": {
+            "step": 0
+        },
         "noise_type": ARGS.noise_type,
         "epochs": ARGS.epochs,
         "nside": ARGS.nside,
