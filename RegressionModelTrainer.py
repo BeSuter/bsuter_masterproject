@@ -470,7 +470,8 @@ if __name__ == "__main__":
         "noise_type": ARGS.noise_type,
         "epochs": ARGS.epochs,
         "nside": ARGS.nside,
-        "l_rate": ARGS.l_rate
+        "l_rate": ARGS.l_rate,
+        "HOME": ARGS.HOME
     }
 
     regression_model_trainer()
