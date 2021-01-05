@@ -40,10 +40,10 @@ def get_layers():
             gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
             gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
             hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
-            tf.keras.layers.LayerNormalization(axis=[1,2]),
+            tf.keras.layers.LayerNormalization(axis=1),
             gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
-            tf.keras.layers.LayerNormalization(axis=[1,2]),
+            tf.keras.layers.LayerNormalization(axis=1),
             gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -88,6 +88,7 @@ def get_layers():
                                        use_bn=True,
                                        norm_type="layer_norm"),
             tf.keras.layers.Flatten(),
+            tf.keras.layers.LayerNormalization(axis=1),
             tf.keras.layers.Dense(2)
         ]
     return layers
