@@ -305,12 +305,14 @@ def regression_model_trainer():
                 "Omega_m",
                 epoch=epoch_non_zero,
                 layer=const_args["get_layer"]["layer"],
-                noise_type=const_args["noise_type"])
+                noise_type=const_args["noise_type"],
+                start_time=date_time)
             s8_pred_check = PredictionLabelComparisonPlot(
                 "Sigma_8",
                 epoch=epoch_non_zero,
                 layer=const_args["get_layer"]["layer"],
-                noise_type=const_args["noise_type"])
+                noise_type=const_args["noise_type"],
+                start_time=date_time)
 
             test_dset = preprocess_dataset(raw_dset)
             for set in test_dset:
@@ -359,37 +361,44 @@ def regression_model_trainer():
                        "Om",
                        epoch=epoch_non_zero,
                        layer=const_args["get_layer"]["layer"],
-                       noise_type=const_args["noise_type"])
+                       noise_type=const_args["noise_type"],
+                       start_time=date_time)
             histo_plot(s8_histo,
                        "S8",
                        epoch=epoch_non_zero,
                        layer=const_args["get_layer"]["layer"],
-                       noise_type=const_args["noise_type"])
+                       noise_type=const_args["noise_type"],
+                       start_time=date_time)
             l2_color_plot(np.asarray(color_predictions),
                           np.asarray(color_labels),
                           epoch=epoch_non_zero,
                           layer=const_args["get_layer"]["layer"],
-                          noise_type=const_args["noise_type"])
+                          noise_type=const_args["noise_type"],
+                          start_time=date_time)
             S8plot(all_results["om"],
                    "Om",
                    epoch=epoch_non_zero,
                    layer=const_args["get_layer"]["layer"],
-                   noise_type=const_args["noise_type"])
+                   noise_type=const_args["noise_type"],
+                   start_time=date_time)
             S8plot(all_results["s8"],
                    "sigma8",
                    epoch=epoch_non_zero,
                    layer=const_args["get_layer"]["layer"],
-                   noise_type=const_args["noise_type"])
+                   noise_type=const_args["noise_type"],
+                   start_time=date_time)
             om_pred_check.save_plot()
             s8_pred_check.save_plot()
     stats(train_loss_results.stack().numpy(),
           "training_loss",
           layer=const_args["get_layer"]["layer"],
-          noise_type=const_args["noise_type"])
+          noise_type=const_args["noise_type"],
+          start_time=date_time)
     stats(global_norm_results.stack().numpy(),
           "global_norm",
           layer=const_args["get_layer"]["layer"],
-          noise_type=const_args["noise_type"])
+          noise_type=const_args["noise_type"],
+          start_time=date_time)
 
     if const_args["HOME"]:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
