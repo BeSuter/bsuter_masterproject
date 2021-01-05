@@ -215,7 +215,6 @@ def l2_color_plot(predictions,
         predictions, labels)
 
     cm = plt.cm.get_cmap("magma")
-    print(np.asarray(no_duplicate_labels))
     sc = plt.scatter(no_duplicate_labels[:, 0],
                      no_duplicate_labels[:, 1],
                      s=100,
