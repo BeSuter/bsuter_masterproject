@@ -257,7 +257,7 @@ def regression_model_trainer():
                                            size=0,
                                            dynamic_size=True,
                                            clear_after_read=False,)
-
+        logger.debug(f"Executing training step for epoch={epoch}")
         for element in train_dset.enumerate():
             const_args["train_step"]["step"] = element[0]
             set = element[1]
@@ -268,7 +268,6 @@ def regression_model_trainer():
             labels = set[1][:, 0, :]
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
-            logger.debug(f"Executing training step for epoch={epoch} and training_step={element[0]}")
             glob_norm = train_step(kappa_data, labels, model, optimizer,
                                    epoch_loss_avg)
             epoch_global_norm = epoch_global_norm.write(
