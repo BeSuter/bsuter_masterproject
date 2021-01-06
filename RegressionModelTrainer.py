@@ -113,6 +113,9 @@ def preprocess_dataset(dset):
     if const_args["preprocess_dataset"]["split"]:
         test_dataset = dset.enumerate().filter(is_test).map(recover)
         train_dataset = dset.enumerate().filter(is_train).map(recover)
+        test_dataset = test_dataset.prefetch(2)
+        train_dataset = train_dataset.prefetch(2)
+
 
         test_counter = 0
         train_counter = 0
@@ -126,6 +129,7 @@ def preprocess_dataset(dset):
         return train_dataset, test_dataset
     else:
         logger.info("Using all maps for training and evaluation")
+        dset = dset.prefetch(2)
         return dset
 
 
