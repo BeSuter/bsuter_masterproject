@@ -201,22 +201,40 @@ def grad(model, inputs, targets):
 
 
 @tf.function
-def train_step(maps, labels, model, optimizer, epoch_loss_avg):
-    # Add noise
-    logger.debug("Adding noise")
-    if const_args["noise_type"] == "pixel_noise":
-        noise = _make_pixel_noise(maps)
-    elif const_args["noise_type"] == "old_noise":
-        noise = _make_noise(maps)
-    kappa_data = tf.math.add(maps, noise)
+def train_step(train_dset, model, optimizer):
+    epoch_loss_avg = tf.keras.metrics.Mean()
+    epoch_global_norm = tf.TensorArray(tf.float32,
+                                       size=0,
+                                       dynamic_size=True,
+                                       clear_after_read=False, )
+    for element in train_dset.enumerate():
+        const_args["train_step"]["step"] = element[0]
+        set = element[1]
+        # Ensure that we have shape (batch_size, pex_len, 4)
+        kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
+                                     const_args["bool_mask"],
+                                     axis=1)
+        labels = set[1][:, 0, :]
+        # Add noise
+        logger.debug("Adding noise")
+        if const_args["noise_type"] == "pixel_noise":
+            noise = _make_pixel_noise(kappa_data)
+        elif const_args["noise_type"] == "old_noise":
+            noise = _make_noise(kappa_data)
+        kappa_data = tf.math.add(kappa_data, noise)
 
-    # Optimize the model
-    loss_value, grads = grad(model, kappa_data, labels)
-    optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        # Optimize the model
+        loss_value, grads = grad(model, kappa_data, labels)
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    epoch_loss_avg.update_state(loss_value)
+        epoch_loss_avg.update_state(loss_value)
+        glob_norm = tf.linalg.global_norm(grads)
+        epoch_global_norm = epoch_global_norm.write(const_args["train_step"]["step"], glob_norm)
+        epo_glob_norm = (sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack()))
+        logger.debug("Closing epoch_global_norm. Releasing memory!")
+        epoch_global_norm.close()
 
-    return tf.linalg.global_norm(grads)
+    return epoch_loss_avg, epo_glob_norm
 
 
 def regression_model_trainer():
@@ -227,6 +245,7 @@ def regression_model_trainer():
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
     bool_mask, indices_ext = mask_maker(raw_dset)
+    const_args["bool_mask"] = bool_mask
 
     # Use all the maps to train the model
     train_dset = preprocess_dataset(raw_dset)
@@ -256,39 +275,18 @@ def regression_model_trainer():
                                          clear_after_read=False)
 
     for epoch in range(const_args["epochs"]):
-        epoch_loss_avg = tf.keras.metrics.Mean()
-        epoch_global_norm = tf.TensorArray(tf.float32,
-                                           size=0,
-                                           dynamic_size=True,
-                                           clear_after_read=False,)
         logger.debug(f"Executing training step for epoch={epoch}")
-        for element in train_dset.enumerate():
-            const_args["train_step"]["step"] = element[0]
-            set = element[1]
-            # Ensure that we have shape (batch_size, pex_len, 4)
-            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
-                                         bool_mask,
-                                         axis=1)
-            labels = set[1][:, 0, :]
-
-            # Optimize the model  --> Returns the loss average and the global norm of each epoch
-            glob_norm = train_step(kappa_data, labels, model, optimizer,
-                                   epoch_loss_avg)
-            epoch_global_norm = epoch_global_norm.write(
-                const_args["train_step"]["step"], glob_norm)
+        # Optimize the model  --> Returns the loss average and the global norm of each epoch
+        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model, optimizer)
 
         # End epoch
-        train_loss_results = train_loss_results.write(epoch,
-                                                      epoch_loss_avg.result())
-        global_norm_results = global_norm_results.write(
-            epoch,
-            (sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack())))
-        logger.debug("Closing epoch_global_norm. Releasing memory!")
-        epoch_global_norm.close()
-
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(
                 epoch, epoch_loss_avg.result()))
+            train_loss_results = train_loss_results.write(epoch,
+                                                          epoch_loss_avg.result())
+            global_norm_results = global_norm_results.write(epoch,
+                                                            epo_glob_norm)
         if epoch % int(const_args["epochs"] // 9) == 0:
             # Evaluate the model and plot the results
             logger.info(f"Evaluating the model and plotting the results for epoch={epoch}")
