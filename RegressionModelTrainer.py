@@ -197,7 +197,7 @@ def grad(model, inputs, targets):
 
 
 @tf.function
-def train_step(maps, labels, model, optimizer):
+def train_step(maps, labels, model, optimizer, epoch_loss_avg):
     # Add noise
     logger.debug("Adding noise")
     if const_args["noise_type"] == "pixel_noise":
@@ -212,7 +212,9 @@ def train_step(maps, labels, model, optimizer):
     loss_value, grads = grad(model, kappa_data, labels)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    return loss_value, grads
+    epoch_loss_avg.update_state(loss_value)
+
+    return tf.linalg.global_norm(grads)
 
 
 def regression_model_trainer():
@@ -256,7 +258,7 @@ def regression_model_trainer():
         epoch_global_norm = tf.TensorArray(tf.float32,
                                            size=0,
                                            dynamic_size=True,
-                                           clear_after_read=False)
+                                           clear_after_read=False,)
 
         for element in train_dset.enumerate():
             const_args["train_step"]["step"] = element[0]
@@ -271,9 +273,8 @@ def regression_model_trainer():
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
             logger.debug(f"Executing training step for epoch={epoch} and training_step={element[0]}")
-            loss_value, grads = train_step(kappa_data, labels, model, optimizer)
-            epoch_loss_avg.update_state(loss_value)
-            glob_norm = tf.linalg.global_norm(grads)
+            glob_norm = train_step(kappa_data, labels, model, optimizer,
+                                   epoch_loss_avg)
             epoch_global_norm = epoch_global_norm.write(
                 const_args["train_step"]["step"], glob_norm)
 
@@ -283,12 +284,15 @@ def regression_model_trainer():
         global_norm_results = global_norm_results.write(
             epoch,
             (sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack())))
+        logger.debug("Closing epoch_global_norm. Releasing memory!")
+        epoch_global_norm.close()
 
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(
                 epoch, epoch_loss_avg.result()))
         if epoch % int(const_args["epochs"] // 9) == 0:
             # Evaluate the model and plot the results
+            logger.info(f"Evaluating the model and plotting the results for epoch={epoch}")
             epoch_non_zero = epoch + 1
 
             color_predictions = []
