@@ -224,7 +224,7 @@ def train_step(train_dset, model, optimizer):
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
         epoch_loss_avg.update_state(loss_value)
-        epoch_global_norm = epoch_global_norm.write(element[0], tf.linalg.global_norm(grads))
+        epoch_global_norm = epoch_global_norm.write(tf.dtypes.cast(element[0], tf.int32), tf.linalg.global_norm(grads))
     epo_glob_norm = sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack())
     logger.debug("Closing epoch_global_norm. Releasing memory!")
     epoch_global_norm.close()
