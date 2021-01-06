@@ -142,44 +142,41 @@ def mask_maker(dset):
 
 
 @tf.function
-def _make_pixel_noise(map):
-    noises = []
-    for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
-        try:
-            noise_path = os.path.join(
-                const_args["_make_pixel_noise"]["noise_dir"],
-                f"PixelNoise_tomo={tomo + 1}.npz")
-            noise_ctx = np.load(noise_path)
-            mean_map = noise_ctx["mean_map"]
-            variance_map = noise_ctx["variance_map"]
-        except FileNotFoundError:
-            logger.critical(
-                "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?"
-            )
-            logger.critical(
-                "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..."
-            )
-            sys.exit(0)
-
-        mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
-        stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
-        noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
-        noise = tf.math.multiply(noise, stddev)
-        noise = tf.math.add(noise, mean)
-
-        noises.append(noise)
-
-    return tf.stack(noises, axis=-1)
-
-
-@tf.function
 def _make_noise(map):
     noises = []
-    for tomo in range(const_args["_make_noise"]["tomo_num"]):
-        noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
-        noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
-        noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
-        noises.append(noise)
+
+    if const_args["noise_type"] == "pixel_noise":
+        for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
+            try:
+                noise_path = os.path.join(
+                    const_args["_make_pixel_noise"]["noise_dir"],
+                    f"PixelNoise_tomo={tomo + 1}.npz")
+                noise_ctx = np.load(noise_path)
+                mean_map = noise_ctx["mean_map"]
+                variance_map = noise_ctx["variance_map"]
+            except FileNotFoundError:
+                logger.critical(
+                    "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?"
+                )
+                logger.critical(
+                    "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..."
+                )
+                sys.exit(0)
+
+            mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
+            stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
+            noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+            noise = tf.math.multiply(noise, stddev)
+            noise = tf.math.add(noise, mean)
+
+            noises.append(noise)
+    elif const_args["noise_type"] == "old_noise":
+        for tomo in range(const_args["_make_noise"]["tomo_num"]):
+            noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+            noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
+            noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
+            noises.append(noise)
+
     return tf.stack(noises, axis=-1)
 
 
@@ -217,11 +214,7 @@ def train_step(train_dset, model, optimizer):
         labels = set[1][:, 0, :]
         # Add noise
         logger.debug("Adding noise")
-        if const_args["noise_type"] == "pixel_noise":
-            noise = _make_pixel_noise(kappa_data)
-        elif const_args["noise_type"] == "old_noise":
-            noise = _make_noise(kappa_data)
-        kappa_data = tf.math.add(kappa_data, noise)
+        kappa_data = tf.math.add(kappa_data, _make_noise(kappa_data))
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
