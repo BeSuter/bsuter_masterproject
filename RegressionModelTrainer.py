@@ -314,8 +314,10 @@ def regression_model_trainer():
                 noise_type=const_args["noise_type"],
                 start_time=date_time)
 
-            test_dset = preprocess_dataset(raw_dset)
-            for set in test_dset:
+            #test_dset = preprocess_dataset(raw_dset)
+            # We use the same data set to train and to test.
+            # If not, remember to replace train_dset with test_dset.
+            for set in train_dset:
                 kappa_data = tf.boolean_mask(tf.transpose(set[0],
                                                           perm=[0, 2, 1]),
                                              bool_mask,
