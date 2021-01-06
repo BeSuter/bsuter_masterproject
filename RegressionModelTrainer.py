@@ -204,9 +204,7 @@ def train_step(maps, labels, model, optimizer, epoch_loss_avg):
         noise = _make_pixel_noise(maps)
     elif const_args["noise_type"] == "old_noise":
         noise = _make_noise(maps)
-    logger.debug(f"Noise has shape {noise.shape}")
     kappa_data = tf.math.add(maps, noise)
-    logger.debug(f"Noisy data has shape {kappa_data.shape}")
 
     # Optimize the model
     loss_value, grads = grad(model, kappa_data, labels)
@@ -264,11 +262,9 @@ def regression_model_trainer():
             const_args["train_step"]["step"] = element[0]
             set = element[1]
             # Ensure that we have shape (batch_size, pex_len, 4)
-            logger.debug("Setting input shape")
             kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                          bool_mask,
                                          axis=1)
-            logger.debug(f"Input shape set to {kappa_data.shape}")
             labels = set[1][:, 0, :]
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
