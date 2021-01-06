@@ -226,7 +226,7 @@ def train_step(train_dset, model, optimizer):
         epoch_loss_avg.update_state(loss_value)
         epoch_global_norm = epoch_global_norm.write(tf.dtypes.cast(element[0], tf.int32), tf.linalg.global_norm(grads))
 
-    return epoch_loss_avg, epoch_global_norm.stack()
+    return epoch_loss_avg.result(), epoch_global_norm.stack()
 
 
 def regression_model_trainer():
@@ -275,9 +275,9 @@ def regression_model_trainer():
         # End epoch
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(
-                epoch, epoch_loss_avg.result()))
+                epoch, epoch_loss_avg))
             train_loss_results = train_loss_results.write(epoch,
-                                                          epoch_loss_avg.result())
+                                                          epoch_loss_avg)
             global_norm_results = global_norm_results.write(epoch,
                                                             sum(epo_glob_norm) / len(epo_glob_norm))
         if epoch % int(const_args["epochs"] // 9) == 0:
