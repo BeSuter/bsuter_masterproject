@@ -14,7 +14,7 @@ from DeepSphere import gnn_layers
 from Plotter import l2_color_plot, histo_plot, stats, S8plot, PredictionLabelComparisonPlot
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
@@ -94,12 +94,10 @@ def get_layers():
     return layers
 
 
-@tf.function
 def is_test(x, y):
     return x % 10 == 0
 
 
-@tf.function
 def is_train(x, y):
     return not is_test(x, y)
 
@@ -200,7 +198,7 @@ def grad(model, inputs, targets):
 
 
 @tf.function
-def train_step(maps, labels, model, optimizer, epoch_loss_avg):
+def train_step(maps, labels, model, optimizer):
     # Add noise
     logger.debug("Adding noise")
     if const_args["noise_type"] == "pixel_noise":
@@ -215,9 +213,7 @@ def train_step(maps, labels, model, optimizer, epoch_loss_avg):
     loss_value, grads = grad(model, kappa_data, labels)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-    epoch_loss_avg.update_state(loss_value)
-
-    return tf.linalg.global_norm(grads)
+    return loss_value, grads
 
 
 def regression_model_trainer():
@@ -275,8 +271,10 @@ def regression_model_trainer():
             labels = set[1][:, 0, :]
 
             # Optimize the model  --> Returns the loss average and the global norm of each epoch
-            glob_norm = train_step(kappa_data, labels, model, optimizer,
-                                   epoch_loss_avg)
+            logger.debug(f"Executing training step for epoch={epoch} and training_step={element[0]}")
+            loss_value, grads = train_step(kappa_data, labels, model, optimizer)
+            epoch_loss_avg.update_state(loss_value)
+            glob_norm = tf.linalg.global_norm(grads)
             epoch_global_norm = epoch_global_norm.write(
                 const_args["train_step"]["step"], glob_norm)
 
