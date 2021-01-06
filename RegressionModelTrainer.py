@@ -321,7 +321,7 @@ def regression_model_trainer():
 
                 # Add noise
                 if const_args["noise_type"] == "pixel_noise":
-                    noise = _make_pixel_noise(kappa_data)
+                    noise = _make_noise(kappa_data)
                 elif const_args["noise_type"] == "old_noise":
                     noise = _make_noise(kappa_data)
                 kappa_data = tf.math.add(kappa_data, noise)
