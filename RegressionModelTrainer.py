@@ -165,14 +165,18 @@ def _make_noise(map):
 
             mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
             stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
-            noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+            noise = tf.random.normal([const_args["preprocess_dataset"]["batch_size"],
+                                      const_args["pixel_num"]],
+                                     mean=0.0, stddev=1.0)
             noise = tf.math.multiply(noise, stddev)
             noise = tf.math.add(noise, mean)
 
             noises.append(noise)
     elif const_args["noise_type"] == "old_noise":
         for tomo in range(const_args["_make_noise"]["tomo_num"]):
-            noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
+            noise = tf.random.normal([const_args["preprocess_dataset"]["batch_size"],
+                                      const_args["pixel_num"]],
+                                     mean=0.0, stddev=1.0)
             noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
@@ -238,6 +242,7 @@ def regression_model_trainer():
     raw_dset = get_dataset(data_path)
     bool_mask, indices_ext = mask_maker(raw_dset)
     const_args["bool_mask"] = bool_mask
+    const_args["pixel_num"] = len(indices_ext)
 
     # Use all the maps to train the model
     train_dset = preprocess_dataset(raw_dset)
@@ -253,7 +258,7 @@ def regression_model_trainer():
                              indices=indices_ext,
                              layers=layers)
     model.build(input_shape=(const_args["preprocess_dataset"]["batch_size"],
-                             len(indices_ext),
+                             const_args["pixel_num"],
                              const_args["_make_pixel_noise"]["tomo_num"]))
 
     # Keep results for plotting
