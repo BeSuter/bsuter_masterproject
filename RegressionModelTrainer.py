@@ -230,11 +230,10 @@ def train_step(train_dset, model, optimizer):
         epoch_loss_avg.update_state(loss_value)
         glob_norm = tf.linalg.global_norm(grads)
         epoch_global_norm = epoch_global_norm.write(const_args["train_step"]["step"], glob_norm)
-        epo_glob_norm = (sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack()))
-        logger.debug("Closing epoch_global_norm. Releasing memory!")
-        epoch_global_norm.close()
+    logger.debug("Closing epoch_global_norm. Releasing memory!")
+    epoch_global_norm.close()
 
-    return epoch_loss_avg, epo_glob_norm
+    return epoch_loss_avg, sum(epoch_global_norm.stack()) / len(epoch_global_norm.stack())
 
 
 def regression_model_trainer():
