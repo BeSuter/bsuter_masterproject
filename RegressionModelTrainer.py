@@ -202,8 +202,7 @@ def grad(model, inputs, targets):
 
 
 @tf.function
-def train_step(train_dset, model, optimizer):
-    epoch_loss_avg = tf.keras.metrics.Mean()
+def train_step(train_dset, model, optimizer, epoch_loss_avg):
     epoch_global_norm = tf.TensorArray(tf.float32,
                                        size=0,
                                        dynamic_size=True,
@@ -268,9 +267,10 @@ def regression_model_trainer():
                                          clear_after_read=False)
 
     for epoch in range(const_args["epochs"]):
+        epoch_loss_avg = tf.keras.metrics.Mean()
         logger.debug(f"Executing training step for epoch={epoch}")
         # Optimize the model  --> Returns the loss average and the global norm of each epoch
-        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model, optimizer)
+        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model, optimizer, epoch_loss_avg)
 
         # End epoch
         if epoch % 10 == 0:
