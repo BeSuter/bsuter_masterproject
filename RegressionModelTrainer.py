@@ -113,6 +113,7 @@ def preprocess_dataset(dset):
     if const_args["preprocess_dataset"]["split"]:
         test_dataset = dset.enumerate().filter(is_test).map(recover)
         train_dataset = dset.enumerate().filter(is_train).map(recover)
+        const_args["element_num"] = tf.dtypes.cast(train_dataset.cardinality(), tf.int32)
         test_dataset = test_dataset.prefetch(2)
         train_dataset = train_dataset.prefetch(2)
 
@@ -129,6 +130,7 @@ def preprocess_dataset(dset):
         return train_dataset, test_dataset
     else:
         logger.info("Using all maps for training and evaluation")
+        const_args["element_num"] = tf.dtypes.cast(dset.cardinality(), tf.int32)
         dset = dset.prefetch(2)
         return dset
 
@@ -241,7 +243,6 @@ def regression_model_trainer():
 
     # Use all the maps to train the model
     train_dset = preprocess_dataset(raw_dset)
-    const_args["element_num"] = tf.dtypes.cast(train_dset.cardinality(), tf.int32)
     logger.info(f"Cardinality of the train_dset is {const_args['element_num']}")
 
     # Define the layers of our model
