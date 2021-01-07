@@ -202,11 +202,15 @@ def grad(model, inputs, targets):
 
 
 @tf.function
-def train_step(train_dset, model, optimizer, epoch_loss_avg):
+def train_step(train_dset, model, optimizer):
     epoch_global_norm = tf.TensorArray(tf.float32,
                                        size=const_args["element_num"],
                                        dynamic_size=False,
                                        clear_after_read=False, )
+    epoch_loss_avg = tf.TensorArray(tf.float32,
+                                    size=const_args["element_num"],
+                                    dynamic_size=False,
+                                    clear_after_read=False, )
     for element in train_dset.enumerate():
         set = element[1]
         # Ensure that we have shape (batch_size, pex_len, 4)
@@ -222,10 +226,10 @@ def train_step(train_dset, model, optimizer, epoch_loss_avg):
         loss_value, grads = grad(model, kappa_data, labels)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-        epoch_loss_avg.update_state(loss_value)
+        epoch_loss_avg = epoch_loss_avg.write(tf.dtypes.cast(element[0], tf.int32), loss_value)
         epoch_global_norm = epoch_global_norm.write(tf.dtypes.cast(element[0], tf.int32), tf.linalg.global_norm(grads))
 
-    return epoch_loss_avg.result(), epoch_global_norm.stack()
+    return epoch_loss_avg.stack(), epoch_global_norm.stack()
 
 
 def regression_model_trainer():
@@ -271,17 +275,16 @@ def regression_model_trainer():
                                          clear_after_read=False)
 
     for epoch in range(const_args["epochs"]):
-        epoch_loss_avg = tf.keras.metrics.Mean()
         logger.debug(f"Executing training step for epoch={epoch}")
         # Optimize the model  --> Returns the loss average and the global norm of each epoch
-        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model, optimizer, epoch_loss_avg)
+        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model, optimizer)
 
         # End epoch
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(
-                epoch, epoch_loss_avg))
+                epoch, sum(epoch_loss_avg) / len(epoch_loss_avg)))
             train_loss_results = train_loss_results.write(epoch,
-                                                          epoch_loss_avg)
+                                                          sum(epoch_loss_avg) / len(epoch_loss_avg))
             global_norm_results = global_norm_results.write(epoch,
                                                             sum(epo_glob_norm) / len(epo_glob_norm))
         if epoch % int(const_args["epochs"] // 9) == 0:
