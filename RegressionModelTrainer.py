@@ -242,7 +242,7 @@ def regression_model_trainer():
     # Use all the maps to train the model
     train_dset = preprocess_dataset(raw_dset)
     for element in train_dset.enumerate():
-        num = element[0]
+        num = element[0] + 1
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
     logger.info(f"Number of elements per epoch is {const_args['element_num']}")
 
