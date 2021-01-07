@@ -106,7 +106,7 @@ recover = lambda x, y: y
 
 
 def preprocess_dataset(dset):
-    const_args["element_num"] =  dset.cardinality() // const_args["preprocess_dataset"]["batch_size"]
+    const_args["element_num"] = tf.data.experimental.cardinality(dset) // const_args["preprocess_dataset"]["batch_size"]
     dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
