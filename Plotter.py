@@ -101,6 +101,7 @@ def stats(data,
 
     plt.figure(num="stats", figsize=(12, 8))
     plt.plot(data, label=label)
+    plt.ylim(0, 5.)
     plt.title(f"Monitoring {label}")
     plt.legend()
 
@@ -110,7 +111,8 @@ def stats(data,
                                  f"Monitoring_{label}_date_time={date_time}")
     else:
         tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
-                                "Monitoring", label, layer, noise_type, start_time)
+                                "Monitoring", label, layer, noise_type,
+                                start_time)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path, f"Monitoring_date_time={date_time}")
     if epoch:

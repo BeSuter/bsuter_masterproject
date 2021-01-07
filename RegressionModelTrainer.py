@@ -116,7 +116,6 @@ def preprocess_dataset(dset):
         test_dataset = test_dataset.prefetch(2)
         train_dataset = train_dataset.prefetch(2)
 
-
         test_counter = 0
         train_counter = 0
         for item in test_dataset:
@@ -144,7 +143,6 @@ def mask_maker(dset):
 @tf.function
 def _make_noise(map):
     noises = []
-
     if const_args["noise_type"] == "pixel_noise":
         for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
             try:
@@ -165,18 +163,24 @@ def _make_noise(map):
 
             mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
             stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
-            noise = tf.random.normal([const_args["preprocess_dataset"]["batch_size"],
-                                      const_args["pixel_num"]],
-                                     mean=0.0, stddev=1.0)
+            noise = tf.random.normal([
+                const_args["preprocess_dataset"]["batch_size"],
+                const_args["pixel_num"]
+            ],
+                                     mean=0.0,
+                                     stddev=1.0)
             noise = tf.math.multiply(noise, stddev)
             noise = tf.math.add(noise, mean)
 
             noises.append(noise)
     elif const_args["noise_type"] == "old_noise":
         for tomo in range(const_args["_make_noise"]["tomo_num"]):
-            noise = tf.random.normal([const_args["preprocess_dataset"]["batch_size"],
-                                      const_args["pixel_num"]],
-                                     mean=0.0, stddev=1.0)
+            noise = tf.random.normal([
+                const_args["preprocess_dataset"]["batch_size"],
+                const_args["pixel_num"]
+            ],
+                                     mean=0.0,
+                                     stddev=1.0)
             noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
@@ -203,14 +207,18 @@ def grad(model, inputs, targets):
 
 @tf.function
 def train_step(train_dset, model, optimizer):
-    epoch_global_norm = tf.TensorArray(tf.float32,
-                                       size=const_args["element_num"],
-                                       dynamic_size=False,
-                                       clear_after_read=False, )
-    epoch_loss_avg = tf.TensorArray(tf.float32,
-                                    size=const_args["element_num"],
-                                    dynamic_size=False,
-                                    clear_after_read=False, )
+    epoch_global_norm = tf.TensorArray(
+        tf.float32,
+        size=const_args["element_num"],
+        dynamic_size=False,
+        clear_after_read=False,
+    )
+    epoch_loss_avg = tf.TensorArray(
+        tf.float32,
+        size=const_args["element_num"],
+        dynamic_size=False,
+        clear_after_read=False,
+    )
     for element in train_dset.enumerate():
         set = element[1]
         # Ensure that we have shape (batch_size, pex_len, 4)
@@ -226,8 +234,10 @@ def train_step(train_dset, model, optimizer):
         loss_value, grads = grad(model, kappa_data, labels)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-        epoch_loss_avg = epoch_loss_avg.write(tf.dtypes.cast(element[0], tf.int32), loss_value)
-        epoch_global_norm = epoch_global_norm.write(tf.dtypes.cast(element[0], tf.int32), tf.linalg.global_norm(grads))
+        epoch_loss_avg = epoch_loss_avg.write(
+            tf.dtypes.cast(element[0], tf.int32), loss_value)
+        epoch_global_norm = epoch_global_norm.write(
+            tf.dtypes.cast(element[0], tf.int32), tf.linalg.global_norm(grads))
 
     return epoch_loss_avg.stack(), epoch_global_norm.stack()
 
@@ -277,19 +287,25 @@ def regression_model_trainer():
     for epoch in range(const_args["epochs"]):
         logger.debug(f"Executing training step for epoch={epoch}")
         # Optimize the model  --> Returns the loss average and the global norm of each epoch
-        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model, optimizer)
+        epoch_loss_avg, epo_glob_norm = train_step(train_dset, model,
+                                                   optimizer)
 
         # End epoch
         if epoch % 10 == 0:
             logger.info("Epoch {:03d}: Loss: {:.3f}".format(
-                epoch, sum(epoch_loss_avg) / len(epoch_loss_avg)))
-            train_loss_results = train_loss_results.write(epoch,
-                                                          sum(epoch_loss_avg) / len(epoch_loss_avg))
-            global_norm_results = global_norm_results.write(epoch,
-                                                            sum(epo_glob_norm) / len(epo_glob_norm))
+                epoch,
+                sum(epoch_loss_avg) / len(epoch_loss_avg)))
+            train_loss_results = train_loss_results.write(
+                epoch,
+                sum(epoch_loss_avg) / len(epoch_loss_avg))
+            global_norm_results = global_norm_results.write(
+                epoch,
+                sum(epo_glob_norm) / len(epo_glob_norm))
         if epoch % int(const_args["epochs"] // 9) == 0:
             # Evaluate the model and plot the results
-            logger.info(f"Evaluating the model and plotting the results for epoch={epoch}")
+            logger.info(
+                f"Evaluating the model and plotting the results for epoch={epoch}"
+            )
             epoch_non_zero = epoch + 1
 
             color_predictions = []
@@ -315,24 +331,17 @@ def regression_model_trainer():
                 noise_type=const_args["noise_type"],
                 start_time=date_time)
 
-            #test_dset = preprocess_dataset(raw_dset)
-            # We use the same data set to train and to test.
-            # If not, remember to replace train_dset with test_dset.
-            for set in train_dset:
+            test_dset = preprocess_dataset(raw_dset)
+            for set in test_dset:
                 kappa_data = tf.boolean_mask(tf.transpose(set[0],
                                                           perm=[0, 2, 1]),
-                                             bool_mask,
+                                             const_args["bool_mask"],
                                              axis=1)
                 labels = set[1][:, 0, :]
                 labels = labels.numpy()
 
                 # Add noise
-                if const_args["noise_type"] == "pixel_noise":
-                    noise = _make_noise(kappa_data)
-                elif const_args["noise_type"] == "old_noise":
-                    noise = _make_noise(kappa_data)
-                kappa_data = tf.math.add(kappa_data, noise)
-
+                kappa_data = tf.math.add(kappa_data, _make_noise(kappa_data))
                 predictions = model(kappa_data)
 
                 for ii, prediction in enumerate(predictions.numpy()):
