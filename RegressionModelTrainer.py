@@ -106,6 +106,7 @@ recover = lambda x, y: y
 
 
 def preprocess_dataset(dset):
+    const_args["element_num"] =  dset.cardinality() // const_args["preprocess_dataset"]["batch_size"]
     dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
@@ -129,7 +130,7 @@ def preprocess_dataset(dset):
         return train_dataset, test_dataset
     else:
         logger.info("Using all maps for training and evaluation")
-        const_args["element_num"] = tf.shape(dset)
+        logger.info(f"Element num is {const_args['element_num']}")
         dset = dset.prefetch(2)
         return dset
 
