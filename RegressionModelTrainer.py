@@ -106,7 +106,6 @@ recover = lambda x, y: y
 
 
 def preprocess_dataset(dset):
-    const_args["element_num"] = tf.data.experimental.cardinality(dset) // const_args["preprocess_dataset"]["batch_size"]
     dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
@@ -130,7 +129,6 @@ def preprocess_dataset(dset):
         return train_dataset, test_dataset
     else:
         logger.info("Using all maps for training and evaluation")
-        logger.info(f"Element num is {const_args['element_num']}")
         dset = dset.prefetch(2)
         return dset
 
@@ -243,7 +241,10 @@ def regression_model_trainer():
 
     # Use all the maps to train the model
     train_dset = preprocess_dataset(raw_dset)
-    logger.info(f"Cardinality of the train_dset is {const_args['element_num']}")
+    for element in train_dset.enumerate():
+        num = element[0]
+    const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
+    logger.info(f"Number of elements per epoch is {const_args['element_num']}")
 
     # Define the layers of our model
     optimizer = tf.keras.optimizers.Adam(learning_rate=const_args["l_rate"])
