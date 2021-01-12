@@ -72,6 +72,7 @@ def simulate_noise():
                           "count": 1}
 
         for id in remaining_ids:
+            logger.info(f"Updating with map {id}")
             map = np.load(os.path.join(noise_map_dir, f"NoiseMap_tomo={tomo}_id={id}.npy"))
             noise_map = map[map > hp.UNSEEN]
             new_mean, new_variance = iterative_mean_and_var(noise_map, noise_data_map)
