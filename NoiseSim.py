@@ -81,3 +81,7 @@ def simulate_noise():
 
         logger.info(f"Saving NewPixelNoise_tomo={tomo}")
         save_dict(noise_data_map, filename_)
+
+
+if __name__ == "__main__":
+    simulate_noise()
