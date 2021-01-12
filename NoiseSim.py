@@ -45,7 +45,7 @@ def iterative_mean_and_var(map, prev_val):
     return new_mean, new_variance
 
 
-def simulate_noise():
+def simulate_noise(job_index):
     """
     Iterative computation of the mean and variance for each pixel.
     Used to generate gaussian noise on the fly during HealpyGCNN model training.
@@ -57,32 +57,33 @@ def simulate_noise():
 
     noise_map_ids = np.load("/cluster/work/refregier/besuter/master_branch/data/NoiseMaps/NoiseMap_ids.npy")
     logger.info(f"Found {len(noise_map_ids)} noise map ids")
-    for tomo in range(4):
-        tomo += 1
-        logger.info(f"Hitting on tomo={tomo}")
-        filename_ = os.path.join(pixel_noise_dir, f"NewPixelNoise_tomo={tomo}.npz")
 
-        first_id = noise_map_ids[0]
-        remaining_ids = noise_map_ids[1::]
+    logger.info(f"Hitting on tomo={job_index}")
+    filename_ = os.path.join(pixel_noise_dir, f"NewPixelNoise_tomo={job_index}.npz")
 
-        first_map = np.load(os.path.join(noise_map_dir, f"NoiseMap_tomo={tomo}_id={first_id}.npy"))
-        first_map = first_map[first_map > hp.UNSEEN]
-        noise_data_map = {"mean_map": first_map,
-                          "variance_map": np.zeros_like(first_map),
-                          "count": 1}
+    first_id = noise_map_ids[0]
+    remaining_ids = noise_map_ids[1::]
 
-        for id in remaining_ids:
-            logger.info(f"Updating with map {id}")
-            map = np.load(os.path.join(noise_map_dir, f"NoiseMap_tomo={tomo}_id={id}.npy"))
-            noise_map = map[map > hp.UNSEEN]
-            new_mean, new_variance = iterative_mean_and_var(noise_map, noise_data_map)
-            noise_data_map["mean_map"] = new_mean
-            noise_data_map["variance_map"] = new_variance
-            noise_data_map["count"] = noise_data_map["count"] + 1
+    first_map = np.load(os.path.join(noise_map_dir, f"NoiseMap_tomo={job_index}_id={first_id}.npy"))
+    first_map = first_map[first_map > hp.UNSEEN]
+    noise_data_map = {"mean_map": first_map,
+                      "variance_map": np.zeros_like(first_map),
+                      "count": 1}
 
-        logger.info(f"Saving NewPixelNoise_tomo={tomo}")
-        save_dict(noise_data_map, filename_)
+    for id in remaining_ids:
+        logger.info(f"Updating with map {id}")
+        map = np.load(os.path.join(noise_map_dir, f"NoiseMap_tomo={job_index}_id={id}.npy"))
+        noise_map = map[map > hp.UNSEEN]
+        new_mean, new_variance = iterative_mean_and_var(noise_map, noise_data_map)
+        noise_data_map["mean_map"] = new_mean
+        noise_data_map["variance_map"] = new_variance
+        noise_data_map["count"] = noise_data_map["count"] + 1
+
+    logger.info(f"Saving NewPixelNoise_tomo={job_index}")
+    save_dict(noise_data_map, filename_)
 
 
 if __name__ == "__main__":
-    simulate_noise()
+    args = sys.argv[1:]
+    job_index = str(args[0])
+    simulate_noise(job_index)
