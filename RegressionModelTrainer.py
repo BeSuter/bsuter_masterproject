@@ -148,7 +148,7 @@ def _make_noise(map):
             try:
                 noise_path = os.path.join(
                     const_args["_make_pixel_noise"]["noise_dir"],
-                    f"PixelNoise_tomo={tomo + 1}.npz")
+                    f"NewPixelNoise_tomo={tomo + 1}.npz")
                 noise_ctx = np.load(noise_path)
                 mean_map = noise_ctx["mean_map"]
                 variance_map = noise_ctx["variance_map"]
@@ -163,6 +163,7 @@ def _make_noise(map):
 
             mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
             stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
+            stddev *= 38.798
             noise = tf.random.normal([
                 const_args["preprocess_dataset"]["batch_size"],
                 const_args["pixel_num"]
