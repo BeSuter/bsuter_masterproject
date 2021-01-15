@@ -141,7 +141,7 @@ def mask_maker(dset):
 
 
 @tf.function
-def _make_noise(map):
+def _make_noise():
     noises = []
     if const_args["noise_type"] == "pixel_noise":
         for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
@@ -185,6 +185,21 @@ def _make_noise(map):
             noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
+    elif const_args["noise_type"] == "dominik_noise":
+        path_to_map_ids = os.path.join(const_args["_make_pixel_noise"]["noise_dir"], "NoiseMap_ids.npy")
+        all_ids = np.load(path_to_map_ids)
+
+        random_ids = np.random.randint(0, high=len(all_ids), size=const_args["preprocess_dataset"]["batch_size"])
+        for tomo in range(const_args["_make_noise"]["tomo_num"]):
+            single_tomo_maps = []
+            for id_num in random_ids:
+                map_name = os.path.join(const_args["_make_pixel_noise"]["noise_dir"],
+                                        "FullNoiseMaps",
+                                        f"NoiseMap_tomo={tomo}_id={all_ids[id_num]}.npy")
+                full_map = np.load(map_name)
+                noise_map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
+                single_tomo_maps.append(noise_map)
+            noises.append(tf.stack(single_tomo_maps, axis=0))
 
     return tf.stack(noises, axis=-1)
 
@@ -274,6 +289,17 @@ def regression_model_trainer():
     model.build(input_shape=(const_args["preprocess_dataset"]["batch_size"],
                              const_args["pixel_num"],
                              const_args["_make_pixel_noise"]["tomo_num"]))
+    if const_args["continue_training"]:
+        if const_args["checkpoint_dir"] == "undefined":
+            logger.critical("Please define the directory within NGSFweights containing the desired weights")
+            logger.critical("E.g. --checkpoint_dir=layer_2/pixel_noise/01-14-2021-18-38")
+            sys.exit(0)
+        else:
+            path_to_weights = os.path.join(const_args["weights_dir"], const_args["checkpoint_dir"])
+            logger.info(f"Loading weights from {path_to_weights}")
+            model.load_weights(tf.train.latest_checkpoint(path_to_weights))
+            const_args["weights_dir"] = os.path.join(const_args["weights_dir"], "RetrainedWeights")
+
 
     # Keep results for plotting
     train_loss_results = tf.TensorArray(tf.float32,
@@ -447,7 +473,8 @@ if __name__ == "__main__":
     parser.add_argument('--nside', type=int, action='store', default=512)
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
     parser.add_argument('--HOME', action='store_true', default=False)
-    ARGS = parser.parse_args()
+    parser.add_argument('--continue_training', action='store_true', default=False)
+    ARGS = parser.parse_args('--checkpoint_dir', type=str, action='store', default="undefined")
 
     print("Starting RegressionModelTrainer")
 
@@ -484,7 +511,9 @@ if __name__ == "__main__":
         "epochs": ARGS.epochs,
         "nside": ARGS.nside,
         "l_rate": ARGS.l_rate,
-        "HOME": ARGS.HOME
+        "HOME": ARGS.HOME,
+        "continue_training": ARGS.continue_training,
+        "checkpoint_dir": ARGS.checkpoint_dir
     }
 
     regression_model_trainer()

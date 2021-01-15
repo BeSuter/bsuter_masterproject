@@ -23,7 +23,8 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def get_layers(layer):
+def get_layers():
+    layer = const_args["get_layer"]["layer"]
     if layer == "layer_1":
         layers = [
             hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
@@ -38,10 +39,10 @@ def get_layers(layer):
             gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
             gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
             hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
-            tf.keras.layers.LayerNormalization(axis=-1),
+            tf.keras.layers.LayerNormalization(axis=1),
             gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
-            tf.keras.layers.LayerNormalization(axis=-1),
+            tf.keras.layers.LayerNormalization(axis=1),
             gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             hp_nn.Healpy_ResidualLayer("CHEBY",
                                        layer_kwargs={
@@ -86,7 +87,7 @@ def get_layers(layer):
                                        use_bn=True,
                                        norm_type="layer_norm"),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.LayerNormalization(axis=-1),
+            tf.keras.layers.LayerNormalization(axis=1),
             tf.keras.layers.Dense(2)
         ]
     return layers
@@ -103,13 +104,16 @@ def is_train(x, y):
 recover = lambda x, y: y
 
 
-def preprocess_dataset(dset, batch_size, shuffle_size, split=False):
-    dset = dset.shuffle(shuffle_size)
-    dset = dset.batch(batch_size, drop_remainder=True)
+def preprocess_dataset(dset):
+    dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
+    dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
+                      drop_remainder=True)
 
-    if split:
+    if const_args["preprocess_dataset"]["split"]:
         test_dataset = dset.enumerate().filter(is_test).map(recover)
         train_dataset = dset.enumerate().filter(is_train).map(recover)
+        test_dataset = test_dataset.prefetch(2)
+        train_dataset = train_dataset.prefetch(2)
 
         test_counter = 0
         train_counter = 0
@@ -118,11 +122,12 @@ def preprocess_dataset(dset, batch_size, shuffle_size, split=False):
         for item in train_dataset:
             train_counter += 1
         logger.info(
-            f"Maps split into training={train_counter*batch_size} and test={test_counter*batch_size}"
+            f"Maps split into training={train_counter * const_args['preprocess_dataset']['batch_size']} and test={test_counter * const_args['preprocess_dataset']['batch_size']}"
         )
         return train_dataset, test_dataset
     else:
         logger.info("Using all maps for training and evaluation")
+        dset = dset.prefetch(2)
         return dset
 
 
@@ -135,61 +140,91 @@ def mask_maker(dset):
 
 
 @tf.function
-def _make_pixel_noise(map, noise_dir, tomo_num=4):
+def _make_noise():
     noises = []
-    for tomo in range(tomo_num):
-        try:
-            noise_path = os.path.join(noise_dir,
-                                      f"PixelNoise_tomo={tomo + 1}.npz")
-            noise_ctx = np.load(noise_path)
-            mean_map = noise_ctx["mean_map"]
-            variance_map = noise_ctx["variance_map"]
-        except FileNotFoundError:
-            logger.critical(
-                "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?"
-            )
-            logger.critical(
-                "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..."
-            )
-            sys.exit(0)
+    if const_args["noise_type"] == "pixel_noise":
+        for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
+            try:
+                noise_path = os.path.join(
+                    const_args["_make_pixel_noise"]["noise_dir"],
+                    f"NewPixelNoise_tomo={tomo + 1}.npz")
+                noise_ctx = np.load(noise_path)
+                mean_map = noise_ctx["mean_map"]
+                variance_map = noise_ctx["variance_map"]
+            except FileNotFoundError:
+                logger.critical(
+                    "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?"
+                )
+                logger.critical(
+                    "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..."
+                )
+                sys.exit(0)
 
-        mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
-        stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
-        noise = tf.random.normal(map[:, :, tomo].shape, mean=0.0, stddev=1.0)
-        logger.info(f"Single noise map has shape {noise.shape}")
-        noise = tf.math.multiply(noise, stddev)
-        noise = tf.math.add(noise, mean)
+            mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
+            stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
+            stddev *= 38.798
+            noise = tf.random.normal([
+                const_args["preprocess_dataset"]["batch_size"],
+                const_args["pixel_num"]
+            ],
+                                     mean=0.0,
+                                     stddev=1.0)
+            noise = tf.math.multiply(noise, stddev)
+            noise = tf.math.add(noise, mean)
 
-        noises.append(noise)
+            noises.append(noise)
+    elif const_args["noise_type"] == "old_noise":
+        for tomo in range(const_args["_make_noise"]["tomo_num"]):
+            noise = tf.random.normal([
+                const_args["preprocess_dataset"]["batch_size"],
+                const_args["pixel_num"]
+            ],
+                                     mean=0.0,
+                                     stddev=1.0)
+            noise *= const_args["_make_noise"]["ctx"][tomo + 1][0]
+            noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
+            noises.append(noise)
+    elif const_args["noise_type"] == "dominik_noise":
+        path_to_map_ids = os.path.join(const_args["_make_pixel_noise"]["noise_dir"], "NoiseMap_ids.npy")
+        all_ids = np.load(path_to_map_ids)
+
+        random_ids = np.random.randint(0, high=len(all_ids), size=const_args["preprocess_dataset"]["batch_size"])
+        for tomo in range(const_args["_make_noise"]["tomo_num"]):
+            single_tomo_maps = []
+            for id_num in random_ids:
+                map_name = os.path.join(const_args["_make_pixel_noise"]["noise_dir"],
+                                        "FullNoiseMaps",
+                                        f"NoiseMap_tomo={tomo}_id={all_ids[id_num]}.npy")
+                full_map = np.load(map_name)
+                noise_map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
+                single_tomo_maps.append(noise_map)
+            noises.append(tf.stack(single_tomo_maps, axis=0))
 
     return tf.stack(noises, axis=-1)
 
 
-def regression_model_trainer(data_path,
-                             batch_size,
-                             shuffle_size,
-                             weights_dir,
-                             noise_dir,
-                             layer,
-                             nside=512):
+def regression_model_trainer():
     # assert layer in weights_dir, "Weights directory does not match the desired layers!"
 
     scratch_path = os.path.expandvars("$SCRATCH")
-    data_path = os.path.join(scratch_path, data_path)
+    data_path = os.path.join(scratch_path, const_args["data_dir"])
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
     bool_mask, indices_ext = mask_maker(raw_dset)
+    const_args["pixel_num"] = len(indices_ext)
 
     # Use all the maps to train the model
-    test_dset = preprocess_dataset(raw_dset, batch_size, shuffle_size)
+    test_dset = preprocess_dataset(raw_dset)
 
-    layers = get_layers(layer)
+    layers = get_layers()
 
     tf.keras.backend.clear_session()
 
-    model = hp_nn.HealpyGCNN(nside=nside, indices=indices_ext, layers=layers)
-    model.build(input_shape=(batch_size, len(indices_ext), 4))
-    model.load_weights(tf.train.latest_checkpoint(weights_dir))
+    model = hp_nn.HealpyGCNN(nside=const_args["nside"], indices=indices_ext, layers=layers)
+    model.build(input_shape=(const_args["preprocess_dataset"]["batch_size"],
+                             const_args["pixel_num"],
+                             const_args["_make_pixel_noise"]["tomo_num"]))
+    model.load_weights(tf.train.latest_checkpoint(const_args["weights_dir"]))
 
     color_predictions = []
     color_labels = []
@@ -201,8 +236,8 @@ def regression_model_trainer(data_path,
     all_results["om"] = collections.OrderedDict()
     all_results["s8"] = collections.OrderedDict()
 
-    om_pred_check = PredictionLabelComparisonPlot("Omega_m", layer=layer)
-    s8_pred_check = PredictionLabelComparisonPlot("Sigma_8", layer=layer)
+    om_pred_check = PredictionLabelComparisonPlot("Omega_m", layer=const_args["get_layer"]["layer"])
+    s8_pred_check = PredictionLabelComparisonPlot("Sigma_8", layer=const_args["get_layer"]["layer"])
 
     for idx, set in enumerate(test_dset):
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
@@ -212,11 +247,11 @@ def regression_model_trainer(data_path,
         labels = labels.numpy()
 
         # Generate noise
-        noise = _make_pixel_noise(kappa_data, noise_dir)
-        logger.info(f"Total noise map has shape {noise.shape}")
+        noise = _make_noise()
+        logger.debug(f"Total noise map has shape {noise.shape}")
         # Plot the noise once
-        if idx == 0:
-            noise_plotter(noise, indices_ext, nside)
+        if idx == 0 and const_args["Noise_plots"]:
+            noise_plotter(noise, indices_ext, const_args["nside"])
         # Add noise
         kappa_data = tf.math.add(kappa_data, noise)
         predictions = model(kappa_data)
@@ -244,13 +279,13 @@ def regression_model_trainer(data_path,
                 all_results["s8"][(labels[ii][0],
                                    labels[ii][1])] = [prediction[1]]
 
-    histo_plot(om_histo, "Om", layer=layer)
-    histo_plot(s8_histo, "S8", layer=layer)
+    histo_plot(om_histo, "Om", layer=const_args["get_layer"]["layer"])
+    histo_plot(s8_histo, "S8", layer=const_args["get_layer"]["layer"])
     l2_color_plot(np.asarray(color_predictions),
                   np.asarray(color_labels),
-                  layer=layer)
-    S8plot(all_results["om"], "Om", layer=layer)
-    S8plot(all_results["s8"], "sigma8", layer=layer)
+                  layer=const_args["get_layer"]["layer"])
+    S8plot(all_results["om"], "Om", layer=const_args["get_layer"]["layer"])
+    S8plot(all_results["s8"], "sigma8", layer=const_args["get_layer"]["layer"])
     om_pred_check.save_plot()
     s8_pred_check.save_plot()
 
@@ -262,9 +297,54 @@ if __name__ == "__main__":
     parser.add_argument('--noise_dir', type=str, action='store')
     parser.add_argument('--batch_size', type=int, action='store')
     parser.add_argument('--shuffle_size', type=int, action='store')
+    parser.add_argument('--epochs', type=int, action='store')
     parser.add_argument('--layer', type=str, action='store')
+    parser.add_argument('--noise_type',
+                        type=str,
+                        action='store',
+                        default='pixel_noise')
+    parser.add_argument('--nside', type=int, action='store', default=512)
+    parser.add_argument('--l_rate', type=float, action='store', default=0.008)
+    parser.add_argument('--HOME', action='store_true', default=False)
+    parser.add_argument('--Noise_plots', action='store_true', default=False)
     ARGS = parser.parse_args()
 
-    print("Starting Model Evaluation")
-    regression_model_trainer(ARGS.data_dir, ARGS.batch_size, ARGS.shuffle_size,
-                             ARGS.weights_dir, ARGS.noise_dir, ARGS.layer)
+    print("Starting Evaluation")
+
+    # Define all constants used in helper functions
+    # --> When tracing, we do not want to have any constant function arguments!
+    const_args = {
+        "get_layer": {
+            "layer": ARGS.layer
+        },
+        "preprocess_dataset": {
+            "batch_size": ARGS.batch_size,
+            "shuffle_size": ARGS.shuffle_size,
+            "split": False
+        },
+        "_make_pixel_noise": {
+            "noise_dir": ARGS.noise_dir,
+            "tomo_num": 4
+        },
+        "data_dir": ARGS.data_dir,
+        "weights_dir": ARGS.weights_dir,
+        "_make_noise": {
+            "tomo_num": 4,
+            "ctx": {
+                1: [0.060280509803501296, 2.6956629531655215e-07],
+                2: [0.06124986702256547, -1.6575954273040043e-07],
+                3: [0.06110073383083452, -1.4452612096534303e-07],
+                4: [0.06125788725968831, 1.2850254404014072e-07]
+            }
+        },
+        "train_step": {
+            "step": 0
+        },
+        "noise_type": ARGS.noise_type,
+        "epochs": ARGS.epochs,
+        "nside": ARGS.nside,
+        "l_rate": ARGS.l_rate,
+        "HOME": ARGS.HOME,
+        "Noise_plots": ARGS.Noise_plots
+    }
+    regression_model_trainer()
