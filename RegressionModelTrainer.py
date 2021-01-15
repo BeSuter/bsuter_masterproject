@@ -333,111 +333,113 @@ def regression_model_trainer():
             logger.info(
                 f"Evaluating the model and plotting the results for epoch={epoch}"
             )
-            epoch_non_zero = epoch + 1
+            if not const_args["debug"]:
+                epoch_non_zero = epoch + 1
 
-            color_predictions = []
-            color_labels = []
+                color_predictions = []
+                color_labels = []
 
-            om_histo = []
-            s8_histo = []
+                om_histo = []
+                s8_histo = []
 
-            all_results = {}
-            all_results["om"] = collections.OrderedDict()
-            all_results["s8"] = collections.OrderedDict()
+                all_results = {}
+                all_results["om"] = collections.OrderedDict()
+                all_results["s8"] = collections.OrderedDict()
 
-            om_pred_check = PredictionLabelComparisonPlot(
-                "Omega_m",
-                epoch=epoch_non_zero,
-                layer=const_args["get_layer"]["layer"],
-                noise_type=const_args["noise_type"],
-                start_time=date_time)
-            s8_pred_check = PredictionLabelComparisonPlot(
-                "Sigma_8",
-                epoch=epoch_non_zero,
-                layer=const_args["get_layer"]["layer"],
-                noise_type=const_args["noise_type"],
-                start_time=date_time)
+                om_pred_check = PredictionLabelComparisonPlot(
+                    "Omega_m",
+                    epoch=epoch_non_zero,
+                    layer=const_args["get_layer"]["layer"],
+                    noise_type=const_args["noise_type"],
+                    start_time=date_time)
+                s8_pred_check = PredictionLabelComparisonPlot(
+                    "Sigma_8",
+                    epoch=epoch_non_zero,
+                    layer=const_args["get_layer"]["layer"],
+                    noise_type=const_args["noise_type"],
+                    start_time=date_time)
 
-            test_dset = preprocess_dataset(raw_dset)
-            for set in test_dset:
-                kappa_data = tf.boolean_mask(tf.transpose(set[0],
-                                                          perm=[0, 2, 1]),
-                                             const_args["bool_mask"],
-                                             axis=1)
-                labels = set[1][:, 0, :]
-                labels = labels.numpy()
+                test_dset = preprocess_dataset(raw_dset)
+                for set in test_dset:
+                    kappa_data = tf.boolean_mask(tf.transpose(set[0],
+                                                              perm=[0, 2, 1]),
+                                                 const_args["bool_mask"],
+                                                 axis=1)
+                    labels = set[1][:, 0, :]
+                    labels = labels.numpy()
 
-                # Add noise
-                kappa_data = tf.math.add(kappa_data, _make_noise(kappa_data))
-                predictions = model(kappa_data)
+                    # Add noise
+                    kappa_data = tf.math.add(kappa_data, _make_noise(kappa_data))
+                    predictions = model(kappa_data)
 
-                for ii, prediction in enumerate(predictions.numpy()):
-                    om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
-                    s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
+                    for ii, prediction in enumerate(predictions.numpy()):
+                        om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
+                        s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
 
-                    color_predictions.append(prediction)
-                    color_labels.append(labels[ii, :])
+                        color_predictions.append(prediction)
+                        color_labels.append(labels[ii, :])
 
-                    om_histo.append(prediction[0] - labels[ii, 0])
-                    s8_histo.append(prediction[1] - labels[ii, 1])
+                        om_histo.append(prediction[0] - labels[ii, 0])
+                        s8_histo.append(prediction[1] - labels[ii, 1])
 
-                    try:
-                        all_results["om"][(labels[ii][0],
-                                           labels[ii][1])].append(
-                                               prediction[0])
-                    except KeyError:
-                        all_results["om"][(labels[ii][0],
-                                           labels[ii][1])] = [prediction[0]]
-                    try:
-                        all_results["s8"][(labels[ii][0],
-                                           labels[ii][1])].append(
-                                               prediction[1])
-                    except KeyError:
-                        all_results["s8"][(labels[ii][0],
-                                           labels[ii][1])] = [prediction[1]]
+                        try:
+                            all_results["om"][(labels[ii][0],
+                                               labels[ii][1])].append(
+                                                   prediction[0])
+                        except KeyError:
+                            all_results["om"][(labels[ii][0],
+                                               labels[ii][1])] = [prediction[0]]
+                        try:
+                            all_results["s8"][(labels[ii][0],
+                                               labels[ii][1])].append(
+                                                   prediction[1])
+                        except KeyError:
+                            all_results["s8"][(labels[ii][0],
+                                               labels[ii][1])] = [prediction[1]]
 
-            histo_plot(om_histo,
+                histo_plot(om_histo,
+                           "Om",
+                           epoch=epoch_non_zero,
+                           layer=const_args["get_layer"]["layer"],
+                           noise_type=const_args["noise_type"],
+                           start_time=date_time)
+                histo_plot(s8_histo,
+                           "S8",
+                           epoch=epoch_non_zero,
+                           layer=const_args["get_layer"]["layer"],
+                           noise_type=const_args["noise_type"],
+                           start_time=date_time)
+                l2_color_plot(np.asarray(color_predictions),
+                              np.asarray(color_labels),
+                              epoch=epoch_non_zero,
+                              layer=const_args["get_layer"]["layer"],
+                              noise_type=const_args["noise_type"],
+                              start_time=date_time)
+                S8plot(all_results["om"],
                        "Om",
                        epoch=epoch_non_zero,
                        layer=const_args["get_layer"]["layer"],
                        noise_type=const_args["noise_type"],
                        start_time=date_time)
-            histo_plot(s8_histo,
-                       "S8",
+                S8plot(all_results["s8"],
+                       "sigma8",
                        epoch=epoch_non_zero,
                        layer=const_args["get_layer"]["layer"],
                        noise_type=const_args["noise_type"],
                        start_time=date_time)
-            l2_color_plot(np.asarray(color_predictions),
-                          np.asarray(color_labels),
-                          epoch=epoch_non_zero,
-                          layer=const_args["get_layer"]["layer"],
-                          noise_type=const_args["noise_type"],
-                          start_time=date_time)
-            S8plot(all_results["om"],
-                   "Om",
-                   epoch=epoch_non_zero,
-                   layer=const_args["get_layer"]["layer"],
-                   noise_type=const_args["noise_type"],
-                   start_time=date_time)
-            S8plot(all_results["s8"],
-                   "sigma8",
-                   epoch=epoch_non_zero,
-                   layer=const_args["get_layer"]["layer"],
-                   noise_type=const_args["noise_type"],
-                   start_time=date_time)
-            om_pred_check.save_plot()
-            s8_pred_check.save_plot()
-    stats(train_loss_results.stack().numpy(),
-          "training_loss",
-          layer=const_args["get_layer"]["layer"],
-          noise_type=const_args["noise_type"],
-          start_time=date_time)
-    stats(global_norm_results.stack().numpy(),
-          "global_norm",
-          layer=const_args["get_layer"]["layer"],
-          noise_type=const_args["noise_type"],
-          start_time=date_time)
+                om_pred_check.save_plot()
+                s8_pred_check.save_plot()
+    if not const_args["debug"]:
+        stats(train_loss_results.stack().numpy(),
+              "training_loss",
+              layer=const_args["get_layer"]["layer"],
+              noise_type=const_args["noise_type"],
+              start_time=date_time)
+        stats(global_norm_results.stack().numpy(),
+              "global_norm",
+              layer=const_args["get_layer"]["layer"],
+              noise_type=const_args["noise_type"],
+              start_time=date_time)
 
     if const_args["HOME"]:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
@@ -449,12 +451,13 @@ def regression_model_trainer():
                                    const_args["weights_dir"],
                                    const_args["get_layer"]["layer"],
                                    const_args["noise_type"], date_time)
-    os.makedirs(path_to_dir, exist_ok=True)
-    weight_file_name = f"kappa_batch={const_args['preprocess_dataset']['batch_size']}" + \
-                       f"_shuffle={const_args['preprocess_dataset']['shuffle_size']}_epoch={const_args['epochs']}.tf"
-    save_weights_to = os.path.join(path_to_dir, weight_file_name)
-    logger.info(f"Saving model weights to {save_weights_to}")
-    model.save_weights(save_weights_to)
+    if not const_args["debug"]:
+        os.makedirs(path_to_dir, exist_ok=True)
+        weight_file_name = f"kappa_batch={const_args['preprocess_dataset']['batch_size']}" + \
+                           f"_shuffle={const_args['preprocess_dataset']['shuffle_size']}_epoch={const_args['epochs']}.tf"
+        save_weights_to = os.path.join(path_to_dir, weight_file_name)
+        logger.info(f"Saving model weights to {save_weights_to}")
+        model.save_weights(save_weights_to)
 
 
 if __name__ == "__main__":
@@ -474,6 +477,7 @@ if __name__ == "__main__":
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
     parser.add_argument('--HOME', action='store_true', default=False)
     parser.add_argument('--continue_training', action='store_true', default=False)
+    parser.add_argument('--debug', action='store_true', default=False)
     ARGS = parser.parse_args('--checkpoint_dir', type=str, action='store', default="undefined")
 
     print("Starting RegressionModelTrainer")
@@ -513,7 +517,8 @@ if __name__ == "__main__":
         "l_rate": ARGS.l_rate,
         "HOME": ARGS.HOME,
         "continue_training": ARGS.continue_training,
-        "checkpoint_dir": ARGS.checkpoint_dir
+        "checkpoint_dir": ARGS.checkpoint_dir,
+        "debug": ARGS.debug
     }
 
     regression_model_trainer()

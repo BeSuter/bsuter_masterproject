@@ -307,6 +307,7 @@ if __name__ == "__main__":
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
     parser.add_argument('--HOME', action='store_true', default=False)
     parser.add_argument('--Noise_plots', action='store_true', default=False)
+    parser.add_argument('--debug', action='store_true', default=False)
     ARGS = parser.parse_args()
 
     print("Starting Evaluation")
@@ -345,6 +346,7 @@ if __name__ == "__main__":
         "nside": ARGS.nside,
         "l_rate": ARGS.l_rate,
         "HOME": ARGS.HOME,
-        "Noise_plots": ARGS.Noise_plots
+        "Noise_plots": ARGS.Noise_plots,
+        "debug": ARGS.debug
     }
     regression_model_trainer()
