@@ -186,14 +186,14 @@ def _make_noise():
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
     elif const_args["noise_type"] == "dominik_noise":
-        path_to_map_ids = os.path.join(const_args["_make_pixel_noise"]["noise_dir"], "NoiseMap_ids.npy")
+        path_to_map_ids = os.path.join("/scratch/snx3000/bsuter/NoiseMaps", "NoiseMap_ids.npy")
         all_ids = np.load(path_to_map_ids)
 
         random_ids = np.random.randint(0, high=len(all_ids), size=const_args["preprocess_dataset"]["batch_size"])
         for tomo in range(const_args["_make_noise"]["tomo_num"]):
             single_tomo_maps = []
             for id_num in random_ids:
-                map_name = os.path.join(const_args["_make_pixel_noise"]["noise_dir"],
+                map_name = os.path.join("/scratch/snx3000/bsuter/NoiseMaps",
                                         "FullNoiseMaps",
                                         f"NoiseMap_tomo={tomo}_id={all_ids[id_num]}.npy")
                 full_map = np.load(map_name)
