@@ -244,7 +244,7 @@ def train_step(train_dset, model, optimizer):
         labels = set[1][:, 0, :]
         # Add noise
         logger.debug("Adding noise")
-        kappa_data = tf.math.add(kappa_data, _make_noise(kappa_data))
+        kappa_data = tf.math.add(kappa_data, _make_noise())
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
@@ -369,7 +369,7 @@ def regression_model_trainer():
                     labels = labels.numpy()
 
                     # Add noise
-                    kappa_data = tf.math.add(kappa_data, _make_noise(kappa_data))
+                    kappa_data = tf.math.add(kappa_data, _make_noise())
                     predictions = model(kappa_data)
 
                     for ii, prediction in enumerate(predictions.numpy()):
