@@ -310,6 +310,11 @@ def regression_model_trainer():
                                          size=0,
                                          dynamic_size=True,
                                          clear_after_read=False)
+    if const_args["epochs"] < 9:
+        # Prevent zeros division in line 331.
+        moduol_epoch = 9
+    else:
+        modulo_epoch = const_args["epochs"]
 
     for epoch in range(const_args["epochs"]):
         logger.debug(f"Executing training step for epoch={epoch}")
@@ -328,7 +333,7 @@ def regression_model_trainer():
             global_norm_results = global_norm_results.write(
                 epoch,
                 sum(epo_glob_norm) / len(epo_glob_norm))
-        if epoch % int(const_args["epochs"] // 9) == 0:
+        if epoch % int(modulo_epoch // 9) == 0:
             # Evaluate the model and plot the results
             logger.info(
                 f"Evaluating the model and plotting the results for epoch={epoch}"
@@ -521,8 +526,5 @@ if __name__ == "__main__":
         "checkpoint_dir": ARGS.checkpoint_dir,
         "debug": ARGS.debug
     }
-    if const_args["epochs"] < 9:
-        # Prevent zeros division in line 331.
-        const_args["epochs"] = 9
 
     regression_model_trainer()
