@@ -195,7 +195,7 @@ def _make_noise():
             for id_num in random_ids:
                 map_name = os.path.join("/scratch/snx3000/bsuter/NoiseMaps",
                                         "FullNoiseMaps",
-                                        f"NoiseMap_tomo={tomo}_id={all_ids[id_num]}.npy")
+                                        f"NoiseMap_tomo={tomo+1}_id={all_ids[id_num]}.npy")
                 full_map = np.load(map_name)
                 noise_map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
                 single_tomo_maps.append(noise_map)
