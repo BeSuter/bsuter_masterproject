@@ -236,8 +236,12 @@ def regression_model_trainer():
     all_results["om"] = collections.OrderedDict()
     all_results["s8"] = collections.OrderedDict()
 
-    om_pred_check = PredictionLabelComparisonPlot("Omega_m", layer=const_args["get_layer"]["layer"])
-    s8_pred_check = PredictionLabelComparisonPlot("Sigma_8", layer=const_args["get_layer"]["layer"])
+    om_pred_check = PredictionLabelComparisonPlot("Omega_m",
+                                                  layer=const_args["get_layer"]["layer"],
+                                                  evaluation="Evaluation")
+    s8_pred_check = PredictionLabelComparisonPlot("Sigma_8",
+                                                  layer=const_args["get_layer"]["layer"],
+                                                  evaluation="Evaluation")
 
     for idx, set in enumerate(test_dset):
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
@@ -279,13 +283,14 @@ def regression_model_trainer():
                 all_results["s8"][(labels[ii][0],
                                    labels[ii][1])] = [prediction[1]]
 
-    histo_plot(om_histo, "Om", layer=const_args["get_layer"]["layer"])
-    histo_plot(s8_histo, "S8", layer=const_args["get_layer"]["layer"])
+    histo_plot(om_histo, "Om", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
+    histo_plot(s8_histo, "S8", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
     l2_color_plot(np.asarray(color_predictions),
                   np.asarray(color_labels),
-                  layer=const_args["get_layer"]["layer"])
-    S8plot(all_results["om"], "Om", layer=const_args["get_layer"]["layer"])
-    S8plot(all_results["s8"], "sigma8", layer=const_args["get_layer"]["layer"])
+                  layer=const_args["get_layer"]["layer"],
+                  evaluation="Evaluation")
+    S8plot(all_results["om"], "Om", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
+    S8plot(all_results["s8"], "sigma8", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
     om_pred_check.save_plot()
     s8_pred_check.save_plot()
 

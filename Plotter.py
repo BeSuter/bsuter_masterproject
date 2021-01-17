@@ -14,7 +14,8 @@ def noise_plotter(noise,
                   target=None,
                   layer="Undefined_Layer",
                   noise_type="Undefinded_Noise_Type",
-                  start_time="Undefined_Time"):
+                  start_time="Undefined_Time",
+                  evaluation=""):
     date_time = datetime.now().strftime("%m-%d-%Y")
     total_noise_map = np.full(hp.nside2npix(nside), hp.UNSEEN)
     for tomo in range(tomo_num):
@@ -30,7 +31,7 @@ def noise_plotter(noise,
             file_path = os.path.join(
                 target, f"Noise_tomo={tomo + 1}_date_time={date_time}.plt")
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
                                     "Noise", layer, noise_type, start_time)
             os.makedirs(tmp_path, exist_ok=True)
             file_path = os.path.join(
@@ -44,7 +45,8 @@ def S8plot(data,
            epoch=None,
            layer="Undefined_Layer",
            noise_type="Undefinded_Noise_Type",
-           start_time="Undefined_Time"):
+           start_time="Undefined_Time",
+           evaluation=""):
     """
     :params data: OrderedDict:
     :params label: str
@@ -73,7 +75,7 @@ def S8plot(data,
         file_path = os.path.join(target,
                                  f"S8plot_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", "S8plot",
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation, "S8plot",
                                 label, layer, noise_type, start_time)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path, f"S8plot_date_time={date_time}")
@@ -92,7 +94,8 @@ def stats(data,
           epoch=None,
           layer="Undefined_Layer",
           noise_type="Undefinded_Noise_Type",
-          start_time="Undefined_Time"):
+          start_time="Undefined_Time",
+          evaluation=""):
     """
     :params data: ndarray
     :params label: str
@@ -110,7 +113,7 @@ def stats(data,
         file_path = os.path.join(target,
                                  f"Monitoring_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
                                 "Monitoring", label, layer, noise_type,
                                 start_time)
         os.makedirs(tmp_path, exist_ok=True)
@@ -130,7 +133,8 @@ def histo_plot(data,
                epoch=None,
                layer="Undefined_Layer",
                noise_type="Undefinded_Noise_Type",
-               start_time="Undefined_Time"):
+               start_time="Undefined_Time",
+               evaluation=""):
     """
     :params data: ndarray
     :params label: str
@@ -147,7 +151,7 @@ def histo_plot(data,
         file_path = os.path.join(
             target, f"HistoPlot_for_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", label,
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation, label,
                                 layer, noise_type, start_time)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path, f"HistoPlot_{label}")
@@ -189,7 +193,8 @@ def l2_color_plot(predictions,
                   epoch=None,
                   layer="Undefined_Layer",
                   noise_type="Undefinded_Noise_Type",
-                  start_time="Undefined_Time"):
+                  start_time="Undefined_Time",
+                  evaluation=""):
     """Plots mean L2 Norm between all predictions and unique labels"""
     date_time = datetime.now().strftime("%m-%d-%Y")
     fig = plt.figure(figsize=(12, 8))
@@ -203,7 +208,7 @@ def l2_color_plot(predictions,
         file_path = os.path.join(target,
                                  f"L2ColorPlot_date_time={date_time}.png")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
                                 "L2_color_plot", layer, noise_type, start_time)
         os.makedirs(tmp_path, exist_ok=True)
         if epoch:
@@ -250,12 +255,13 @@ class PredictionLabelComparisonPlot:
         layer = kwargs.pop("layer", "Undefined_Layer")
         noise_type = kwargs.pop("noise_type", "Undefinded_Noise_Type")
         start_time = kwargs.pop("start_time", "Undefined_Time")
+        evaluation = kwargs.pop("evaluation", "")
 
         if target:
             os.makedirs(target, exist_ok=True)
             self.file_path = os.path.join(target, plot_name + ".png")
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots",
+            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
                                     layer, noise_type, start_time)
             os.makedirs(tmp_path, exist_ok=True)
             self.file_path = os.path.join(
