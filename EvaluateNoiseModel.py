@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import logging
+import datetime
 import collections
 import numpy as np
 import healpy as hp
@@ -204,6 +205,7 @@ def _make_noise():
 
 
 def regression_model_trainer():
+    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
     # assert layer in weights_dir, "Weights directory does not match the desired layers!"
 
     scratch_path = os.path.expandvars("$SCRATCH")
@@ -238,9 +240,13 @@ def regression_model_trainer():
 
     om_pred_check = PredictionLabelComparisonPlot("Omega_m",
                                                   layer=const_args["get_layer"]["layer"],
+                                                  noise_type=const_args["noise_type"],
+                                                  start_time=date_time,
                                                   evaluation="Evaluation")
     s8_pred_check = PredictionLabelComparisonPlot("Sigma_8",
                                                   layer=const_args["get_layer"]["layer"],
+                                                  noise_type=const_args["noise_type"],
+                                                  start_time=date_time,
                                                   evaluation="Evaluation")
 
     for idx, set in enumerate(test_dset):
@@ -255,7 +261,11 @@ def regression_model_trainer():
         logger.debug(f"Total noise map has shape {noise.shape}")
         # Plot the noise once
         if idx == 0 and const_args["Noise_plots"]:
-            noise_plotter(noise, indices_ext, const_args["nside"])
+            noise_plotter(noise,
+                          indices_ext,
+                          const_args["nside"],
+                          noise_type=const_args["noise_type"],
+                          start_time=date_time)
         # Add noise
         kappa_data = tf.math.add(kappa_data, noise)
         predictions = model(kappa_data)
@@ -283,14 +293,36 @@ def regression_model_trainer():
                 all_results["s8"][(labels[ii][0],
                                    labels[ii][1])] = [prediction[1]]
 
-    histo_plot(om_histo, "Om", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
-    histo_plot(s8_histo, "S8", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
+    histo_plot(om_histo,
+               "Om",
+               layer=const_args["get_layer"]["layer"],
+               noise_type=const_args["noise_type"],
+               start_time=date_time,
+               evaluation="Evaluation")
+    histo_plot(s8_histo,
+               "S8",
+               layer=const_args["get_layer"]["layer"],
+               noise_type=const_args["noise_type"],
+               start_time=date_time,
+               evaluation="Evaluation")
     l2_color_plot(np.asarray(color_predictions),
                   np.asarray(color_labels),
                   layer=const_args["get_layer"]["layer"],
+                  noise_type=const_args["noise_type"],
+                  start_time=date_time,
                   evaluation="Evaluation")
-    S8plot(all_results["om"], "Om", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
-    S8plot(all_results["s8"], "sigma8", layer=const_args["get_layer"]["layer"], evaluation="Evaluation")
+    S8plot(all_results["om"],
+           "Om",
+           layer=const_args["get_layer"]["layer"],
+           noise_type=const_args["noise_type"],
+           start_time=date_time,
+           evaluation="Evaluation")
+    S8plot(all_results["s8"],
+           "sigma8",
+           layer=const_args["get_layer"]["layer"],
+           noise_type=const_args["noise_type"],
+           start_time=date_time,
+           evaluation="Evaluation")
     om_pred_check.save_plot()
     s8_pred_check.save_plot()
 
