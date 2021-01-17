@@ -478,7 +478,8 @@ if __name__ == "__main__":
     parser.add_argument('--HOME', action='store_true', default=False)
     parser.add_argument('--continue_training', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
-    ARGS = parser.parse_args('--checkpoint_dir', type=str, action='store', default="undefined")
+    parser.add_argument('--checkpoint_dir', type=str, action='store', default='undefined')
+    ARGS = parser.parse_args()
 
     print("Starting RegressionModelTrainer")
 
