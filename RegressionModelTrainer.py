@@ -521,5 +521,8 @@ if __name__ == "__main__":
         "checkpoint_dir": ARGS.checkpoint_dir,
         "debug": ARGS.debug
     }
+    if const_args["epochs"] < 9:
+        # Prevent zeros division in line 331.
+        const_args["epochs"] = 9
 
     regression_model_trainer()
