@@ -312,7 +312,7 @@ def regression_model_trainer():
                                          clear_after_read=False)
     if const_args["epochs"] < 9:
         # Prevent zeros division in line 331.
-        moduol_epoch = 9
+        modulo_epoch = 9
     else:
         modulo_epoch = const_args["epochs"]
 
