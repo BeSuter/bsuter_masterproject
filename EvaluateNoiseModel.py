@@ -2,13 +2,13 @@ import os
 import sys
 import argparse
 import logging
-import datetime
 import collections
 import numpy as np
 import healpy as hp
 import tensorflow as tf
 
 from utils import get_dataset
+from datetime import datetime
 from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
 from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot, noise_plotter
