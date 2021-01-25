@@ -159,7 +159,7 @@ def import_pipeline_maps():
         for idx, id_num in enumerate(random_ids):
             map_name = os.path.join("/scratch/snx3000/bsuter/Maps",
                                     "FullMaps",
-                                    f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}tomo={tomo + 1}_id={all_ids[id_num]}.npy")
+                                    f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
             full_map = np.load(map_name)
             map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
             single_tomo_maps.append(map)
