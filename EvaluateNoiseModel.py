@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import argparse
 import logging
@@ -132,6 +133,42 @@ def preprocess_dataset(dset):
         return dset
 
 
+def _label_finder(str):
+    Om_label = re.search(r"(?<=Om=).+(?=_s8=)", str).group(0)
+    s8_label = re.search(r"(?<=s8=).+(?=_tomo)", str).group(0)
+    return (float(Om_label), float(s8_label))
+
+
+def import_pipeline_maps():
+    full_tomo_map = []
+    logger.info(f"Loading pipeline maps")
+    path_to_map_ids = os.path.join("/scratch/snx3000/bsuter/Maps", "Map_ids.npy")
+    all_map_paths = os.listdir("/scratch/snx3000/bsuter/Maps/FullMaps")
+
+    all_ids = np.load(path_to_map_ids)
+    choosen_labels = []
+    random_ids = np.random.randint(0, high=len(all_ids), size=1)
+    for id in random_ids:
+        for file_name in all_map_paths:
+            if file_name.endswith(f"_id={all_ids[id]}.npy"):
+                choosen_labels.append(_label_finder(file_name))
+                break
+
+    for tomo in range(const_args["_make_noise"]["tomo_num"]):
+        single_tomo_maps = []
+        for idx, id_num in enumerate(random_ids):
+            map_name = os.path.join("/scratch/snx3000/bsuter/Maps",
+                                    "FullMaps",
+                                    f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}tomo={tomo + 1}_id={all_ids[id_num]}.npy")
+            full_map = np.load(map_name)
+            map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
+            single_tomo_maps.append(map)
+        full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
+
+    return (tf.stack(full_tomo_map, axis=-1), choosen_labels)
+
+
+
 def mask_maker(dset):
     iterator = iter(dset)
     bool_mask = hp.mask_good(iterator.get_next()[0][0].numpy())
@@ -208,6 +245,7 @@ def regression_model_trainer():
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
     # assert layer in weights_dir, "Weights directory does not match the desired layers!"
 
+    # Kleen up data import
     scratch_path = os.path.expandvars("$SCRATCH")
     data_path = os.path.join(scratch_path, const_args["data_dir"])
     logger.info(f"Retrieving data from {data_path}")
@@ -216,7 +254,12 @@ def regression_model_trainer():
     const_args["pixel_num"] = len(indices_ext)
 
     # Use all the maps to train the model
-    test_dset = preprocess_dataset(raw_dset)
+    if const_args["pipeline_data"]:
+        test_dset = []
+        for i in range(const_args["map_count"]):
+            test_dset.append(import_pipeline_maps())
+    else:
+        test_dset = preprocess_dataset(raw_dset)
 
     layers = get_layers()
 
@@ -250,11 +293,15 @@ def regression_model_trainer():
                                                   evaluation="Evaluation")
 
     for idx, set in enumerate(test_dset):
-        kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
-                                     bool_mask,
-                                     axis=1)
-        labels = set[1][:, 0, :]
-        labels = labels.numpy()
+        if not const_args["pipeline_data"]:
+            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
+                                         bool_mask,
+                                         axis=1)
+            labels = set[1][:, 0, :]
+            labels = labels.numpy()
+        else:
+            kappa_data = set[0]
+            labels = np.asarray(set[1])
 
         # Generate noise
         noise = _make_noise()
@@ -265,7 +312,8 @@ def regression_model_trainer():
                           indices_ext,
                           const_args["nside"],
                           noise_type=const_args["noise_type"],
-                          start_time=date_time)
+                          start_time=date_time,
+                          layer=const_args["get_layer"]["layer"])
         # Add noise
         kappa_data = tf.math.add(kappa_data, noise)
         predictions = model(kappa_data)
@@ -345,6 +393,8 @@ if __name__ == "__main__":
     parser.add_argument('--HOME', action='store_true', default=False)
     parser.add_argument('--Noise_plots', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
+    parser.add_argument('--pipeline_data', action='store_true', default=False)
+    parser.add_argument('--map_count', type=int, action='store')
     ARGS = parser.parse_args()
 
     print("Starting Evaluation")
@@ -384,6 +434,10 @@ if __name__ == "__main__":
         "l_rate": ARGS.l_rate,
         "HOME": ARGS.HOME,
         "Noise_plots": ARGS.Noise_plots,
-        "debug": ARGS.debug
+        "debug": ARGS.debug,
+        "pipeline_data": ARGS.pipeline_data,
+        "map_count": ARGS.map_count
     }
+    if ARGS.pipeline_data:
+        assert ARGS.map_count > 0
     regression_model_trainer()
