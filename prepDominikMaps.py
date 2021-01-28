@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import healpy as hp
 
+from memory_profiler import profile
 from DeepSphere.utils import extend_indices
 from estats.catalog import catalog
 
@@ -18,7 +19,7 @@ handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
-
+@profile
 def _rotate_map(map, ctx):
     """
     """
@@ -57,7 +58,7 @@ def _rotate_map(map, ctx):
 
     return rotated_map
 
-
+@profile
 def main(job_index, debug=False):
     tomo = int(job_index)
     ctx = {
