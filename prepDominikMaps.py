@@ -101,8 +101,6 @@ def main(job_index, debug=False):
 
     for idx in range(2000):
         map_manager(idx, tomo, ctx, debug=debug)
-        if idx == 17:
-            break
 
 
 if __name__ == "__main__":
