@@ -59,16 +59,17 @@ def _rotate_map(map, ctx):
 
     return rotated_map
 
-@profile
+
 def map_manager(idx, tomo, ctx, debug=False):
     for mode in ["E"]:
         all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
         try:
             all_cuts = np.load(os.path.join(ctx["noise_dir"], all_cuts_name))
-        except IOError:
+        except (IOError, ValueError) as e:
             logger.info(
                 f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " + \
                 "Adding to failed list")
+            logger.info(e)
             continue
 
         tmp_cuts = []
