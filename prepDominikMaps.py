@@ -74,7 +74,8 @@ def map_manager(idx, tomo, ctx, debug=False):
         tmp_cuts = []
         for cut in range(len(all_cuts)):
             ctx["index_counter"] = cut
-            tmp_cuts.append(_rotate_map(all_cuts[cut], ctx))
+            rotated_map = _rotate_map(all_cuts[cut], ctx)
+            tmp_cuts.append(rotated_map)
         all_cuts = np.asarray(tmp_cuts)
         del(tmp_cuts)
 
