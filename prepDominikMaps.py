@@ -37,6 +37,7 @@ def _rotate_map(map, ctx):
                   ctx["dec_rotations"][ctx["index_counter"]],
         mirror=ctx["mirror"][ctx["index_counter"]])
     pix = mock_cat._pixelize(alpha, delta)
+    del(mock_cat)
 
     rotated_indices_ext = extend_indices(
         indices=pix,
