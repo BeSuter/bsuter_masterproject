@@ -58,7 +58,7 @@ def _rotate_map(map, ctx):
 
     return rotated_map
 
-
+@profile
 def map_manager(idx, tomo, ctx, debug=False):
     for mode in ["E"]:
         all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
