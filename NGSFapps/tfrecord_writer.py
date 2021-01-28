@@ -39,11 +39,59 @@ def _noise_info(str):
     return (int(tomo), float(scale))
 
 
+def collect_noise(noise_id):
+    noise_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
+    error_flag = False
+    for cut in range(8):
+        full_tomo_map = np.zeros(0)
+        for tomo in range(1,5):
+            try:
+                tomo_map = np.load(os.path.join(
+                    noise_dir,
+                    f"Rotated_NOISE_mode=E_noise={noise_id}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy")
+                )[cut]
+            except (IOError, ValueError) as e:
+                logger.info(
+                    f"Error while loading Rotated_NOISE_mode=E_noise={noise_id}_stat=" +
+                    f"GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
+                    "excluding from TFRecord files \n" + e)
+                error_flag = True
+                break
+            full_tomo_map = np.append(full_tomo_map, tomo_map)
+        if error_flag:
+            break
+        yield full_tomo_map
+
+
+def collect_fiducial(idx):
+    pass
+
+
+def collect_grid(idx):
+    pass
+
+
+def cleanup_noise(noise_id):
+    noise_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
+    for tomo in range(1, 5):
+        file_path = os.path.join(
+            noise_dir,
+            f"Rotated_NOISE_mode=E_noise={noise_id}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy")
+        yield file_path
+
+
+def cleanup_fiducial(idx):
+    pass
+
+
+def cleanup_grid(idx):
+    pass
+
+
 def LSF_tfrecord_writer(job_index,
-                        path="NGSF_LIGHTCONES",
-                        target="NGSFrecords",
-                        file_count=32,
-                        SCRATCH=True):
+                        MAP_TYPE="noise",
+                        target="NGSFrecordsDomoNoise",
+                        file_count=16):
     """
     ToDo: Find better way of generating the cosmology labels
     This function is meant to be used in the context of lsf job array.
@@ -51,50 +99,55 @@ def LSF_tfrecord_writer(job_index,
     """
     # Job index starts at 1, array index starts at 0
     array_idx = int(job_index) - 1
-    if SCRATCH:
-        map_path = os.path.join(os.path.expandvars("$SCRATCH"), path)
-        target_path = os.path.join(os.path.expandvars("$SCRATCH"), target)
+    if os.getenv("DEBUG", False):
+        work_dir = os.path.expandvars("$SCRATCH")
+        target_path = os.path.join(work_dir, target)
+        logger.debug(f"In debug mode. Target top_dir is {target_path}")
     else:
-        map_path = path
-        target_path = target
+        target_path = "/cluster/work/refregier/besuter/data/NoiseMaps"
     os.makedirs(target_path, exist_ok=True)
-    f_names = [
-        os.path.join(map_path, file) for file in os.listdir(map_path)
-        if not file.startswith(".")
-    ]
-    f_names.sort()
-    batch_size = int(len(f_names) / file_count)
-    if array_idx + 1 == file_count:
-        start = int((array_idx - 1) * batch_size + 1)
-        end = len(f_names) + 1
-        name_batch = f_names[start:]
-        logger.info(f"Serializing maps {start} to end")
-    else:
-        start = int(array_idx * batch_size)
-        end = int(start + batch_size)
-        name_batch = f_names[start:end]
-        logger.info(f"Serializing maps {start} to {end}")
+
     serialized_example_dump = []
-    for file in name_batch:
-        try:
-            k_map = np.load(file)
-        except IOError as e:
-            logger.critical(e)
-            continue
-        labels = _label_finder(file)
-        noise_info = _noise_info(file)
-        cosmo_labels = np.array([
-            [labels[0], labels[1]], [noise_info[0], noise_info[1]]
-        ])
-        serialized_example_dump.append(
-            data.serialize_labeled_example(k_map, cosmo_labels))
-    logger.info("Dumping maps")
-    map_shape = ','.join(map(str,np.shape(k_map)))
-    label_shape = ','.join(map(str,np.shape(cosmo_labels)))
-    tfrecord_name = f"kappa_map_cosmo={start}-{end-1}_shapes={map_shape}&{label_shape}_{uuid.uuid4().hex}.tfrecord"
-    target_path = os.path.join(target_path, tfrecord_name)
-    _write_tfr(serialized_example_dump, target_path)
+    for idx in range(array_idx, 2001, file_count):
+        if MAP_TYPE == "noise":
+            label = np.array([0]) # We do not need a label for noise maps
+            for full_tomo_map in collect_noise(idx):
+                serialized_map = data.serialize_labeled_example(full_tomo_map, label)
+                serialized_example_dump.append(serialized_map)
+        elif MAP_TYPE == "kappa":
+            for full_tomo_map, label in collect_fiducial(idx):
+                serialized_map = data.serialize_labeled_example(full_tomo_map, label)
+                serialized_example_dump.append(serialized_map)
+            for full_tomo_map, label in collect_grid(idx):
+                serialized_map = data.serialize_labeled_example(full_tomo_map, label)
+                serialized_example_dump.append(serialized_map)
+        if os.getenv("DEBUG", False):
+            logger.debug("In debug mode. Stopping after 1 iteration")
+            break
+    logger.info(f"Dumping {MAP_TYPE} maps")
+    map_shape = ','.join(map(str, np.shape(full_tomo_map)))
+    label_shape = ','.join(map(str, np.shape(label)))
+    del(full_tomo_map)
+    del(label)
+    tfrecord_name = f"{MAP_TYPE}_map_cosmo_shapes={map_shape}&{label_shape}_{uuid.uuid4().hex}.tfrecord"
+    record_path = os.path.join(target_path, tfrecord_name)
+    _write_tfr(serialized_example_dump, record_path)
     serialized_example_dump.clear()
+    if not os.getenv("DEBUG", False):
+        logger.info("Cleaning up")
+        for idx in range(array_idx, 2001, file_count):
+            if MAP_TYPE == "noise":
+                for file in cleanup_noise(idx):
+                    if os.isfile(file):
+                        os.remove(file)
+            if MAP_TYPE == "kappa":
+                for file in cleanup_fiducial(idx):
+                    if os.isfile(file):
+                        os.remove(file)
+                for file in cleanup_grid(idx):
+                    if os.isfile(file):
+                        os.remove(file)
+
 
 if __name__ == "__main__":
     args = sys.argv[1:]
