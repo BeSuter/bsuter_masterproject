@@ -71,12 +71,6 @@ def main(job_index, debug=False):
     }
     noise_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
 
-    # Load file containing noise_id of corrupted files
-    try:
-        corrupted = np.load(os.path.join(noise_dir, f"corrupted_files_tomo={tomo}.npy"))
-    except IOError:
-        corrupted = np.zeros(0, dtype=np.int32)
-
     for idx in range(2000):
         for mode in ["E"]:
             all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
@@ -85,7 +79,6 @@ def main(job_index, debug=False):
             except IOError:
                 logger.info(f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " +\
                             "Adding to failed list")
-                corrupted = np.append(corrupted, np.array([idx]))
                 continue
 
             tmp_cuts = []
@@ -103,7 +96,9 @@ def main(job_index, debug=False):
                 logger.debug(f"Debug-Mode: Saving first noise file to {SCRATCH_path} then aborting.")
                 np.save(SCRATCH_path, all_cuts)
                 sys.exit(0)
-    np.save(os.path.join(noise_dir, f"corrupted_files_tomo={tomo}.npy"), corrupted)
+        # For profiling
+        if idx == 15:
+            break
 
 
 if __name__ == "__main__":
