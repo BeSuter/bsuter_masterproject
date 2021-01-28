@@ -58,7 +58,7 @@ def _rotate_map(map, ctx):
     return rotated_map
 
 
-def main(job_index, debug=False):
+def main(job_index, debug=True):
     tomo = int(job_index)
     ctx = {
         "NSIDE": 1024,
@@ -94,9 +94,11 @@ def main(job_index, debug=False):
             all_cuts = np.asarray(tmp_cuts)
 
             if not debug:
-                np.save(os.path.join(noise_dir, all_cuts_name), all_cuts)
+                np.save(os.path.join(noise_dir, "Rotated_" + all_cuts_name), all_cuts)
+                if os.path.isfile(os.path.join(noise_dir, all_cuts_name)):
+                    os.remove(os.path.join(noise_dir, all_cuts_name))
             else:
-                SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), all_cuts_name)
+                SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), "Rotated_" + all_cuts_name)
                 logger.debug(f"Debug-Mode: Saving first noise file to {SCRATCH_path} then aborting.")
                 np.save(SCRATCH_path, all_cuts)
                 sys.exit(0)
@@ -106,14 +108,4 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     job_index = str(args[0])
 
-    try:
-        if str(args[1]) == "debug":
-            debug = True
-        else:
-            debug = False
-    except IndexError:
-        debug = False
-
-
-    main(job_index, debug=debug)
-
+    main(job_index)
