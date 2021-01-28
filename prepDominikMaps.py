@@ -58,6 +58,34 @@ def _rotate_map(map, ctx):
 
     return rotated_map
 
+
+def map_manager(idx, tomo, ctx, debug=False):
+    for mode in ["E"]:
+        all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
+        try:
+            all_cuts = np.load(os.path.join(ctx["noise_dir"], all_cuts_name))
+        except IOError:
+            logger.info(
+                f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " + \
+                "Adding to failed list")
+            continue
+
+        tmp_cuts = []
+        for cut in range(len(all_cuts)):
+            ctx["index_counter"] = cut
+            tmp_cuts.append(_rotate_map(all_cuts[cut], ctx))
+        all_cuts = np.asarray(tmp_cuts)
+
+        if not debug:
+            np.save(os.path.join(ctx["noise_dir"], "Rotated_" + all_cuts_name), all_cuts)
+            if os.path.isfile(os.path.join(ctx["noise_dir"], all_cuts_name)):
+                os.remove(os.path.join(ctx["noise_dir"], all_cuts_name))
+        else:
+            SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), "Rotated_" + all_cuts_name)
+            logger.debug(f"Debug-Mode: Saving first noise file to {SCRATCH_path} then aborting.")
+            np.save(SCRATCH_path, all_cuts)
+            sys.exit(0)
+
 @profile
 def main(job_index, debug=False):
     tomo = int(job_index)
@@ -67,37 +95,13 @@ def main(job_index, debug=False):
         "alpha_rotations": [0., 1.578, 3.142, 4.712, 0., 1.578, 3.142, 4.712],
         "dec_rotations": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         "mirror": [False, False, False, False, True, True, True, True],
-        "down_sample": 512
+        "down_sample": 512,
+        "noise_dir": "/cluster/work/refregier/besuter/data/NoiseMaps"
     }
-    noise_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
 
     for idx in range(2000):
-        for mode in ["E"]:
-            all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
-            try:
-                all_cuts = np.load(os.path.join(noise_dir, all_cuts_name))
-            except IOError:
-                logger.info(f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " +\
-                            "Adding to failed list")
-                continue
-
-            tmp_cuts = []
-            for cut in range(len(all_cuts)):
-                ctx["index_counter"] = cut
-                tmp_cuts.append(_rotate_map(all_cuts[cut], ctx))
-            all_cuts = np.asarray(tmp_cuts)
-
-            if not debug:
-                np.save(os.path.join(noise_dir, "Rotated_" + all_cuts_name), all_cuts)
-                if os.path.isfile(os.path.join(noise_dir, all_cuts_name)):
-                    os.remove(os.path.join(noise_dir, all_cuts_name))
-            else:
-                SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), "Rotated_" + all_cuts_name)
-                logger.debug(f"Debug-Mode: Saving first noise file to {SCRATCH_path} then aborting.")
-                np.save(SCRATCH_path, all_cuts)
-                sys.exit(0)
-        # For profiling
-        if idx == 15:
+        map_manager(idx, tomo, ctx, debug=debug)
+        if idx == 17:
             break
 
 
