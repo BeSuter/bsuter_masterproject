@@ -58,7 +58,7 @@ def _rotate_map(map, ctx):
     return rotated_map
 
 
-def main(job_index, debug=True):
+def main(job_index, debug=False):
     tomo = int(job_index)
     ctx = {
         "NSIDE": 1024,
@@ -102,6 +102,7 @@ def main(job_index, debug=True):
                 logger.debug(f"Debug-Mode: Saving first noise file to {SCRATCH_path} then aborting.")
                 np.save(SCRATCH_path, all_cuts)
                 sys.exit(0)
+    np.save(os.path.join(noise_dir, f"corrupted_files_tomo={tomo}.npy"), corrupted)
 
 
 if __name__ == "__main__":
