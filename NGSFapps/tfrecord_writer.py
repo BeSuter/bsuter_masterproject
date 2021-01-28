@@ -54,7 +54,8 @@ def collect_noise(noise_id):
                 logger.info(
                     f"Error while loading Rotated_NOISE_mode=E_noise={noise_id}_stat=" +
                     f"GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
-                    "excluding from TFRecord files \n" + e)
+                    "excluding from TFRecord files \n")
+                print(e)
                 error_flag = True
                 break
             full_tomo_map = np.append(full_tomo_map, tomo_map)
