@@ -75,6 +75,7 @@ def map_manager(idx, tomo, ctx, debug=False):
             ctx["index_counter"] = cut
             tmp_cuts.append(_rotate_map(all_cuts[cut], ctx))
         all_cuts = np.asarray(tmp_cuts)
+        del(tmp_cuts)
 
         if not debug:
             np.save(os.path.join(ctx["noise_dir"], "Rotated_" + all_cuts_name), all_cuts)
