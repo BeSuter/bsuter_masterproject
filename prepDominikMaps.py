@@ -106,9 +106,14 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     job_index = str(args[0])
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action="store_true", default=False)
-    ARGS = parser.parse_args()
+    try:
+        if str(args[1]) == "debug":
+            debug = True
+        else:
+            debug = False
+    except IndexError:
+        debug = False
 
-    main(job_index, debug=ARGS.debug)
+
+    main(job_index, debug=debug)
 
