@@ -50,7 +50,7 @@ def collect_noise(noise_id):
                     noise_dir,
                     f"Rotated_NOISE_mode=E_noise={noise_id}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy")
                 )[cut]
-            except (IOError, ValueError) as e:
+            except (IOError, ValueError, IndexError) as e:
                 logger.info(
                     f"Error while loading Rotated_NOISE_mode=E_noise={noise_id}_stat=" +
                     f"GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
