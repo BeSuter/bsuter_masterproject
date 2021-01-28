@@ -19,7 +19,7 @@ handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
-@profile
+
 def _rotate_map(map, ctx):
     """
     """
