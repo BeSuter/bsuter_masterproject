@@ -139,14 +139,14 @@ def LSF_tfrecord_writer(job_index,
         for idx in range(array_idx, 2001, file_count):
             if MAP_TYPE == "noise":
                 for file in cleanup_noise(idx):
-                    if os.isfile(file):
+                    if os.path.isfile(file):
                         os.remove(file)
             if MAP_TYPE == "kappa":
                 for file in cleanup_fiducial(idx):
-                    if os.isfile(file):
+                    if os.path.isfile(file):
                         os.remove(file)
                 for file in cleanup_grid(idx):
-                    if os.isfile(file):
+                    if os.path.isfile(file):
                         os.remove(file)
 
 
