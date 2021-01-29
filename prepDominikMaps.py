@@ -1,11 +1,9 @@
 import os
 import sys
 import logging
-import argparse
 import numpy as np
 import healpy as hp
 
-from memory_profiler import profile
 from DeepSphere.utils import extend_indices
 from estats.catalog import catalog
 
@@ -60,14 +58,14 @@ def _rotate_map(map, ctx):
     return rotated_map
 
 
-def map_manager(idx, tomo, ctx, debug=False):
+def map_manager(idx, tomo, ctx):
     for mode in ["E"]:
         all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
         try:
             all_cuts = np.load(os.path.join(ctx["noise_dir"], all_cuts_name))
         except (IOError, ValueError) as e:
             logger.info(
-                f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " + \
+                f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
                 "Adding to failed list")
             logger.info(e)
             continue
@@ -77,10 +75,11 @@ def map_manager(idx, tomo, ctx, debug=False):
             ctx["index_counter"] = cut
             rotated_map = _rotate_map(all_cuts[cut], ctx)
             tmp_cuts.append(rotated_map)
+            del(rotated_map)
         all_cuts = np.asarray(tmp_cuts)
         del(tmp_cuts)
 
-        if not debug:
+        if not os.getenv("DEBUG", False):
             np.save(os.path.join(ctx["noise_dir"], "Rotated_" + all_cuts_name), all_cuts)
             if os.path.isfile(os.path.join(ctx["noise_dir"], all_cuts_name)):
                 os.remove(os.path.join(ctx["noise_dir"], all_cuts_name))
@@ -90,8 +89,8 @@ def map_manager(idx, tomo, ctx, debug=False):
             np.save(SCRATCH_path, all_cuts)
             sys.exit(0)
 
-@profile
-def main(job_index, debug=False):
+
+def main(job_index):
     tomo = int(job_index)
     ctx = {
         "NSIDE": 1024,
@@ -104,7 +103,7 @@ def main(job_index, debug=False):
     }
 
     for idx in range(2000):
-        map_manager(idx, tomo, ctx, debug=debug)
+        map_manager(idx, tomo, ctx)
 
 
 if __name__ == "__main__":

@@ -8,8 +8,14 @@ import numpy as np
 import tensorflow as tf
 from DeepSphere import data
 
+
+if os.getenv("DEBUG", False):
+    lvl = logging.DEBUG
+else:
+    lvl = logging.INFO
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(lvl)
 
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
@@ -43,7 +49,7 @@ def collect_noise(noise_id):
     noise_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
     error_flag = False
     for cut in range(8):
-        full_tomo_map = np.zeros(0)
+        full_tomo_map = []
         for tomo in range(1,5):
             try:
                 tomo_map = np.load(os.path.join(
@@ -58,9 +64,10 @@ def collect_noise(noise_id):
                 print(e)
                 error_flag = True
                 break
-            full_tomo_map = np.append(full_tomo_map, tomo_map)
+            full_tomo_map.append(tomo_map)
         if error_flag:
             break
+        full_tomo_map = np.asarray(full_tomo_map)
         yield full_tomo_map
 
 
@@ -128,6 +135,7 @@ def LSF_tfrecord_writer(job_index,
     logger.info(f"Dumping {MAP_TYPE} maps")
     map_shape = ','.join(map(str, np.shape(full_tomo_map)))
     label_shape = ','.join(map(str, np.shape(label)))
+    logger.debug(f"Shapes are map_shape={map_shape} and label_shape={label_shape}")
     del(full_tomo_map)
     del(label)
     tfrecord_name = f"{MAP_TYPE}_map_cosmo_shapes={map_shape}&{label_shape}_{uuid.uuid4().hex}.tfrecord"
