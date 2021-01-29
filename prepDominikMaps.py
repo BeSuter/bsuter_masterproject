@@ -76,6 +76,7 @@ def map_manager(idx, tomo, ctx):
             rotated_map = _rotate_map(all_cuts[cut], ctx)
             tmp_cuts.append(rotated_map)
             del(rotated_map)
+        logger.info(f"Collected {len(tmp_cuts)}/{len(all_cuts)} cuts.")
         all_cuts = np.asarray(tmp_cuts)
         del(tmp_cuts)
 
