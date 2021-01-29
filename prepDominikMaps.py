@@ -7,8 +7,13 @@ import healpy as hp
 from DeepSphere.utils import extend_indices
 from estats.catalog import catalog
 
+if os.getenv("DEBUG", False):
+    lvl = logging.DEBUG
+else:
+    lvl = logging.INFO
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(lvl)
 
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
@@ -64,10 +69,10 @@ def map_manager(idx, tomo, ctx):
         try:
             all_cuts = np.load(os.path.join(ctx["noise_dir"], all_cuts_name))
         except (IOError, ValueError) as e:
-            logger.info(
+            logger.debug(
                 f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
                 "Adding to failed list")
-            logger.info(e)
+            logger.debug(e)
             continue
 
         tmp_cuts = []
@@ -76,7 +81,7 @@ def map_manager(idx, tomo, ctx):
             rotated_map = _rotate_map(all_cuts[cut], ctx)
             tmp_cuts.append(rotated_map)
             del(rotated_map)
-        logger.info(f"Collected {len(tmp_cuts)}/{len(all_cuts)} cuts.")
+        logger.info(f"Collected {len(tmp_cuts)}/{len(all_cuts)} cuts for noise_id {idx}.")
         all_cuts = np.asarray(tmp_cuts)
         del(tmp_cuts)
 
