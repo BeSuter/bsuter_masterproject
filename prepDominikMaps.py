@@ -66,7 +66,7 @@ def generate_rotated_fiducial_maps(noise_idx, tomo, real_idx, ctx):
         map_name = f"SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode={mode}_noise={noise_idx}_s8=0.84_stat=" + \
                    f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy"
         try:
-            map = np.load(os.path.join(ctx["fiducial_dir"]), map_name)
+            map = np.load(os.path.join(ctx["fiducial_dir"], map_name))
         except (IOError, ValueError) as e:
             logger.debug(
                 f"Error while loading SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" +
