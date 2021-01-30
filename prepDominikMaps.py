@@ -24,8 +24,6 @@ logger.addHandler(handler)
 
 
 def _rotate_map(map, ctx):
-    """
-    """
     indices = np.arange(len(map))[map > hp.UNSEEN]
     delta, alpha = hp.pix2ang(ctx["NSIDE"], indices)
 
@@ -63,40 +61,83 @@ def _rotate_map(map, ctx):
     return rotated_map
 
 
-def map_manager(idx, tomo, ctx):
+def generate_rotated_fiducial_maps(noise_idx, tomo, real_idx, ctx):
     for mode in ["E"]:
-        all_cuts_name = f"NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
+        map_name = f"SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode={mode}_noise={noise_idx}_s8=0.84_stat=" + \
+                   f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy"
         try:
-            all_cuts = np.load(os.path.join(ctx["noise_dir"], all_cuts_name))
+            map = np.load(os.path.join(ctx["fiducial_dir"]), map_name)
         except (IOError, ValueError) as e:
             logger.debug(
-                f"Error while loading NOISE_mode={mode}_noise={idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
+                f"Error while loading SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" +
+                f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy " +
                 "Adding to failed list")
             logger.debug(e)
             continue
 
-        tmp_cuts = []
-        for cut in range(len(all_cuts)):
+        for cut in range(len(map)):
             ctx["index_counter"] = cut
-            rotated_map = _rotate_map(all_cuts[cut], ctx)
-            tmp_cuts.append(rotated_map)
-            del(rotated_map)
-        logger.info(f"Collected {len(tmp_cuts)}/{len(all_cuts)} cuts for noise_id {idx}.")
-        all_cuts = np.asarray(tmp_cuts)
-        del(tmp_cuts)
-
-        if not os.getenv("DEBUG", False):
-            np.save(os.path.join(ctx["noise_dir"], "Rotated_" + all_cuts_name), all_cuts)
-            if os.path.isfile(os.path.join(ctx["noise_dir"], all_cuts_name)):
-                os.remove(os.path.join(ctx["noise_dir"], all_cuts_name))
-        else:
-            SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), "Rotated_" + all_cuts_name)
-            logger.debug(f"Debug-Mode: Saving first noise file to {SCRATCH_path} then aborting.")
-            np.save(SCRATCH_path, all_cuts)
-            sys.exit(0)
+            rotated_map = _rotate_map(map[cut], ctx)
+            yield rotated_map
 
 
-def main(job_index):
+def generate_rotated_noise_maps(noise_idx, tomo, ctx):
+    for mode in ["E"]:
+        all_cuts_name = f"NOISE_mode={mode}_noise={noise_idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
+        try:
+            map = np.load(os.path.join(ctx["noise_dir"], all_cuts_name))
+        except (IOError, ValueError) as e:
+            logger.debug(
+                f"Error while loading NOISE_mode={mode}_noise={noise_idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy " +
+                "Adding to failed list")
+            logger.debug(e)
+            continue
+
+        for cut in range(len(map)):
+            ctx["index_counter"] = cut
+            rotated_map = _rotate_map(map[cut], ctx)
+            yield rotated_map
+
+
+def generate_rotated_grid_maps():
+    pass
+
+
+def map_manager(noise_idx, tomo, ctx, real_idx="Undefined"):
+    if ctx["MAP_TYPE"] == "noise":
+        map_generator = generate_rotated_noise_maps(noise_idx, tomo, ctx)
+        map_name = f"NOISE_mode=E_noise={noise_idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
+        logger_info = f"map with tomographic_bin={tomo}x{tomo} and noise_idx={noise_idx}"
+    elif ctx["MAP_TYPE"] == "fiducial":
+        assert real_idx != "Undefined", "Pleas pass the realisation index of the map when using the fiducial mode"
+        map_generator = generate_rotated_fiducial_maps(noise_idx, tomo, real_idx, ctx)
+        map_name = f"SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" + \
+                   f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy"
+        logger_info = f"map with tomographic_bin={tomo}x{tomo}, noise={noise_idx} and realisation={real_idx}"
+    elif ctx["MAP_TYPE"] == "grid":
+        map_generator = generate_rotated_grid_maps()
+        map_name = f""
+        logger_info = f"map with"
+
+    tmp_cuts = []
+    for rotated_map in map_generator:
+        tmp_cuts.append(rotated_map)
+    logger.info(f"Collected {len(tmp_cuts)} cuts from " + logger_info)
+    all_cuts = np.asarray(tmp_cuts)
+    del(tmp_cuts)
+
+    if not os.getenv("DEBUG", False):
+        np.save(os.path.join(ctx["noise_dir"], "Rotated_" + map_name), all_cuts)
+        if os.path.isfile(os.path.join(ctx["noise_dir"], map_name)):
+            os.remove(os.path.join(ctx["noise_dir"], map_name))
+    else:
+        SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), "Rotated_" + map_name)
+        logger.debug(f"Debug-Mode: Saving first rotated map file to {SCRATCH_path} then aborting.")
+        np.save(SCRATCH_path, all_cuts)
+        sys.exit(0)
+
+
+def main(job_index, MAP_TYPE):
     tomo = int(job_index)
     ctx = {
         "NSIDE": 1024,
@@ -105,15 +146,25 @@ def main(job_index):
         "dec_rotations": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         "mirror": [False, False, False, False, True, True, True, True],
         "down_sample": 512,
-        "noise_dir": "/cluster/work/refregier/besuter/data/NoiseMaps"
+        "noise_dir": "/cluster/work/refregier/besuter/data/NoiseMaps",
+        "fiducial_dir": "/cluster/work/refregier/besuter/data/SmoothedMaps",
+        "MAP_TYPE": MAP_TYPE
     }
 
-    for idx in range(2000):
-        map_manager(idx, tomo, ctx)
+    if ctx["MAP_TYPE"] == "noise":
+        for noise_idx in range(2000):
+            map_manager(noise_idx, tomo, ctx)
+    elif ctx["MAP_TYPE"] == "fiducial":
+        for noise_idx in range(10):
+            for real_idx in range(50):
+                map_manager(noise_idx, tomo, ctx, real_idx=real_idx)
+    elif ctx["MAP_TYPE"] == "grid":
+        pass
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     job_index = str(args[0])
+    MAP_TYPE = str(args[1])
 
-    main(job_index)
+    main(job_index, MAP_TYPE)
