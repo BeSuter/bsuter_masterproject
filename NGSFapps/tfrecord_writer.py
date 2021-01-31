@@ -165,7 +165,7 @@ def LSF_tfrecord_writer(job_index,
         label = np.array([0.26, 0.84]) # Constant label for fiducial cosmology
         for noise_idx in range(10):
             for real_idx in range(array_idx, 50, file_count):
-                for full_tomo_map, label in collect_fiducial(noise_idx, real_idx):
+                for full_tomo_map in collect_fiducial(noise_idx, real_idx):
                     serialized_map = data.serialize_labeled_example(full_tomo_map, label)
                     serialized_example_dump.append(serialized_map)
                 if os.getenv("DEBUG", False):
