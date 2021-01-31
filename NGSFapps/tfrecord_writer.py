@@ -81,13 +81,13 @@ def collect_fiducial(noise_idx, real_idx):
             try:
                 tomo_map = np.load(os.path.join(
                     fiducial_dir,
-                    f"SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" + \
+                    f"Rotated_SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" + \
                     f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy")
                 )[cut]
             except (IOError, ValueError, IndexError) as e:
                 logger.debug(
-                    f"Error while loading SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" +
-                    f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy " +
+                    f"Error while loading Rotated_SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_" +
+                    f"stat=GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy " +
                     "excluding from TFRecord files")
                 print(e)
                 error_flag = True
@@ -113,11 +113,12 @@ def cleanup_noise(noise_id):
 
 
 def cleanup_fiducial(noise_idx, real_idx):
-    fiducial_dir = "/cluster/work/refregier/besuter/data/SmoothedMaps"
+    # Correct to SmoothedMaps
+    fiducial_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
     for tomo in range(1, 5):
         file_path = os.path.join(
             fiducial_dir,
-            f"SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" +
+            f"Rotated_SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" +
             f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy")
         yield file_path
 
