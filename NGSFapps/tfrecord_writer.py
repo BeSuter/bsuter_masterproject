@@ -33,18 +33,6 @@ def _write_tfr(serialized_dump, target_path):
             writer.write(serialized_example)
 
 
-def _label_finder(str):
-    Om_label = re.search(r"(?<=Om=).+(?=_eta)", str).group(0)
-    s8_label = re.search(r"(?<=s8=).+(?=_tomo)", str).group(0)
-    return (float(Om_label), float(s8_label))
-
-
-def _noise_info(str):
-    tomo = re.search(r"(?<=tomo=).+(?=_z)", str).group(0)
-    scale = re.search(r"(?<=scale=).+(?=.n)", str).group(0)
-    return (int(tomo), float(scale))
-
-
 def collect_noise(noise_idx):
     noise_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
     error_flag = False
@@ -72,8 +60,7 @@ def collect_noise(noise_idx):
 
 
 def collect_fiducial(noise_idx, real_idx):
-    # Change to fiducial -- maps were saved to /NoiseMaps
-    fiducial_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
+    fiducial_dir = "/cluster/work/refregier/besuter/data/SmoothedMaps"
     error_flag = False
     for cut in range(8):
         full_tomo_map = []
@@ -99,8 +86,31 @@ def collect_fiducial(noise_idx, real_idx):
         yield full_tomo_map
 
 
-def collect_grid(idx):
-    pass
+def collect_grid(noise_idx, real_idx, omega_m, sigma_8):
+    grid_dir = "/cluster/work/refregier/besuter/data/SmoothedMaps"
+    error_flag = False
+    for cut in range(8):
+        full_tomo_map = []
+        for tomo in range(1, 5):
+            try:
+                tomo_map = np.load(os.path.join(
+                    grid_dir,
+                    f"Rotated_SIM_IA=0.0_Om={omega_m}_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8={sigma_8}_stat=" + \
+                    f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy")
+                )[cut]
+            except (IOError, ValueError, IndexError) as e:
+                logger.debug(
+                    f"Error while loading Rotated_SIM_IA=0.0_Om={omega_m}_eta=0.0_m=0.0_mode=E_noise={noise_idx}" +
+                    f"_s8={sigma_8}_stat=GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy " +
+                    "excluding from TFRecord files")
+                print(e)
+                error_flag = True
+                break
+            full_tomo_map.append(tomo_map)
+        if error_flag:
+            break
+        full_tomo_map = np.asarray(full_tomo_map)
+        yield full_tomo_map
 
 
 def cleanup_noise(noise_id):
@@ -113,8 +123,7 @@ def cleanup_noise(noise_id):
 
 
 def cleanup_fiducial(noise_idx, real_idx):
-    # Correct to SmoothedMaps
-    fiducial_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
+    fiducial_dir = "/cluster/work/refregier/besuter/data/SmoothedMaps"
     for tomo in range(1, 5):
         file_path = os.path.join(
             fiducial_dir,
@@ -123,19 +132,20 @@ def cleanup_fiducial(noise_idx, real_idx):
         yield file_path
 
 
-def cleanup_grid(noise_idx, real_idx):
-    pass
+def cleanup_grid(noise_idx, real_idx, omega_m, sigma_8):
+    grid_dir = "/cluster/work/refregier/besuter/data/SmoothedMaps"
+    for tomo in range(1, 5):
+        file_path = os.path.join(
+            grid_dir,
+            f"Rotated_SIM_IA=0.0_Om={omega_m}_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8={sigma_8}_stat=" +
+            f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy")
+        yield file_path
 
 
 def LSF_tfrecord_writer(job_index,
                         MAP_TYPE,
                         target="NGSFrecordsDomoNoise",
                         file_count=16):
-    """
-    ToDo: Find better way of generating the cosmology labels
-    This function is meant to be used in the context of lsf job array.
-    :param job_index: int, corresponds to the job index of the job array has to be [1-file_count].
-    """
     # Job index starts at 1, array index starts at 0
     array_idx = int(job_index) - 1
     if os.getenv("DEBUG", False):
@@ -174,9 +184,16 @@ def LSF_tfrecord_writer(job_index,
             if os.getenv("DEBUG", False):
                 break
     elif MAP_TYPE == "grid":
-        for noise_idx in range(10):
-            for real_idx in range(5):
-                for full_tomo_map, label in collect_grid(noise_idx, real_idx):
+        file_count = 5
+        assert job_index < 6, "For grid cosmologies we parallelize over the realisations ranging from 1 to 5"
+        cosmo_file = os.path.join("/cluster/work/refregier/besuter/data", "cosmo.par")
+        all_cosmologies = np.genfromtxt(cosmo_file)
+        for cosmology in all_cosmologies:
+            omega_m = cosmology[0]
+            sigma_8 = cosmology[6]
+            label = np.array([omega_m, sigma_8])
+            for noise_idx in range(10):
+                for full_tomo_map in collect_grid(noise_idx, array_idx, omega_m, sigma_8):
                     serialized_map = data.serialize_labeled_example(full_tomo_map, label)
                     serialized_example_dump.append(serialized_map)
                 if os.getenv("DEBUG", False):
@@ -209,9 +226,13 @@ def LSF_tfrecord_writer(job_index,
                         if os.path.isfile(file):
                             os.remove(file)
         if MAP_TYPE == "grid":
-            for noise_idx in range(10):
-                for real_idx in range(5):
-                    for file in cleanup_grid(noise_idx, real_idx):
+            cosmo_file = os.path.join("/cluster/work/refregier/besuter/data", "cosmo.par")
+            all_cosmologies = np.genfromtxt(cosmo_file)
+            for cosmology in all_cosmologies:
+                omega_m = cosmology[0]
+                sigma_8 = cosmology[6]
+                for noise_idx in range(10):
+                    for file in cleanup_grid(noise_idx, array_idx, omega_m, sigma_8):
                         if os.path.isfile(file):
                             os.remove(file)
 
