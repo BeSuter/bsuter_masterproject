@@ -191,7 +191,7 @@ def LSF_tfrecord_writer(job_index,
     del full_tomo_map
     del label
     tfrecord_name = f"{MAP_TYPE}_map_cosmo_shapes={map_shape}&{label_shape}_" +\
-                    f"start={job_index}_step={file_count}_{uuid.uuid4().hex}.tfrecord"
+                    f"start={array_idx}_step={file_count}_{uuid.uuid4().hex}.tfrecord"
     record_path = os.path.join(target_path, tfrecord_name)
     _write_tfr(serialized_example_dump, record_path)
     serialized_example_dump.clear()
