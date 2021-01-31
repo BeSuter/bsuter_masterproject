@@ -99,11 +99,26 @@ def generate_rotated_noise_maps(noise_idx, tomo, ctx):
             yield rotated_map
 
 
-def generate_rotated_grid_maps():
-    pass
+def generate_rotated_grid_maps(noise_idx, tomo, real_idx, omega_m, sigma_8, ctx):
+    for mode in ["E"]:
+        map_name = f"SIM_IA=0.0_Om={omega_m}_eta=0.0_m=0.0_mode={mode}_noise={noise_idx}_s8={sigma_8}_stat=" + \
+                   f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy"
+        try:
+            map = np.load(os.path.join(ctx["grid_dir"], map_name))
+        except (IOError, ValueError) as e:
+            logger.debug(
+                f"Error while loading SIM_IA=0.0_Om={omega_m}_eta=0.0_m=0.0_mode={mode}_noise={noise_idx}" +
+                f"_s8={sigma_8}_stat=GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy")
+            logger.debug(e)
+            continue
+
+        for cut in range(len(map)):
+            ctx["index_counter"] = cut
+            rotated_map = _rotate_map(map[cut], ctx)
+            yield rotated_map
 
 
-def map_manager(noise_idx, tomo, ctx, real_idx="Undefined"):
+def map_manager(noise_idx, tomo, ctx, real_idx="Undefined", cosmo="Undefined"):
     if ctx["MAP_TYPE"] == "noise":
         map_generator = generate_rotated_noise_maps(noise_idx, tomo, ctx)
         map_name = f"NOISE_mode=E_noise={noise_idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
@@ -117,9 +132,15 @@ def map_manager(noise_idx, tomo, ctx, real_idx="Undefined"):
         logger_info = f"map with tomographic_bin={tomo}x{tomo}, noise={noise_idx} and realisation={real_idx}"
         target = ctx["fiducial_dir"]
     elif ctx["MAP_TYPE"] == "grid":
-        map_generator = generate_rotated_grid_maps()
-        map_name = f""
-        logger_info = f"map with"
+        assert real_idx != "Undefined", "Pleas pass the realisation index of the map when using the grid mode"
+        assert cosmo != "Undefined", "Pleas pass the cosmology of the map when using the grid mode"
+        omega_m = cosmo[0]
+        sigma_8 = cosmo[1]
+        map_generator = generate_rotated_grid_maps(noise_idx, tomo, real_idx, omega_m, sigma_8, ctx)
+        map_name = f"SIM_IA=0.0_Om={omega_m}_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8={sigma_8}_stat=" + \
+                   f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy"
+        logger_info = f"map with cosmology 0m={omega_m}, s8={sigma_8}, tomographic_bin={tomo}x{tomo}," + \
+                      f"noise={noise_idx} and realisation={real_idx}"
         target = ctx["grid_dir"]
 
     tmp_cuts = []
@@ -162,7 +183,13 @@ def main(job_index, MAP_TYPE):
             for real_idx in range(50):
                 map_manager(noise_idx, tomo, ctx, real_idx=real_idx)
     elif ctx["MAP_TYPE"] == "grid":
-        pass
+        cosmo_file = os.path.join("/cluster/work/refregier/besuter/data", "cosmo.par")
+        all_cosmologies = np.genfromtxt(cosmo_file)
+        for cosmology in all_cosmologies:
+            cosmo = (cosmology[0], cosmology[6])
+            for noise_idx in range(10):
+                for real_idx in range(50):
+                    map_manager(noise_idx, tomo, ctx, real_idx=real_idx, cosmo=cosmo)
 
 
 if __name__ == "__main__":
