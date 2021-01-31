@@ -189,7 +189,7 @@ def main(job_index, MAP_TYPE):
         for cosmology in all_cosmologies:
             cosmo = (cosmology[0], cosmology[6])
             for noise_idx in range(10):
-                for real_idx in range(50):
+                for real_idx in range(5):
                     map_manager(noise_idx, tomo, ctx, real_idx=real_idx, cosmo=cosmo)
 
 
