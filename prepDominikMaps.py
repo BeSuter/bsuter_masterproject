@@ -172,6 +172,7 @@ def main(job_index, MAP_TYPE):
         "down_sample": 512,
         "noise_dir": "/cluster/work/refregier/besuter/data/NoiseMaps",
         "fiducial_dir": "/cluster/work/refregier/besuter/data/SmoothedMaps",
+        "grid_dir": "/cluster/work/refregier/besuter/data/SmoothedMaps",
         "MAP_TYPE": MAP_TYPE
     }
 
