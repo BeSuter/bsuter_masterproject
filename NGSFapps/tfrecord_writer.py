@@ -72,7 +72,8 @@ def collect_noise(noise_idx):
 
 
 def collect_fiducial(noise_idx, real_idx):
-    fiducial_dir = "/cluster/work/refregier/besuter/data/SmoothedMaps"
+    # Change to fiducial -- maps were saved to /NoiseMaps
+    fiducial_dir = "/cluster/work/refregier/besuter/data/NoiseMaps"
     error_flag = False
     for cut in range(8):
         full_tomo_map = []

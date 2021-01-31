@@ -108,16 +108,19 @@ def map_manager(noise_idx, tomo, ctx, real_idx="Undefined"):
         map_generator = generate_rotated_noise_maps(noise_idx, tomo, ctx)
         map_name = f"NOISE_mode=E_noise={noise_idx}_stat=GetSmoothedMap_tomo={tomo}x{tomo}.npy"
         logger_info = f"map with tomographic_bin={tomo}x{tomo} and noise_idx={noise_idx}"
+        target = ctx["noise_dir"]
     elif ctx["MAP_TYPE"] == "fiducial":
         assert real_idx != "Undefined", "Pleas pass the realisation index of the map when using the fiducial mode"
         map_generator = generate_rotated_fiducial_maps(noise_idx, tomo, real_idx, ctx)
         map_name = f"SIM_IA=0.0_Om=0.26_eta=0.0_m=0.0_mode=E_noise={noise_idx}_s8=0.84_stat=" + \
                    f"GetSmoothedMap_tomo={tomo}x{tomo}_z=0.0_{real_idx}.npy"
         logger_info = f"map with tomographic_bin={tomo}x{tomo}, noise={noise_idx} and realisation={real_idx}"
+        target = ctx["fiducial_dir"]
     elif ctx["MAP_TYPE"] == "grid":
         map_generator = generate_rotated_grid_maps()
         map_name = f""
         logger_info = f"map with"
+        target = ctx["grid_dir"]
 
     tmp_cuts = []
     for rotated_map in map_generator:
@@ -127,9 +130,9 @@ def map_manager(noise_idx, tomo, ctx, real_idx="Undefined"):
     del(tmp_cuts)
 
     if not os.getenv("DEBUG", False):
-        np.save(os.path.join(ctx["noise_dir"], "Rotated_" + map_name), all_cuts)
-        if os.path.isfile(os.path.join(ctx["noise_dir"], map_name)):
-            os.remove(os.path.join(ctx["noise_dir"], map_name))
+        np.save(os.path.join(target, "Rotated_" + map_name), all_cuts)
+        if os.path.isfile(os.path.join(target, map_name)):
+            os.remove(os.path.join(target, map_name))
     else:
         SCRATCH_path = os.path.join(os.path.expandvars("$SCRATCH"), "Rotated_" + map_name)
         logger.debug(f"Debug-Mode: Saving first rotated map file to {SCRATCH_path} then aborting.")
