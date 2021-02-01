@@ -185,7 +185,7 @@ def LSF_tfrecord_writer(job_index,
                 break
     elif MAP_TYPE == "grid":
         file_count = 5
-        assert job_index < 6, "For grid cosmologies we parallelize over the realisations ranging from 1 to 5"
+        assert int(job_index) < 6, "For grid cosmologies we parallelize over the realisations ranging from 1 to 5"
         cosmo_file = os.path.join("/cluster/work/refregier/besuter/data", "cosmo.par")
         all_cosmologies = np.genfromtxt(cosmo_file)
         for cosmology in all_cosmologies:
