@@ -158,7 +158,7 @@ def LSF_tfrecord_writer(job_index,
         if MAP_TYPE == "fiducial":
             target_path = "/cluster/work/refregier/besuter/data/SmoothedMaps"
         if MAP_TYPE == "grid":
-            target_path = ""
+            target_path = "/cluster/work/refregier/besuter/data/SmoothedMaps"
     os.makedirs(target_path, exist_ok=True)
 
     serialized_example_dump = []
