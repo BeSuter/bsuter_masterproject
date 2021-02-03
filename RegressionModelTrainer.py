@@ -262,8 +262,9 @@ def train_step(train_dset, model, optimizer):
 
 @tf.function()
 def count_elements(dset):
+    num = 0
     for element in dset.enumerate():
-        pass
+        num = element[0]
     return element[0] + 1
 
 
