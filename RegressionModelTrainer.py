@@ -280,10 +280,9 @@ def regression_model_trainer():
         train_dset = preprocess_dataset(raw_dset,
                                         const_args["preprocess_dataset"]["shuffle_size"])
     logger.debug("Counting elements per epoch")
-    #for element in train_dset.enumerate():
-    #    num = element[0] + 1
-    #    logger.debug("Counting...")
-    num = int(3350 / 25) + 1
+    for element in train_dset.enumerate():
+        pass
+    num = element[0] + 1
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
     logger.info(f"Number of elements per epoch is {const_args['element_num']}")
 
