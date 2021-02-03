@@ -489,6 +489,7 @@ if __name__ == "__main__":
                         type=str,
                         action='store',
                         default='pixel_noise')
+    parser.add_argument('--split_data', action='store_true', default=False)
     parser.add_argument('--nside', type=int, action='store', default=512)
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
     parser.add_argument('--HOME', action='store_true', default=False)
@@ -508,7 +509,7 @@ if __name__ == "__main__":
         "preprocess_dataset": {
             "batch_size": ARGS.batch_size,
             "shuffle_size": ARGS.shuffle_size,
-            "split": False
+            "split": ARGS.split_data
         },
         "_make_pixel_noise": {
             "noise_dir": ARGS.noise_dir,
