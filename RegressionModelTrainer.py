@@ -242,10 +242,7 @@ def train_step(train_dset, model, optimizer):
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
-        print(kappa_data)
         labels = set[1]
-        logger.debug(f"Label shape={tf.shape(labels)}")
-        print(labels)
         # Add noise
         logger.debug("Adding noise")
         kappa_data = tf.math.add(kappa_data, _make_noise())
