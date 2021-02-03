@@ -267,6 +267,7 @@ def regression_model_trainer():
     data_path = const_args["data_dir"]
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
+    logger.debug(f"Making the mask")
     bool_mask, indices_ext = mask_maker(raw_dset)
     const_args["bool_mask"] = bool_mask
     const_args["pixel_num"] = len(indices_ext)
@@ -279,7 +280,7 @@ def regression_model_trainer():
     else:
         train_dset = preprocess_dataset(raw_dset,
                                         const_args["preprocess_dataset"]["shuffle_size"])
-
+    logger.debug("Counting elements per epoch")
     for element in train_dset.enumerate():
         num = element[0] + 1
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
