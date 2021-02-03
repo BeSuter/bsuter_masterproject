@@ -112,6 +112,7 @@ def preprocess_dataset(dset, shuffle_size, split=False):
                       drop_remainder=True)
 
     if split:
+        logger.debug(f"Splitting data")
         test_dataset = dset.enumerate().filter(is_test).map(recover)
         train_dataset = dset.enumerate().filter(is_train).map(recover)
         test_dataset = test_dataset.prefetch(2)
@@ -189,7 +190,7 @@ def _make_noise():
     elif const_args["noise_type"] == "dominik_noise":
         data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
         raw_noise_dset = get_dataset(data_path)
-        noise_dset = preprocess_dataset(raw_noise_dset, 8000)
+        noise_dset = preprocess_dataset(raw_noise_dset, const_args["preprocess_dataset"]["batch_size"])
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()
         # Ensure that we have shape (batch_size, pex_len, 4)
