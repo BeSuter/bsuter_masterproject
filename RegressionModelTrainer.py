@@ -13,6 +13,7 @@ from DeepSphere import healpy_networks as hp_nn
 from DeepSphere import gnn_layers
 from Plotter import l2_color_plot, histo_plot, stats, S8plot, PredictionLabelComparisonPlot
 
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -95,7 +96,7 @@ def get_layers():
 
 
 def is_test(x, y):
-    return x % 10 == 0
+    return x % 5 == 0
 
 
 def is_train(x, y):
@@ -105,12 +106,12 @@ def is_train(x, y):
 recover = lambda x, y: y
 
 
-def preprocess_dataset(dset):
-    dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
+def preprocess_dataset(dset, shuffle_size, split=False):
+    dset = dset.shuffle(shuffle_size)
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
 
-    if const_args["preprocess_dataset"]["split"]:
+    if split:
         test_dataset = dset.enumerate().filter(is_test).map(recover)
         train_dataset = dset.enumerate().filter(is_train).map(recover)
         test_dataset = test_dataset.prefetch(2)
@@ -186,22 +187,21 @@ def _make_noise():
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
     elif const_args["noise_type"] == "dominik_noise":
-        path_to_map_ids = os.path.join("/scratch/snx3000/bsuter/NoiseMaps", "NoiseMap_ids.npy")
-        all_ids = np.load(path_to_map_ids)
+        data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
+        raw_noise_dset = get_dataset(data_path)
+        noise_dset = preprocess_dataset(raw_noise_dset, 8000)
+        iterator = iter(noise_dset)
+        noise_element = iterator.get_next()
+        # Ensure that we have shape (batch_size, pex_len, 4)
+        noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
+                                const_args["bool_mask"],
+                                axis=1)
+        logger.debug(f"Noise has shape={tf.shape(noise)}")
 
-        random_ids = np.random.randint(0, high=len(all_ids), size=const_args["preprocess_dataset"]["batch_size"])
-        for tomo in range(const_args["_make_noise"]["tomo_num"]):
-            single_tomo_maps = []
-            for id_num in random_ids:
-                map_name = os.path.join("/scratch/snx3000/bsuter/NoiseMaps",
-                                        "FullNoiseMaps",
-                                        f"NoiseMap_tomo={tomo+1}_id={all_ids[id_num]}.npy")
-                full_map = np.load(map_name)
-                noise_map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
-                single_tomo_maps.append(noise_map)
-            noises.append(tf.stack(single_tomo_maps, axis=0))
+    if not const_args["noise_type"] == "dominik_noise":
+        noise = tf.stack(noises, axis=-1)
 
-    return tf.stack(noises, axis=-1)
+    return noise
 
 
 @tf.function
@@ -241,7 +241,9 @@ def train_step(train_dset, model, optimizer):
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
+        logger.debug(f"Kappa_data has shape={tf.shape(kappa_data)}")
         labels = set[1][:, 0, :]
+        logger.debug(f"Label shape={tf.shape(labels)}")
         # Add noise
         logger.debug("Adding noise")
         kappa_data = tf.math.add(kappa_data, _make_noise())
@@ -262,7 +264,9 @@ def regression_model_trainer():
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
     scratch_path = os.path.expandvars("$SCRATCH")
-    data_path = os.path.join(scratch_path, const_args["data_dir"])
+    data_path = []
+    for data_dir in const_args["data_dir"]:
+        data_path.append(os.path.join(scratch_path, data_dir))
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
     bool_mask, indices_ext = mask_maker(raw_dset)
@@ -270,7 +274,14 @@ def regression_model_trainer():
     const_args["pixel_num"] = len(indices_ext)
 
     # Use all the maps to train the model
-    train_dset = preprocess_dataset(raw_dset)
+    if const_args["preprocess_dataset"]["split"]:
+        train_dset, test_dset = preprocess_dataset(raw_dset,
+                                                   const_args["preprocess_dataset"]["shuffle_size"],
+                                                   split=True)
+    else:
+        train_dset = preprocess_dataset(raw_dset,
+                                        const_args["preprocess_dataset"]["shuffle_size"])
+
     for element in train_dset.enumerate():
         num = element[0] + 1
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
@@ -364,7 +375,10 @@ def regression_model_trainer():
                     noise_type=const_args["noise_type"],
                     start_time=date_time)
 
-                test_dset = preprocess_dataset(raw_dset)
+                if const_args["preprocess_dataset"]["split"]:
+                    pass
+                else:
+                    test_dset = train_dset
                 for set in test_dset:
                     kappa_data = tf.boolean_mask(tf.transpose(set[0],
                                                               perm=[0, 2, 1]),
@@ -467,7 +481,7 @@ def regression_model_trainer():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_dir', type=str, action='store')
+    parser.add_argument('--data_dirs', nargs='+', type=str, action='store')
     parser.add_argument('--weights_dir', type=str, action='store')
     parser.add_argument('--noise_dir', type=str, action='store')
     parser.add_argument('--batch_size', type=int, action='store')
@@ -503,7 +517,7 @@ if __name__ == "__main__":
             "noise_dir": ARGS.noise_dir,
             "tomo_num": 4
         },
-        "data_dir": ARGS.data_dir,
+        "data_dir": ARGS.data_dirs,
         "weights_dir": ARGS.weights_dir,
         "_make_noise": {
             "tomo_num": 4,

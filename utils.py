@@ -139,7 +139,7 @@ def tfrecord_writer(path,
                     downsampling=False,
                     SCRATCH=True):
     """
-    Writes kappa_maps in 'path' to a TFRecord file. The kappa_maps are reordered to 'NESTED' an will be batched such
+    Writes kappa_maps in 'path' to a TFRecord file. The kappa_maps are reordered to 'NESTED' and will be batched such
     that there will be #file_count TFRecord files created.
     :param path: string, absolute path to data directory
     :param target: string, path to directory where TFRecord files will be written to
@@ -321,12 +321,19 @@ def LSF_tfrecord_writer(job_index,
     serialized_example_dump.clear()
 
 
-def get_dataset(path):
-    f_names = [
-        os.path.join(path, file) for file in os.listdir(path)
-        if not file.startswith(".")
-    ]
-    shapes = _shape_finder(f_names[0])
-    dset = tf.data.TFRecordDataset(f_names)
+def get_dataset(path=[]):
+    if not isinstance(path, list):
+        path = [path]
+    all_files = []
+    logger.debug(f"Adding TFRecord files from {path}")
+    for pp in path:
+        f_names = [
+            os.path.join(pp, file) for file in os.listdir(pp)
+            if file.endsswith(".tfrecord")
+        ]
+        all_files.extend(f_names)
+    shapes = _shape_finder(all_files[0])
+    dset = tf.data.TFRecordDataset(all_files)
+    logger.debug(f"Created DataSet out of {len(all_files)} TFRecord files.")
     decoded_dset = data.decode_labeled_dset(dset, shapes)
     return decoded_dset
