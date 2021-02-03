@@ -42,9 +42,14 @@ def _label_finder(str):
 
 
 def _shape_finder(str):
-    shapes = re.search(r"(?<=shapes=).+(?=_)", str).group(0)
-    shapes = [(int(item.split(",")[0]), int(item.split(",")[1])) for item in shapes.split("&")]
-    return shapes
+    shapes = re.search(r"(?<=shapes=)\d+,\d+&\d+(?=_)", str).group(0)
+    all_shapes = []
+    for item in shapes.split("&"):
+        try:
+            all_shapes.append((int(item.split(",")[0]), int(item.split(",")[1])))
+        except IndexError:
+            all_shapes.append((int(item)))
+    return all_shapes
 
 
 def _get_euler_angles(configuration="Default"):
