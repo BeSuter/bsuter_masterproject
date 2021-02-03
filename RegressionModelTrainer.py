@@ -283,6 +283,7 @@ def regression_model_trainer():
     logger.debug("Counting elements per epoch")
     for element in train_dset.enumerate():
         num = element[0] + 1
+        logger.debug("Counting...")
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
     logger.info(f"Number of elements per epoch is {const_args['element_num']}")
 
