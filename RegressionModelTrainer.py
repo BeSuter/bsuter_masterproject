@@ -394,7 +394,7 @@ def regression_model_trainer():
                                                               perm=[0, 2, 1]),
                                                  const_args["bool_mask"],
                                                  axis=1)
-                    labels = set[1][:, 0, :]
+                    labels = set[1]
                     labels = labels.numpy()
 
                     # Add noise
