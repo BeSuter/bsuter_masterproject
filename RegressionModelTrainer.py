@@ -265,7 +265,7 @@ def count_elements(dset):
     num = 0
     for element in dset.enumerate():
         num = element[0]
-    return element[0] + 1
+    return num[0] + 1
 
 
 def regression_model_trainer():
