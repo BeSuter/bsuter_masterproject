@@ -138,6 +138,7 @@ def mask_maker(dset):
     iterator = iter(dset)
     bool_mask = hp.mask_good(iterator.get_next()[0][0].numpy())
     indices_ext = np.arange(len(bool_mask))[bool_mask > 0.5]
+    logger.debug(f"bool_mask has shape={np.shape(bool_mask)}")
 
     return bool_mask, indices_ext
 
@@ -239,6 +240,8 @@ def train_step(train_dset, model, optimizer):
     for element in train_dset.enumerate():
         set = element[1]
         # Ensure that we have shape (batch_size, pex_len, 4)
+        logger.debug(f"Set has shape={tf.shape(set)}")
+        logger.debug(f"Zero index of Set has shape={tf.shape(set[0])}")
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
