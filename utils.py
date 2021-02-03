@@ -329,7 +329,7 @@ def get_dataset(path=[]):
     for pp in path:
         f_names = [
             os.path.join(pp, file) for file in os.listdir(pp)
-            if file.endsswith(".tfrecord")
+            if file.endswith(".tfrecord")
         ]
         all_files.extend(f_names)
     shapes = _shape_finder(all_files[0])
