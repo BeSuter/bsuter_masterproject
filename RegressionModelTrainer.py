@@ -106,7 +106,6 @@ def is_train(x, y):
 recover = lambda x, y: y
 
 
-@tf.function
 def preprocess_dataset(dset):
     dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
@@ -135,7 +134,6 @@ def preprocess_dataset(dset):
         return dset
 
 
-@tf.function
 def preprocess_dataset(dset):
     dset = dset.shuffle(const_args["preprocess_dataset"]["batch_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
