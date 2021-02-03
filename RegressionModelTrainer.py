@@ -260,6 +260,13 @@ def train_step(train_dset, model, optimizer):
     return epoch_loss_avg.stack(), epoch_global_norm.stack()
 
 
+@tf.function()
+def count_elements(dset):
+    for element in dset.enumerate():
+        pass
+    return element[0] + 1
+
+
 def regression_model_trainer():
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
@@ -280,9 +287,7 @@ def regression_model_trainer():
         train_dset = preprocess_dataset(raw_dset,
                                         const_args["preprocess_dataset"]["shuffle_size"])
     logger.debug("Counting elements per epoch")
-    for element in train_dset.enumerate():
-        pass
-    num = element[0] + 1
+    num = count_elements(train_dset)
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
     logger.info(f"Number of elements per epoch is {const_args['element_num']}")
 
