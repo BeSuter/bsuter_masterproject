@@ -263,10 +263,7 @@ def train_step(train_dset, model, optimizer):
 def regression_model_trainer():
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
-    scratch_path = os.path.expandvars("$SCRATCH")
-    data_path = []
-    for data_dir in const_args["data_dir"]:
-        data_path.append(os.path.join(scratch_path, data_dir))
+    data_path = const_args["data_dir"]
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
     bool_mask, indices_ext = mask_maker(raw_dset)
