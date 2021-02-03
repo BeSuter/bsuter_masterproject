@@ -106,12 +106,13 @@ def is_train(x, y):
 recover = lambda x, y: y
 
 
-def preprocess_dataset(dset, shuffle_size, split=False):
-    dset = dset.shuffle(shuffle_size)
+@tf.function
+def preprocess_dataset(dset):
+    dset = dset.shuffle(const_args["preprocess_dataset"]["shuffle_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
 
-    if split:
+    if const_args["preprocess_dataset"]["split"]:
         logger.debug(f"Splitting data")
         test_dataset = dset.enumerate().filter(is_test).map(recover)
         train_dataset = dset.enumerate().filter(is_train).map(recover)
@@ -132,6 +133,17 @@ def preprocess_dataset(dset, shuffle_size, split=False):
         logger.info("Using all maps for training and evaluation")
         dset = dset.prefetch(2)
         return dset
+
+
+@tf.function
+def preprocess_dataset(dset):
+    dset = dset.shuffle(const_args["preprocess_dataset"]["batch_size"])
+    dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
+                      drop_remainder=True)
+
+    logger.info("Using all noise maps.")
+    dset = dset.prefetch(2)
+    return dset
 
 
 def mask_maker(dset):
@@ -190,7 +202,7 @@ def _make_noise():
     elif const_args["noise_type"] == "dominik_noise":
         data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
         raw_noise_dset = get_dataset(data_path)
-        noise_dset = preprocess_dataset(raw_noise_dset, const_args["preprocess_dataset"]["batch_size"])
+        noise_dset = preprocess_dataset(raw_noise_dset)
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()
         # Ensure that we have shape (batch_size, pex_len, 4)
@@ -280,12 +292,9 @@ def regression_model_trainer():
 
     # Use all the maps to train the model
     if const_args["preprocess_dataset"]["split"]:
-        train_dset, test_dset = preprocess_dataset(raw_dset,
-                                                   const_args["preprocess_dataset"]["shuffle_size"],
-                                                   split=True)
+        train_dset, test_dset = preprocess_dataset(raw_dset)
     else:
-        train_dset = preprocess_dataset(raw_dset,
-                                        const_args["preprocess_dataset"]["shuffle_size"])
+        train_dset = preprocess_dataset(raw_dset)
     num = count_elements(train_dset)
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
     logger.info(f"Number of elements per epoch is {const_args['element_num']}")
