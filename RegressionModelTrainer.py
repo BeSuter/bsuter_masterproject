@@ -239,14 +239,13 @@ def train_step(train_dset, model, optimizer):
     for element in train_dset.enumerate():
         set = element[1]
         # Ensure that we have shape (batch_size, pex_len, 4)
-        logger.debug(f"Zero index of Set has shape={tf.shape(set[0])}")
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
-        logger.debug(f"Kappa_data has shape={tf.shape(kappa_data)}")
-        logger.debug(f"Unmodified label shape is {tf.shape(set[1])}")
-        labels = set[1][:, 0, :]
+        print(kappa_data)
+        labels = set[1]
         logger.debug(f"Label shape={tf.shape(labels)}")
+        print(labels)
         # Add noise
         logger.debug("Adding noise")
         kappa_data = tf.math.add(kappa_data, _make_noise())
