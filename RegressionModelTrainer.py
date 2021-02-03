@@ -246,7 +246,6 @@ def train_step(train_dset, model, optimizer):
         # Add noise
         logger.debug("Adding noise")
         kappa_data = tf.math.add(kappa_data, _make_noise())
-        logger.debug(f"Noisy data has shape {tf.shape(kappa_data)}")
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
@@ -287,7 +286,6 @@ def regression_model_trainer():
     else:
         train_dset = preprocess_dataset(raw_dset,
                                         const_args["preprocess_dataset"]["shuffle_size"])
-    logger.debug("Counting elements per epoch")
     num = count_elements(train_dset)
     const_args["element_num"] = tf.dtypes.cast(num, tf.int32)
     logger.info(f"Number of elements per epoch is {const_args['element_num']}")
