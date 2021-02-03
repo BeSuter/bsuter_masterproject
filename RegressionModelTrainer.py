@@ -264,7 +264,7 @@ def train_step(train_dset, model, optimizer):
 def count_elements(dset):
     num = 0
     for element in dset.enumerate():
-        num = element[0]
+        num = tf.dtypes.cast(element[0], tf.int32)
     return num[0] + 1
 
 
