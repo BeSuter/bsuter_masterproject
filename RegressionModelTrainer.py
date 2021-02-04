@@ -247,6 +247,7 @@ def set_profiler(epoch_step):
         logger.debug("Evaluating profiling criterions")
         os.makedirs(path_to_dir, exist_ok=True)
         logger.info(f"Saving profiling info at {path_to_dir}")
+        logger.debug(f"Current epoch is {const_args['profiler']['current_epoch']} and valid epochs are {const_args['profiler']['epochs']}")
         if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
             logger.debug(f"Current epoch criterion is fulfilled")
             if epoch_step == const_args["profiler"]["starting_step"]:
@@ -278,7 +279,7 @@ def train_step(train_dset, model, optimizer):
     for element in train_dset.enumerate():
         set_profiler(int(element[0]))
         set = element[1]
-        # Ensure that we have shape (batch_size, pex_len, 4)
+        # Ensure that we have shape (batch_size, pix_len, 4)
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
@@ -579,7 +580,7 @@ if __name__ == "__main__":
             "profile": ARGS.profile,
             "log_dir": "model_profiles",
             "epochs": [1,2],
-            "steps_per_epoch": 50,
+            "steps_per_epoch": 12,
             "starting_step": 2
         },
         "noise_type": ARGS.noise_type,
