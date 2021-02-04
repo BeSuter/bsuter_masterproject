@@ -234,6 +234,7 @@ def grad(model, inputs, targets):
 
 
 def set_profiler(epoch_step):
+    epoch_step = int(epoch_step)
     logger.debug(f"Epoch_step is {epoch_step}")
     logger.debug(f"Current Epoch is {const_args['profiler']['current_epoch']}")
     date_time = datetime.now().strftime("%m-%d-%Y")
