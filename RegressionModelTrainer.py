@@ -235,8 +235,6 @@ def grad(model, inputs, targets):
 
 def set_profiler(epoch_step):
     epoch_step = int(epoch_step)
-    logger.debug(f"Epoch_step is {epoch_step}")
-    logger.debug(f"Current Epoch is {const_args['profiler']['current_epoch']}")
     date_time = datetime.now().strftime("%m-%d-%Y")
     if const_args["HOME"]:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
@@ -244,10 +242,11 @@ def set_profiler(epoch_step):
     else:
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
                                    const_args["profiler"]["log_dir"])
-    os.makedirs(path_to_dir, exist_ok=True)
-    logger.info(f"Saving profiling info at {path_to_dir}")
 
     if const_args["profiler"]["profile"]:
+        logger.debug("Evaluating profiling criterions")
+        os.makedirs(path_to_dir, exist_ok=True)
+        logger.info(f"Saving profiling info at {path_to_dir}")
         if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
             logger.debug(f"Current epoch criterion is fulfilled")
             if epoch_step == const_args["profiler"]["starting_step"]:
