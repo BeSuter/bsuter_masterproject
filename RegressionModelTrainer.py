@@ -134,7 +134,7 @@ def preprocess_dataset(dset):
         return dset
 
 
-def preprocess_dataset(dset):
+def preprocess_noise_dataset(dset):
     dset = dset.shuffle(const_args["preprocess_dataset"]["batch_size"])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
@@ -200,7 +200,7 @@ def _make_noise():
     elif const_args["noise_type"] == "dominik_noise":
         data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
         raw_noise_dset = get_dataset(data_path)
-        noise_dset = preprocess_dataset(raw_noise_dset)
+        noise_dset = preprocess_noise_dataset(raw_noise_dset)
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()
         # Ensure that we have shape (batch_size, pex_len, 4)
