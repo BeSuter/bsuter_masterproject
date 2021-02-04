@@ -233,6 +233,30 @@ def grad(model, inputs, targets):
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
+def set_profiler(epoch_step):
+    date_time = datetime.now().strftime("%m-%d-%Y")
+    if const_args["HOME"]:
+        path_to_dir = os.path.join(os.path.expandvars("$HOME"),
+                                   const_args["profiler"]["log_dir"])
+    else:
+        path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
+                                   const_args["profiler"]["log_dir"])
+    os.makedirs(path_to_dir, exist_ok=True)
+    logger.info(f"Saving profiling info at {path_to_dir}")
+
+    if const_args["profiler"]["profile"]:
+        if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
+            if epoch_step == const_args["profiler"]["starting_step"]:
+                logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
+                                      f"_noise={const_args['noise_type']}" +
+                                      f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
+                tf.profiler.experimental.start(str(logdir))
+                logger.info("Starting profiling")
+            elif epoch_step == const_args["profiler"]["starting_step"] + const_args["profiler"]["steps_per_epoch"]:
+                logger.info("Stopping profiler")
+                tf.profiler.experimental.stop()
+
+
 @tf.function
 def train_step(train_dset, model, optimizer):
     epoch_global_norm = tf.TensorArray(
@@ -248,6 +272,7 @@ def train_step(train_dset, model, optimizer):
         clear_after_read=False,
     )
     for element in train_dset.enumerate():
+        set_profiler(element[0])
         set = element[1]
         # Ensure that we have shape (batch_size, pex_len, 4)
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
@@ -276,29 +301,6 @@ def count_elements(dset):
     for element in dset.enumerate():
         num = tf.dtypes.cast(element[0], tf.int32)
     return num + 1
-
-
-def set_profiler(epoch_step):
-    date_time = datetime.now().strftime("%m-%d-%Y")
-    if const_args["HOME"]:
-        path_to_dir = os.path.join(os.path.expandvars("$HOME"),
-                                   const_args["profiler"]["log_dir"])
-    else:
-        path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
-                                   const_args["profiler"]["log_dir"])
-    os.makedirs(path_to_dir, exist_ok=True)
-
-    if const_args["profiler"]["profile"]:
-        if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
-            if epoch_step == const_args["profiler"]["starting_step"]:
-                logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
-                                      f"_noise={const_args['noise_type']}" +
-                                      f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
-                tf.profiler.experimental.start(str(logdir))
-                logger.info("Starting profiling")
-            elif epoch_step == const_args["profiler"]["starting_step"] + const_args["profiler"]["steps_per_epoch"]:
-                logger.info("Stopping profiler")
-                tf.profiler.experimental.stop()
 
 
 def regression_model_trainer():
