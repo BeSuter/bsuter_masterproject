@@ -234,6 +234,8 @@ def grad(model, inputs, targets):
 
 
 def set_profiler(epoch_step):
+    logger.debug(f"Epoch_step is {epoch_step}")
+    logger.debug(f"Current Epoch is {const_args['profiler']['current_epoch']}")
     date_time = datetime.now().strftime("%m-%d-%Y")
     if const_args["HOME"]:
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
@@ -246,7 +248,9 @@ def set_profiler(epoch_step):
 
     if const_args["profiler"]["profile"]:
         if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
+            logger.debug(f"Current epoch criterion is fulfilled")
             if epoch_step == const_args["profiler"]["starting_step"]:
+                logger.debug("Epoch_step condition fulfilled")
                 logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
                                       f"_noise={const_args['noise_type']}" +
                                       f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
@@ -272,7 +276,7 @@ def train_step(train_dset, model, optimizer):
         clear_after_read=False,
     )
     for element in train_dset.enumerate():
-        set_profiler(element[0])
+        set_profiler(int(element[0]))
         set = element[1]
         # Ensure that we have shape (batch_size, pex_len, 4)
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
@@ -364,7 +368,7 @@ def regression_model_trainer():
         modulo_epoch = const_args["epochs"]
 
     for epoch in range(const_args["epochs"]):
-        const_args["profiler"]["current_epoch"] = epoch
+        const_args["profiler"]["current_epoch"] = int(epoch)
         logger.debug(f"Executing training step for epoch={epoch}")
         # Optimize the model  --> Returns the loss average and the global norm of each epoch
         epoch_loss_avg, epo_glob_norm = train_step(train_dset, model,
