@@ -157,6 +157,7 @@ def mask_maker(dset):
 def _make_noise():
     noises = []
     if const_args["noise_type"] == "pixel_noise":
+        tf.print("In pixel noise")
         for tomo in range(const_args["_make_pixel_noise"]["tomo_num"]):
             try:
                 noise_path = os.path.join(
@@ -188,6 +189,7 @@ def _make_noise():
 
             noises.append(noise)
     elif const_args["noise_type"] == "old_noise":
+        tf.print("In old noise")
         for tomo in range(const_args["_make_noise"]["tomo_num"]):
             noise = tf.random.normal([
                 const_args["preprocess_dataset"]["batch_size"],
@@ -199,6 +201,7 @@ def _make_noise():
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
     elif const_args["noise_type"] == "dominik_noise":
+        tf.print("In dominik noise")
         data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
         raw_noise_dset = get_dataset(data_path)
         noise_dset = preprocess_noise_dataset(raw_noise_dset)
@@ -233,6 +236,7 @@ def grad(model, inputs, targets):
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
+@tf.function
 def set_profiler(epoch_step):
     epoch_step = int(epoch_step)
     date_time = datetime.now().strftime("%m-%d-%Y")
@@ -247,11 +251,14 @@ def set_profiler(epoch_step):
         logger.debug("Evaluating profiling criterions")
         os.makedirs(path_to_dir, exist_ok=True)
         logger.info(f"Saving profiling info at {path_to_dir}")
+        tf.print("Evaluating profiling criterions")
         logger.debug(f"Current epoch is {const_args['profiler']['current_epoch']} and valid epochs are {const_args['profiler']['epochs']}")
         if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
             logger.debug(f"Current epoch criterion is fulfilled")
+            tf.print(f"Current epoch criterion is fulfilled")
             if epoch_step == const_args["profiler"]["starting_step"]:
                 logger.debug("Epoch_step condition fulfilled")
+                tf.print("Epoch_step condition fulfilled")
                 logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
                                       f"_noise={const_args['noise_type']}" +
                                       f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
@@ -259,6 +266,7 @@ def set_profiler(epoch_step):
                 logger.info("Starting profiling")
             elif epoch_step == const_args["profiler"]["starting_step"] + const_args["profiler"]["steps_per_epoch"]:
                 logger.info("Stopping profiler")
+                tf.print("Stopping profiler")
                 tf.profiler.experimental.stop()
 
 
@@ -277,7 +285,7 @@ def train_step(train_dset, model, optimizer):
         clear_after_read=False,
     )
     for element in train_dset.enumerate():
-        set_profiler(int(element[0]))
+        set_profiler(element[0])
         set = element[1]
         # Ensure that we have shape (batch_size, pix_len, 4)
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
@@ -579,9 +587,9 @@ if __name__ == "__main__":
         "profiler": {
             "profile": ARGS.profile,
             "log_dir": "model_profiles",
-            "epochs": [1,2],
-            "steps_per_epoch": 12,
-            "starting_step": 2
+            "epochs": [0,1],
+            "steps_per_epoch": 10,
+            "starting_step": 0
         },
         "noise_type": ARGS.noise_type,
         "epochs": ARGS.epochs,
