@@ -118,15 +118,16 @@ def preprocess_dataset(dset):
         test_dataset = test_dataset.prefetch(2)
         train_dataset = train_dataset.prefetch(2)
 
-        test_counter = 0
-        train_counter = 0
-        for item in test_dataset:
-            test_counter += 1
-        for item in train_dataset:
-            train_counter += 1
-        logger.info(
-            f"Maps split into training={train_counter * const_args['preprocess_dataset']['batch_size']} and test={test_counter * const_args['preprocess_dataset']['batch_size']}"
-        )
+        if const_args["show_split"]:
+            test_counter = 0
+            train_counter = 0
+            for item in test_dataset:
+                test_counter += 1
+            for item in train_dataset:
+                train_counter += 1
+            logger.info(
+                f"Maps split into training={train_counter * const_args['preprocess_dataset']['batch_size']} and test={test_counter * const_args['preprocess_dataset']['batch_size']}"
+            )
         return train_dataset, test_dataset
     else:
         logger.info("Using all maps for training and evaluation")
@@ -277,6 +278,29 @@ def count_elements(dset):
     return num + 1
 
 
+def set_profiler(epoch_step):
+    date_time = datetime.now().strftime("%m-%d-%Y")
+    if const_args["HOME"]:
+        path_to_dir = os.path.join(os.path.expandvars("$HOME"),
+                                   const_args["profiler"]["log_dir"])
+    else:
+        path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
+                                   const_args["profiler"]["log_dir"])
+    os.makedirs(path_to_dir, exist_ok=True)
+
+    if const_args["profiler"]["profile"]:
+        if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
+            if epoch_step == const_args["profiler"]["starting_step"]:
+                logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
+                                      f"_noise={const_args['noise_type']}" +
+                                      f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
+                tf.profiler.experimental.start(str(logdir))
+                logger.info("Starting profiling")
+            elif epoch_step == const_args["profiler"]["starting_step"] + const_args["profiler"]["steps_per_epoch"]:
+                logger.info("Stopping profiler")
+                tf.profiler.experimental.stop()
+
+
 def regression_model_trainer():
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
@@ -338,6 +362,7 @@ def regression_model_trainer():
         modulo_epoch = const_args["epochs"]
 
     for epoch in range(const_args["epochs"]):
+        const_args["profiler"]["current_epoch"] = epoch
         logger.debug(f"Executing training step for epoch={epoch}")
         # Optimize the model  --> Returns the loss average and the global norm of each epoch
         epoch_loss_avg, epo_glob_norm = train_step(train_dset, model,
@@ -509,6 +534,8 @@ if __name__ == "__main__":
     parser.add_argument('--continue_training', action='store_true', default=False)
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--checkpoint_dir', type=str, action='store', default='undefined')
+    parser.add_argument('--profile', action='store_true', default=False)
+    parser.add_argument('--show_split', action='store_true', default=False)
     ARGS = parser.parse_args()
 
     print("Starting RegressionModelTrainer")
@@ -542,6 +569,13 @@ if __name__ == "__main__":
         "train_step": {
             "step": 0
         },
+        "profiler": {
+            "profile": ARGS.profile,
+            "log_dir": "model_profiles",
+            "epochs": [1,2],
+            "steps_per_epoch": 50,
+            "starting_step": 2
+        },
         "noise_type": ARGS.noise_type,
         "epochs": ARGS.epochs,
         "nside": ARGS.nside,
@@ -549,7 +583,8 @@ if __name__ == "__main__":
         "HOME": ARGS.HOME,
         "continue_training": ARGS.continue_training,
         "checkpoint_dir": ARGS.checkpoint_dir,
-        "debug": ARGS.debug
+        "debug": ARGS.debug,
+        "show_split": ARGS.show_split
     }
 
     regression_model_trainer()
