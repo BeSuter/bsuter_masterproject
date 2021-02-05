@@ -583,9 +583,9 @@ if __name__ == "__main__":
         "profiler": {
             "profile": ARGS.profile,
             "log_dir": "model_profiles",
-            "epochs": [0,1],
-            "steps_per_epoch": 10,
-            "starting_step": 0
+            "epochs": [1,2],
+            "steps_per_epoch": 22,
+            "starting_step": 2
         },
         "noise_type": ARGS.noise_type,
         "epochs": ARGS.epochs,
