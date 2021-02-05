@@ -236,7 +236,6 @@ def grad(model, inputs, targets):
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
-@tf.function
 def set_profiler(epoch_step):
     epoch_step = int(epoch_step)
     date_time = datetime.now().strftime("%m-%d-%Y")
@@ -251,14 +250,11 @@ def set_profiler(epoch_step):
         logger.debug("Evaluating profiling criterions")
         os.makedirs(path_to_dir, exist_ok=True)
         logger.info(f"Saving profiling info at {path_to_dir}")
-        tf.print("Evaluating profiling criterions")
         logger.debug(f"Current epoch is {const_args['profiler']['current_epoch']} and valid epochs are {const_args['profiler']['epochs']}")
         if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
             logger.debug(f"Current epoch criterion is fulfilled")
-            tf.print(f"Current epoch criterion is fulfilled")
             if epoch_step == const_args["profiler"]["starting_step"]:
                 logger.debug("Epoch_step condition fulfilled")
-                tf.print("Epoch_step condition fulfilled")
                 logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
                                       f"_noise={const_args['noise_type']}" +
                                       f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
@@ -270,7 +266,7 @@ def set_profiler(epoch_step):
                 tf.profiler.experimental.stop()
 
 
-@tf.function
+#@tf.function
 def train_step(train_dset, model, optimizer):
     epoch_global_norm = tf.TensorArray(
         tf.float32,
