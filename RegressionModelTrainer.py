@@ -208,11 +208,9 @@ def _make_noise():
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()[0]
         # Ensure that we have shape (batch_size, pex_len, 4)
-        tf.print("Noise: ", noise_element)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
                                 axis=1)
-        tf.print("Noise: ", noise)
 
     if not const_args["noise_type"] == "dominik_noise":
         noise = tf.stack(noises, axis=-1)
@@ -267,7 +265,7 @@ def set_profiler(epoch_step):
                 tf.profiler.experimental.stop()
 
 
-@tf.function
+#@tf.function
 def train_step(train_dset, model, optimizer):
     epoch_global_norm = tf.TensorArray(
         tf.float32,
@@ -285,17 +283,13 @@ def train_step(train_dset, model, optimizer):
         set_profiler(element[0])
         set = element[1]
         # Ensure that we have shape (batch_size, pix_len, 4)
-        tf.print("Kappa: ", set[0])
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
         labels = set[1]
         # Add noise
         logger.debug("Adding noise")
-        logger.debug(f"Kappa pre noise {kappa_data}")
-        tf.print("Kappa: ", kappa_data)
         kappa_data = tf.math.add(kappa_data, _make_noise())
-        tf.print("Kappa post noise: ", kappa_data)
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
@@ -325,7 +319,6 @@ def regression_model_trainer():
     raw_dset = get_dataset(data_path)
     logger.debug(f"Making the mask")
     bool_mask, indices_ext = mask_maker(raw_dset)
-    logger.debug(f"Mask is {bool_mask}")
     const_args["bool_mask"] = bool_mask
     const_args["pixel_num"] = len(indices_ext)
 
