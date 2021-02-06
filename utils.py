@@ -338,6 +338,5 @@ def get_dataset(path=[]):
         all_files.extend(f_names)
     shapes = _shape_finder(all_files[0])
     dset = tf.data.TFRecordDataset(all_files)
-    logger.debug(f"Created DataSet out of {len(all_files)} TFRecord files.")
     decoded_dset = data.decode_labeled_dset(dset, shapes)
     return decoded_dset
