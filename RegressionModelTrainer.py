@@ -153,7 +153,7 @@ def mask_maker(dset):
     return bool_mask, indices_ext
 
 
-@tf.function
+#@tf.function
 def _make_noise():
     noises = []
     if const_args["noise_type"] == "pixel_noise":
@@ -267,7 +267,7 @@ def set_profiler(epoch_step):
                 tf.profiler.experimental.stop()
 
 
-@tf.function
+#@tf.function
 def train_step(train_dset, model, optimizer):
     epoch_global_norm = tf.TensorArray(
         tf.float32,
