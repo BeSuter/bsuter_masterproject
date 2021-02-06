@@ -208,6 +208,7 @@ def _make_noise():
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()[0]
         # Ensure that we have shape (batch_size, pex_len, 4)
+        print(noise_element)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
                                 axis=1)
@@ -290,8 +291,9 @@ def train_step(train_dset, model, optimizer):
         labels = set[1]
         # Add noise
         logger.debug("Adding noise")
+        logger.debug(f"Kappa pre noise {kappa_data}")
         kappa_data = tf.math.add(kappa_data, _make_noise())
-        logger.debug(kappa_data)
+        logger.debug(f"Kappa post noise {kappa_data}")
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
