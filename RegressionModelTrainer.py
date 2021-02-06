@@ -136,11 +136,9 @@ def preprocess_dataset(dset):
 
 
 def preprocess_noise_dataset(dset):
-    dset = dset.shuffle(const_args["preprocess_dataset"]["batch_size"])
+    dset = dset.shuffle(const_args['element_num'])
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
-
-    logger.info("Using all noise maps.")
     dset = dset.prefetch(2)
     return dset
 
@@ -201,12 +199,15 @@ def _make_noise():
             noise += const_args["_make_noise"]["ctx"][tomo + 1][1]
             noises.append(noise)
     elif const_args["noise_type"] == "dominik_noise":
-        tf.print("In dominik noise")
-        data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
-        raw_noise_dset = get_dataset(data_path)
-        noise_dset = preprocess_noise_dataset(raw_noise_dset)
-        iterator = iter(noise_dset)
-        noise_element = iterator.get_next()[0]
+        if not const_args["nois_dset_init"] == True:
+            logger.debug("Initializing noise dataset")
+            data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
+            raw_noise_dset = get_dataset(data_path)
+            noise_dset = preprocess_noise_dataset(raw_noise_dset)
+            iterator = iter(noise_dset)
+            const_args["noise_iter"] = iterator
+            const_args["nois_dset_init"] = True
+        noise_element = const_args["noise_iter"].get_next()[0]
         # Ensure that we have shape (batch_size, pex_len, 4)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
@@ -246,14 +247,9 @@ def set_profiler(epoch_step):
                                    const_args["profiler"]["log_dir"])
 
     if const_args["profiler"]["profile"]:
-        logger.debug("Evaluating profiling criterions")
         os.makedirs(path_to_dir, exist_ok=True)
-        logger.info(f"Saving profiling info at {path_to_dir}")
-        logger.debug(f"Current epoch is {const_args['profiler']['current_epoch']} and valid epochs are {const_args['profiler']['epochs']}")
         if const_args["profiler"]["current_epoch"] in const_args["profiler"]["epochs"]:
-            logger.debug(f"Current epoch criterion is fulfilled")
             if epoch_step == const_args["profiler"]["starting_step"]:
-                logger.debug("Epoch_step condition fulfilled")
                 logdir = os.path.join(path_to_dir, f"layer={const_args['get_layer']['layer']}" +
                                       f"_noise={const_args['noise_type']}" +
                                       f"_epoch={const_args['profiler']['current_epoch']}_time={date_time}")
@@ -261,7 +257,6 @@ def set_profiler(epoch_step):
                 logger.info("Starting profiling")
             elif epoch_step == const_args["profiler"]["starting_step"] + const_args["profiler"]["steps_per_epoch"]:
                 logger.info("Stopping profiler")
-                tf.print("Stopping profiler")
                 tf.profiler.experimental.stop()
 
 
@@ -288,7 +283,6 @@ def train_step(train_dset, model, optimizer):
                                      axis=1)
         labels = set[1]
         # Add noise
-        logger.debug("Adding noise")
         kappa_data = tf.math.add(kappa_data, _make_noise())
 
         # Optimize the model
@@ -317,7 +311,6 @@ def regression_model_trainer():
     data_path = const_args["data_dir"]
     logger.info(f"Retrieving data from {data_path}")
     raw_dset = get_dataset(data_path)
-    logger.debug(f"Making the mask")
     bool_mask, indices_ext = mask_maker(raw_dset)
     const_args["bool_mask"] = bool_mask
     const_args["pixel_num"] = len(indices_ext)
@@ -372,6 +365,7 @@ def regression_model_trainer():
         modulo_epoch = const_args["epochs"]
 
     for epoch in range(const_args["epochs"]):
+        const_args["nois_dset_init"] = False
         const_args["profiler"]["current_epoch"] = int(epoch)
         logger.debug(f"Executing training step for epoch={epoch}")
         # Optimize the model  --> Returns the loss average and the global norm of each epoch

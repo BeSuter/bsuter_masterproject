@@ -330,7 +330,6 @@ def get_dataset(path=[]):
     if not isinstance(path, list):
         path = [path]
     all_files = []
-    logger.debug(f"Adding TFRecord files from {path}")
     for pp in path:
         f_names = [
             os.path.join(pp, file) for file in os.listdir(pp)
