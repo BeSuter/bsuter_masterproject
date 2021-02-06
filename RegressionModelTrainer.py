@@ -207,6 +207,7 @@ def _make_noise():
         noise_dset = preprocess_noise_dataset(raw_noise_dset)
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()
+        tf.print(noise_element)
         # Ensure that we have shape (batch_size, pex_len, 4)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
