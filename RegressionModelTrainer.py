@@ -136,7 +136,7 @@ def preprocess_dataset(dset):
 
 
 def preprocess_noise_dataset(dset):
-    dset = dset.shuffle(const_args['element_num'])
+    dset = dset.shuffle(tf.cast(const_args['element_num'], tf.int64))
     dset = dset.batch(const_args["preprocess_dataset"]["batch_size"],
                       drop_remainder=True)
     dset = dset.prefetch(2)
