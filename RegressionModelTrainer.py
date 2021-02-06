@@ -207,12 +207,11 @@ def _make_noise():
         noise_dset = preprocess_noise_dataset(raw_noise_dset)
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()[0]
-        logger.debug(noise_element)
         # Ensure that we have shape (batch_size, pex_len, 4)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
                                 axis=1)
-        logger.debug(f"Noise has shape={tf.shape(noise)}")
+        logger.debug(f"Noise has shape={noise}")
 
     if not const_args["noise_type"] == "dominik_noise":
         noise = tf.stack(noises, axis=-1)
@@ -292,6 +291,7 @@ def train_step(train_dset, model, optimizer):
         # Add noise
         logger.debug("Adding noise")
         kappa_data = tf.math.add(kappa_data, _make_noise())
+        logger.debug(kappa_data)
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
