@@ -208,11 +208,11 @@ def _make_noise():
         iterator = iter(noise_dset)
         noise_element = iterator.get_next()[0]
         # Ensure that we have shape (batch_size, pex_len, 4)
-        print(noise_element)
+        tf.print("Noise: ", noise_element)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
                                 axis=1)
-        logger.debug(f"Noise has shape={noise}")
+        tf.print("Noise: ", noise)
 
     if not const_args["noise_type"] == "dominik_noise":
         noise = tf.stack(noises, axis=-1)
@@ -285,6 +285,7 @@ def train_step(train_dset, model, optimizer):
         set_profiler(element[0])
         set = element[1]
         # Ensure that we have shape (batch_size, pix_len, 4)
+        tf.print("Kappa: ", set[0])
         kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                      const_args["bool_mask"],
                                      axis=1)
@@ -292,8 +293,9 @@ def train_step(train_dset, model, optimizer):
         # Add noise
         logger.debug("Adding noise")
         logger.debug(f"Kappa pre noise {kappa_data}")
+        tf.print("Kappa: ", kappa_data)
         kappa_data = tf.math.add(kappa_data, _make_noise())
-        logger.debug(f"Kappa post noise {kappa_data}")
+        tf.print("Kappa post noise: ", kappa_data)
 
         # Optimize the model
         loss_value, grads = grad(model, kappa_data, labels)
