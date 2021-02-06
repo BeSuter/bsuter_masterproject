@@ -323,6 +323,7 @@ def regression_model_trainer():
     raw_dset = get_dataset(data_path)
     logger.debug(f"Making the mask")
     bool_mask, indices_ext = mask_maker(raw_dset)
+    logger.debug(f"Mask is {bool_mask}")
     const_args["bool_mask"] = bool_mask
     const_args["pixel_num"] = len(indices_ext)
 
