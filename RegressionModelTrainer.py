@@ -207,7 +207,16 @@ def _make_noise():
             iterator = iter(noise_dset)
             const_args["noise_iter"] = iterator
             const_args["nois_dset_init"] = True
-        noise_element = const_args["noise_iter"].get_next()[0]
+        try:
+            noise_element = const_args["noise_iter"].get_next()[0]
+        except tf.errors.OutOfRangeError:
+            logger.debug("Initializing noise dataset")
+            data_path = "/scratch/snx3000/bsuter/TFRecordNoise"
+            raw_noise_dset = get_dataset(data_path)
+            noise_dset = preprocess_noise_dataset(raw_noise_dset)
+            iterator = iter(noise_dset)
+            const_args["noise_iter"] = iterator
+            noise_element = const_args["noise_iter"].get_next()[0]
         # Ensure that we have shape (batch_size, pex_len, 4)
         noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                 const_args["bool_mask"],
