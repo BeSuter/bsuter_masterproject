@@ -16,7 +16,6 @@ from Plotter import l2_color_plot, histo_plot, stats, S8plot, PredictionLabelCom
 class Trainer:
 
     def __init__(self, params):
-        # Init
         self.date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
         self.params = params
         self._set_dataloader()
@@ -40,7 +39,8 @@ class Trainer:
         for element in self.train_dataset.enumerate():
             num = tf.dtypes.cast(element[0], tf.int32)
         num = num + 1
-        self.params['dataloader']['number_of_elements'] = tf.dtypes.cast(num, tf.int32)
+        self.params['dataloader']['number_of_elements'] = tf.dtypes.cast(
+            num, tf.int32)
 
     def _set_dataloader(self):
         def is_test(x, y):
@@ -66,8 +66,10 @@ class Trainer:
         total_dataset = total_dataset.batch(batch_size, drop_remainder=True)
 
         if self.params['dataloader']['split_data']:
-            test_dataset = total_dataset.enumerate().filter(is_test).map(recover)
-            train_dataset = total_dataset.enumerate().filter(is_train).map(recover)
+            test_dataset = total_dataset.enumerate().filter(is_test).map(
+                recover)
+            train_dataset = total_dataset.enumerate().filter(is_train).map(
+                recover)
             self.test_dataset = test_dataset.prefetch(prefetch_batch)
             self.train_dataset = train_dataset.prefetch(prefetch_batch)
         else:
@@ -85,33 +87,43 @@ class Trainer:
         prefetch_batch = self.params['dataloader']['prefetch_batch']
 
         total_noise_dataset = utils.get_dataset(data_dirs)
-        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(repeat_count)
-        total_noise_dataset = total_noise_dataset.batch(batch_size, drop_remainder=True)
+        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
+            repeat_count)
+        total_noise_dataset = total_noise_dataset.batch(batch_size,
+                                                        drop_remainder=True)
         total_noise_dataset = total_noise_dataset.prefetch(prefetch_batch)
         self.noise_dataset = total_noise_dataset
 
     def _set_model(self):
         tf.keras.backend.clear_session()
         self.layers = util.get_layers(self.params['model']['layer'])
-        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.params['model']['l_rate'])
+        self.optimizer = tf.keras.optimizers.Adam(
+            learning_rate=self.params['model']['l_rate'])
 
         self.model = hp_nn.HealpyGCNN(nside=self.params['model']['nside'],
                                       indices=self.indices_ext,
                                       layers=self.layers)
-        self.model.build(input_shape=(self.params['dataloader']['batch_size'],
-                                      self.pixel_num,
-                                      self.params['dataloader']['tomographic_bin_number']))
+        self.model.build(
+            input_shape=(self.params['dataloader']['batch_size'],
+                         self.pixel_num,
+                         self.params['dataloader']['tomographic_bin_number']))
         if self.params['model']['continue_training']:
             if self.params['model']['checkpoint_dir'] == "undefined":
-                logger.critical("Please define the directory within NGSFweights containing the desired weights")
-                logger.critical("E.g. --checkpoint_dir=layer_2/pixel_noise/01-14-2021-18-38")
+                logger.critical(
+                    "Please define the directory within NGSFweights containing the desired weights"
+                )
+                logger.critical(
+                    "E.g. --checkpoint_dir=layer_2/pixel_noise/01-14-2021-18-38"
+                )
                 sys.exit(0)
             else:
-                path_to_weights = os.path.join(self.params['model']['weights_dir'],
-                                               self.params['model']['checkpoint_dir'])
-                self.model.load_weights(tf.train.latest_checkpoint(path_to_weights))
-                self.params['model']['weights_dir'] = os.path.join(self.params['model']['weights_dir'],
-                                                                   "RetrainedWeights")
+                path_to_weights = os.path.join(
+                    self.params['model']['weights_dir'],
+                    self.params['model']['checkpoint_dir'])
+                self.model.load_weights(
+                    tf.train.latest_checkpoint(path_to_weights))
+                self.params['model']['weights_dir'] = os.path.join(
+                    self.params['model']['weights_dir'], "RetrainedWeights")
 
     def _save_model(self, epoch):
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
@@ -124,14 +136,16 @@ class Trainer:
                            f"_shuffle={self.params['noise']['noise_dataloader']['shuffle_size']}" +\
                            f"_epoch={epoch}.tf"
         save_weights_to = os.path.join(path_to_dir, weight_file_name)
-        logger.info(f"Saving model weights to {save_weights_to} for epoch {epoch}")
+        logger.info(
+            f"Saving model weights to {save_weights_to} for epoch {epoch}")
         self.model.save_weights(save_weights_to)
 
     @tf.function
     def _make_noise(self):
         noises = []
         if self.params['noise']['noise_type'] == "pixel_noise":
-            for tomo in range(self.params['dataloader']['tomographic_bin_number']):
+            for tomo in range(
+                    self.params['dataloader']['tomographic_bin_number']):
                 try:
                     noise_path = os.path.join(
                         self.params['noise']['noise_dir'],
@@ -149,30 +163,30 @@ class Trainer:
                     sys.exit(0)
                 mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
                 stddev = tf.convert_to_tensor(variance_map, dtype=tf.float32)
-                stddev *= 38.798 # Fix this, recalculate the standard deviation of the noise maps
-                noise = tf.random.normal([
-                    self.params['dataloader']['batch_size'],
-                    self.pixel_num
-                ],
+                stddev *= 38.798  # Fix this, recalculate the standard deviation of the noise maps
+                noise = tf.random.normal(
+                    [self.params['dataloader']['batch_size'], self.pixel_num],
                     mean=0.0,
                     stddev=1.0)
                 noise = tf.math.multiply(noise, stddev)
                 noise = tf.math.add(noise, mean)
                 noises.append(noise)
         elif self.params['noise']['noise_type'] == "old_noise":
-            for tomo in range(self.params['dataloader']['tomographic_bin_number']):
-                noise = tf.random.normal([
-                    self.params['dataloader']['batch_size'],
-                    self.pixel_num
-                ],
+            for tomo in range(
+                    self.params['dataloader']['tomographic_bin_number']):
+                noise = tf.random.normal(
+                    [self.params['dataloader']['batch_size'], self.pixel_num],
                     mean=0.0,
                     stddev=1.0)
-                noise *= self.params['noise']['tomographic_context'][tomo + 1][0]
-                noise += self.params['noise']['tomographic_context'][tomo + 1][1]
+                noise *= self.params['noise']['tomographic_context'][tomo +
+                                                                     1][0]
+                noise += self.params['noise']['tomographic_context'][tomo +
+                                                                     1][1]
                 noises.append(noise)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
-            noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
+            noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2,
+                                                                      1]),
                                     self.bool_mask,
                                     axis=1)
         if not self.params['noise']['noise_type'] == "dominik_noise":
@@ -191,7 +205,8 @@ class Trainer:
     def grad(self, inputs, targets):
         with tf.GradientTape() as tape:
             loss_value = self.loss(inputs, targets)
-        return loss_value, tape.gradient(loss_value, self.model.trainable_variables)
+        return loss_value, tape.gradient(loss_value,
+                                         self.model.trainable_variables)
 
     @tf.function
     def train_step(self):
@@ -218,12 +233,14 @@ class Trainer:
 
             # Optimize the model
             loss_value, grads = self.grad(kappa_data, labels)
-            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+            self.optimizer.apply_gradients(
+                zip(grads, self.model.trainable_variables))
 
             epoch_loss_avg = epoch_loss_avg.write(
                 tf.dtypes.cast(element[0], tf.int32), loss_value)
             epoch_global_norm = epoch_global_norm.write(
-                tf.dtypes.cast(element[0], tf.int32), tf.linalg.global_norm(grads))
+                tf.dtypes.cast(element[0], tf.int32),
+                tf.linalg.global_norm(grads))
 
         return epoch_loss_avg.stack(), epoch_global_norm.stack()
 
@@ -239,20 +256,25 @@ class Trainer:
                                              clear_after_read=False)
         if self.params['model']['epochs'] < self.params['model']['epochs_eval']:
             # Defaults to evaluating the last epoch
-            self.params['model']['epochs_eval'] = self.params['model']['epochs'] - 1
+            self.params['model'][
+                'epochs_eval'] = self.params['model']['epochs'] - 1
 
         for epoch in range(self.params['model']['epochs']):
             logger.debug(f"Executing training step for epoch={epoch}")
             self.noise_dataset_iterator = iter(self.noise_dataset)
 
-            if self.params['model']['profiler']['profile'] and epoch in self.params['model']['profiler']['epochs']:
-                path_to_dir = os.path.join(os.path.expandvars("$HOME"),
-                                           self.params['model']['profiler']['log_dir'])
+            if self.params['model']['profiler'][
+                    'profile'] and epoch in self.params['model']['profiler'][
+                        'epochs']:
+                path_to_dir = os.path.join(
+                    os.path.expandvars("$HOME"),
+                    self.params['model']['profiler']['log_dir'])
                 os.makedirs(path_to_dir, exist_ok=True)
 
-                log_dir = os.path.join(path_to_dir, f"layer={self.params['model']['layer']}" +
-                                       f"_noise={self.params['dataloader']['noise_type']}" +
-                                       f"_epoch={epoch}_time={self.date_time}")
+                log_dir = os.path.join(
+                    path_to_dir, f"layer={self.params['model']['layer']}" +
+                    f"_noise={self.params['dataloader']['noise_type']}" +
+                    f"_epoch={epoch}_time={self.date_time}")
                 logger.info("Starting profiling \n")
                 with tf.profiler.experimental.Profile(log_dir):
                     epoch_loss_avg, epo_glob_norm = self.train_step()
@@ -306,20 +328,23 @@ class Trainer:
                         start_time=self.date_time)
 
                     for set in self.test_dataset:
-                        kappa_data = tf.boolean_mask(tf.transpose(set[0],
-                                                                  perm=[0, 2, 1]),
+                        kappa_data = tf.boolean_mask(tf.transpose(
+                            set[0], perm=[0, 2, 1]),
                                                      self.bool_mask,
                                                      axis=1)
                         labels = set[1]
                         labels = labels.numpy()
 
                         # Add noise
-                        kappa_data = tf.math.add(kappa_data, self._make_noise())
+                        kappa_data = tf.math.add(kappa_data,
+                                                 self._make_noise())
                         predictions = self.model(kappa_data)
 
                         for ii, prediction in enumerate(predictions.numpy()):
-                            om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
-                            s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
+                            om_pred_check.add_to_plot(prediction[0], labels[ii,
+                                                                            0])
+                            s8_pred_check.add_to_plot(prediction[1], labels[ii,
+                                                                            1])
 
                             color_predictions.append(prediction)
                             color_labels.append(labels[ii, :])
@@ -330,17 +355,21 @@ class Trainer:
                             try:
                                 all_results["om"][(labels[ii][0],
                                                    labels[ii][1])].append(
-                                    prediction[0])
+                                                       prediction[0])
                             except KeyError:
                                 all_results["om"][(labels[ii][0],
-                                                   labels[ii][1])] = [prediction[0]]
+                                                   labels[ii][1])] = [
+                                                       prediction[0]
+                                                   ]
                             try:
                                 all_results["s8"][(labels[ii][0],
                                                    labels[ii][1])].append(
-                                    prediction[1])
+                                                       prediction[1])
                             except KeyError:
                                 all_results["s8"][(labels[ii][0],
-                                                   labels[ii][1])] = [prediction[1]]
+                                                   labels[ii][1])] = [
+                                                       prediction[1]
+                                                   ]
 
                     histo_plot(om_histo,
                                "Om",
@@ -354,12 +383,13 @@ class Trainer:
                                layer=self.params['model']['layer'],
                                noise_type=self.params['noise']['noise_type'],
                                start_time=self.date_time)
-                    l2_color_plot(np.asarray(color_predictions),
-                                  np.asarray(color_labels),
-                                  epoch=epoch_non_zero,
-                                  layer=self.params['model']['layer'],
-                                  noise_type=self.params['noise']['noise_type'],
-                                  start_time=self.date_time)
+                    l2_color_plot(
+                        np.asarray(color_predictions),
+                        np.asarray(color_labels),
+                        epoch=epoch_non_zero,
+                        layer=self.params['model']['layer'],
+                        noise_type=self.params['noise']['noise_type'],
+                        start_time=self.date_time)
                     S8plot(all_results["om"],
                            "Om",
                            epoch=epoch_non_zero,
@@ -406,17 +436,37 @@ if __name__ == "__main__":
     parser.add_argument('--split_data', action='store_true', default=False)
     parser.add_argument('--nside', type=int, action='store', default=512)
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
-    parser.add_argument('--continue_training', action='store_true', default=False)
+    parser.add_argument('--continue_training',
+                        action='store_true',
+                        default=False)
     parser.add_argument('--debug', action='store_true', default=False)
-    parser.add_argument('--checkpoint_dir', type=str, action='store', default='undefined')
+    parser.add_argument('--checkpoint_dir',
+                        type=str,
+                        action='store',
+                        default='undefined')
     parser.add_argument('--profile', action='store_true', default=False)
-    parser.add_argument('--prefetch_batch', type=int, action='store', default=2)
-    parser.add_argument('--tomographic_bin_number', type=int, action='store', default=4)
-    parser.add_argument('--noise_shuffle', type=int, action='store', default=75)
+    parser.add_argument('--prefetch_batch',
+                        type=int,
+                        action='store',
+                        default=2)
+    parser.add_argument('--tomographic_bin_number',
+                        type=int,
+                        action='store',
+                        default=4)
+    parser.add_argument('--noise_shuffle',
+                        type=int,
+                        action='store',
+                        default=75)
     parser.add_argument('--repeat_count', type=int, action='store', default=2)
-    parser.add_argument('--log_dir', type=str, action='store', default="model_profiles")
+    parser.add_argument('--log_dir',
+                        type=str,
+                        action='store',
+                        default="model_profiles")
     parser.add_argument('--epochs_save', type=int, action='store', default=30)
-    parser.add_argument('--number_of_epochs_eval', type=int, action='store', default=4)
+    parser.add_argument('--number_of_epochs_eval',
+                        type=int,
+                        action='store',
+                        default=4)
     ARGS = parser.parse_args()
 
     logger = logging.getLogger(__name__)
@@ -435,7 +485,7 @@ if __name__ == "__main__":
 
     print("Starting RegressionModelTrainer")
 
-    params = {
+    parameters = {
         'dataloader': {
             'data_dirs': ARGS.data_dirs,
             'batch_size': ARGS.batch_size,
@@ -450,7 +500,7 @@ if __name__ == "__main__":
             'noise_dataloader': {
                 'data_dirs': ARGS.noise_dir,
                 'shuffle_size': ARGS.noise_shuffle,
-                 'repeat_count': ARGS.repeat_count
+                'repeat_count': ARGS.repeat_count
             },
             'tomographic_context': {
                 1: [0.060280509803501296, 2.6956629531655215e-07],
@@ -476,5 +526,5 @@ if __name__ == "__main__":
         }
     }
 
-    trainer = Trainer(params)
+    trainer = Trainer(parameters)
     trainer.train()
