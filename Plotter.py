@@ -67,6 +67,7 @@ def S8plot(data,
                  yerr=error_values,
                  marker='o',
                  linestyle='')
+    plt.title(f"S8plot for epoch={epoch}")
     plt.xlabel("sigma8*sqrt(Om/0.3)")
     plt.ylabel(label)
 
@@ -105,7 +106,7 @@ def stats(data,
     plt.figure(num="stats", figsize=(12, 8))
     plt.plot(data, label=label)
     plt.ylim(0, 5.)
-    plt.title(f"Monitoring {label}")
+    plt.title(f"Monitoring {label}, epoch={epoch}")
     plt.legend()
 
     if target:
@@ -143,7 +144,7 @@ def histo_plot(data,
 
     plt.figure(num="histo_plot", figsize=(12, 8))
     plt.hist(data, bins=75, label=label, range=(-0.275, 0.275), density=True)
-    plt.title("Histogram of prediction - label")
+    plt.title(f"Histogram of prediction - label, epoch={epoch}")
     plt.legend()
 
     if target:
@@ -201,7 +202,7 @@ def l2_color_plot(predictions,
     fig.add_axes([0.1, 0.35, 0.8, 0.6],
                  ylabel="Sigma_8",
                  xlabel="Omega_M",
-                 title="L2 Norm prediction to label")
+                 title=f"L2 Norm prediction to label for epoch {epoch}")
 
     if target:
         os.makedirs(target, exist_ok=True)
@@ -235,13 +236,18 @@ def l2_color_plot(predictions,
 
 class PredictionLabelComparisonPlot:
     def __init__(self, topic, target=None, **kwargs):
+        epoch = kwargs.pop("epochs", None)
+        if epoch:
+            title = f"{topic} prediction compared to Label for epoch {epoch}"
+        else:
+            title = f"{topic} prediction compared to Label"
         date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
         self.fig = plt.figure(figsize=(12, 8))
         self.fig_ax = self.fig.add_axes(
             [0.1, 0.35, 0.8, 0.6],
             ylabel="Predictions",
             xlabel="Labels",
-            title=f"{topic} prediction compared to Label")
+            title=title)
         plot_name = f"{topic}_comparison"
         batch_size = kwargs.pop("batch_size", None)
         if batch_size:
@@ -249,9 +255,9 @@ class PredictionLabelComparisonPlot:
         shuffle_size = kwargs.pop("shuffle_size", None)
         if shuffle_size:
             plot_name += f"_shuffle={shuffle_size}"
-        epochs = kwargs.pop("epochs", None)
-        if epochs:
-            plot_name += f"_epochs={epochs}"
+        epoch = kwargs.pop("epochs", None)
+        if epoch:
+            plot_name += f"_epochs={epoch}"
         layer = kwargs.pop("layer", "Undefined_Layer")
         noise_type = kwargs.pop("noise_type", "Undefinded_Noise_Type")
         start_time = kwargs.pop("start_time", "Undefined_Time")
