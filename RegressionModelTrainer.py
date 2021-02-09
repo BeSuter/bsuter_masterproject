@@ -60,7 +60,7 @@ class Trainer:
         print(f"- Loaded Data from {self.params['dataloader']['data_dirs']}")
         print(f"- Batch Size is  {self.params['dataloader']['batch_size']}")
         print(f"- Shuffle Size is {self.params['dataloader']['shuffle_size']}")
-        print(f"- Prefetch Size is {self.params['dataloader']['batch']}")
+        print(f"- Prefetch Size is {self.params['dataloader']['prefetch_batch']}")
         print(f"- Number of Tomographic Bins is {self.params['dataloader']['tomographic_bin_number']}")
         if self.params['dataloader']['split_data']:
             print(" !!!!! DATA WILL BE SPLIT INTO TRAINING AND EVALUATION DATA !!!!! ")
