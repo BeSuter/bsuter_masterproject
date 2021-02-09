@@ -8,6 +8,12 @@ import numpy as np
 import healpy as hp
 import tensorflow as tf
 
+try:
+    import horovod.tensorflow as hvd
+    IMPORTED_HVD = True
+except ImportError:
+    IMPORTED_HVD = False
+
 from datetime import datetime
 from DeepSphere import healpy_networks as hp_nn
 from Plotter import l2_color_plot, histo_plot, stats, S8plot, PredictionLabelComparisonPlot
@@ -18,9 +24,18 @@ class Trainer:
     def __init__(self, params):
         self.date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
         self.params = params
+
+        if params['training']['distributed'] and IMPORTED_HVD:
+            hvd.init()
+        elif params['training']['distributed']:
+            logger.critical("Failed to import horovod.tensorflow. Proceeding with non distributed training")
+            params['training']['distributed'] = False
+
         self._set_dataloader()
+
         if self.params['noise']['noise_type'] == "dominik_noise":
             self._set_noise_dataloader()
+
         self._set_model()
 
     def _train_preprint(self):
@@ -44,20 +59,26 @@ class Trainer:
             num, tf.int32)
 
     def _set_dataloader(self):
-        def is_test(x, y):
-            return x % 5 == 0
+        def is_test(index, value):
+            return index % 5 == 0
 
-        def is_train(x, y):
-            return not is_test(x, y)
+        def is_train(index, value):
+            return not is_test(index, value)
 
-        recover = lambda x, y: y
+        def recover(index, value):
+            return value
 
         data_dirs = self.params['dataloader']['data_dirs']
         batch_size = self.params['dataloader']['batch_size']
         shuffle_size = self.params['dataloader']['shuffle_size']
         prefetch_batch = self.params['dataloader']['prefetch_batch']
+        distributed_training = self.params['training']['distributed']
 
         total_dataset = utils.get_dataset(data_dirs)
+
+        if distributed_training:
+            total_dataset = total_dataset.shard(hvd.size(), hvd.rank())
+
         bool_mask, indices_ext = Trainer._mask_maker(total_dataset)
         self.bool_mask = bool_mask
         self.indices_ext = indices_ext
@@ -87,8 +108,13 @@ class Trainer:
         repeat_count = self.params['noise']['noise_dataloader']['repeat_count']
         batch_size = self.params['dataloader']['batch_size']
         prefetch_batch = self.params['dataloader']['prefetch_batch']
+        distributed_training = self.params['training']['distributed']
 
         total_noise_dataset = utils.get_dataset(data_dirs)
+
+        if distributed_training:
+            total_noise_dataset = total_noise_dataset.shard(hvd.size(), hvd.rank())
+
         total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
             repeat_count)
         total_noise_dataset = total_noise_dataset.batch(batch_size,
@@ -102,7 +128,7 @@ class Trainer:
 
     def _set_model(self):
         tf.keras.backend.clear_session()
-        self.layers = util.get_layers(self.params['model']['layer'])
+        self.layers = utils.get_layers(self.params['model']['layer'])
         self.optimizer = tf.keras.optimizers.Adam(
             learning_rate=self.params['model']['l_rate'])
 
@@ -211,7 +237,7 @@ class Trainer:
     @tf.function
     def loss(self, inputs, targets):
         loss_object = tf.keras.losses.MeanAbsoluteError()
-        y_ = self.model(inputs, training=True)
+        y_ = self.model.__call__(inputs, training=True)
 
         return loss_object(y_true=targets, y_pred=y_)
 
@@ -338,7 +364,7 @@ class Trainer:
                     # Add noise
                     kappa_data = tf.math.add(kappa_data,
                                              self._make_noise())
-                    predictions = self.model(kappa_data)
+                    predictions = self.model.__call__(kappa_data)
 
                     for ii, prediction in enumerate(predictions.numpy()):
                         om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
@@ -455,6 +481,7 @@ if __name__ == "__main__":
                         type=int,
                         action='store',
                         default=4)
+    parser.add_argument('--distributed_training', action='store_true', default=False)
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -511,6 +538,9 @@ if __name__ == "__main__":
                 'profile': ARGS.profile,
                 'epochs': [1, 10]
             }
+        },
+        'training': {
+            'distributed': ARGS.distributed_training
         }
     }
 
