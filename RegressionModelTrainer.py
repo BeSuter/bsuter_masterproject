@@ -25,11 +25,17 @@ class Trainer:
         self.date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
         self.params = params
 
-        if params['training']['distributed'] and IMPORTED_HVD:
+        self.worker_id = ""
+        self.is_root_worker = True
+
+        if self.params['training']['distributed'] and IMPORTED_HVD:
             hvd.init()
-        elif params['training']['distributed']:
+            self._configure_worker()
+        elif self.params['training']['distributed']:
             logger.critical("Failed to import horovod.tensorflow. Proceeding with non distributed training")
-            params['training']['distributed'] = False
+            self.params['training']['distributed'] = False
+
+        self._train_preprint()
 
         self._set_dataloader()
 
@@ -39,7 +45,56 @@ class Trainer:
         self._set_model()
 
     def _train_preprint(self):
-        pass
+        print('')
+        print(' -------------- Starting training    ({})'.format(self.date_time))
+
+        if self.params['training']['distributed'] and IMPORTED_HVD:
+            print('')
+            print(' IN DISTRIBUTED TRAINING MODE ')
+            print(' ---------------------------- ')
+            print(self.worker_id)
+
+        print('')
+        print(' DATALOADER ')
+        print(' ---------- ')
+        print(f"- Loaded Data from {self.params['dataloader']['data_dirs']}")
+        print(f"-- Batch Size is  {self.params['dataloader']['batch_size']}")
+        print(f"--- Shuffle Size is {self.params['dataloader']['shuffle_size']}")
+        print(f"---- Prefetch Size is {self.params['dataloader']['prefetch_size']}")
+        print(f"----- Number of Tomographic Bins is {self.params['dataloader']['tomographic_bin_number']}")
+        if self.params['dataloader']['split_data']:
+            print(" !!!!! DATA WILL BE SPLIT INTO TRAINING AND EVALUATION DATA !!!!! ")
+        else:
+            print(" !!!!! USING ALL MAPS FOR TRAINING AND EVALUATION !!!!! ")
+
+        print('')
+        print(' NOISE ')
+        print(' ----- ')
+        print(f"- Noise Type is {self.params['noise']['noise_type']}")
+        if self.params['noise']['noise_type'] == 'dominik_noise':
+            print(f"-- Loaded Noise from {self.params['noise']['noise_dataloader']['data_dirs']}")
+            print(f"--- Noise Shuffle Size is {self.params['noise']['noise_dataloader']['shuffle_size']}")
+            print(f"---- Noise Repeat Count is {self.params['noise']['noise_dataloader']['repeat_count']}")
+
+        print('')
+        print(' MODEL ')
+        print(' ----- ')
+        print(f"- Layer Name is {self.params['model']['layer']}")
+        print(f"-- NSIDE set to {self.params['model']['nside']}")
+        print(f"--- Learning Rate is set to {self.params['model']['l_rate']}")
+        if self.params['model']['profiler']['profile']:
+            print(f"---- Profiling Training for Epochs {self.params['model']['profiler']['epochs']}")
+            print(f"----- Saving Profile Log to {self.params['model']['profiler']['log_dir']}")
+        if self.params['model']['continue_training']:
+            print('')
+            print(f" CONTINUING TRAINING ")
+            path = os.path.join(self.params['model']['weights_dir'], self.params['model']['checkpoint_dir'])
+            print(f"- Loading Weights from {path}")
+
+    def _configure_worker(self):
+        self.worker_id = f" -- Worker ID is {hvd.rank()}/{hvd.size()}"
+        if hvd.rank() != 0:
+            self.is_root_worker = False
 
     @staticmethod
     def _mask_maker(raw_dset):
@@ -102,7 +157,7 @@ class Trainer:
         self.count_elements()
 
     def _set_noise_dataloader(self):
-        """ Only used if we intedn to use noise maps directly from the NGSF pipeline """
+        """ Only used if we intend to use noise maps directly from the NGSF pipeline """
         data_dirs = self.params['noise']['noise_dataloader']['data_dirs']
         shuffle_size = self.params['noise']['noise_dataloader']['shuffle_size']
         repeat_count = self.params['noise']['noise_dataloader']['repeat_count']
@@ -143,7 +198,7 @@ class Trainer:
             if self.params['model']['checkpoint_dir'] == "undefined":
                 logger.critical(
                     "Please define the directory within NGSFweights containing the desired weights " +
-                    "E.g. --checkpoint_dir=layer_2/pixel_noise/01-14-2021-18-38"
+                    "E.g. --checkpoint_dir=layer_2/pixel_noise/01-14-2021-18-38" + self.worker_id
                 )
                 sys.exit(0)
             else:
@@ -167,7 +222,7 @@ class Trainer:
                            f"_epoch={epoch}.tf"
         save_weights_to = os.path.join(path_to_dir, weight_file_name)
         logger.info(
-            f"Saving model weights to {save_weights_to} for epoch {epoch}")
+            f"Saving model weights to {save_weights_to} for epoch {epoch} self.worker_id")
         self.model.save_weights(save_weights_to)
 
     def _make_log_dir(self, epoch):
@@ -195,10 +250,9 @@ class Trainer:
                     variance_map = noise_ctx["variance_map"]
                 except FileNotFoundError:
                     logger.critical(
-                        "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?"
-                    )
-                    logger.critical(
-                        "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..."
+                        "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?\n" +
+                        "At the moment the noise is hardcoded to PixelNoise_tomo=2.npz. Please change this..." +
+                        self.worker_id
                     )
                     sys.exit(0)
                 mean = tf.convert_to_tensor(mean_map, dtype=tf.float32)
@@ -245,11 +299,13 @@ class Trainer:
     def grad(self, inputs, targets):
         with tf.GradientTape() as tape:
             loss_value = self.loss(inputs, targets)
+        if self.params['training']['distributed']:
+            tape = hvd.DistributedGradientTape(tape)
         return loss_value, tape.gradient(loss_value,
                                          self.model.trainable_variables)
 
     @tf.function
-    def train_step(self):
+    def train_step(self, first_epoch):
         epoch_global_norm = tf.TensorArray(
             tf.float32,
             size=self.params['dataloader']["number_of_elements"],
@@ -263,6 +319,7 @@ class Trainer:
             clear_after_read=False,
         )
         for element in self.train_dataset.enumerate():
+            index = tf.dtypes.cast(element[0], tf.int32)
             set = element[1]
             kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                          self.bool_mask,
@@ -273,14 +330,14 @@ class Trainer:
 
             # Optimize the model
             loss_value, grads = self.grad(kappa_data, labels)
-            self.optimizer.apply_gradients(
-                zip(grads, self.model.trainable_variables))
+            self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
-            epoch_loss_avg = epoch_loss_avg.write(
-                tf.dtypes.cast(element[0], tf.int32), loss_value)
-            epoch_global_norm = epoch_global_norm.write(
-                tf.dtypes.cast(element[0], tf.int32),
-                tf.linalg.global_norm(grads))
+            if self.params['training']['distributed'] and index == 0 and first_epoch:
+                hvd.broadcast_variables(self.model.variables, root_rank=0)
+                hvd.broadcast_variables(self.optimizer.variables(), root_rank=0)
+
+            epoch_loss_avg = epoch_loss_avg.write(index, loss_value)
+            epoch_global_norm = epoch_global_norm.write(index, tf.linalg.global_norm(grads))
 
         return epoch_loss_avg.stack(), epoch_global_norm.stack()
 
@@ -296,42 +353,42 @@ class Trainer:
                                              clear_after_read=False)
         if self.params['model']['epochs'] < self.params['model']['epochs_eval']:
             # Defaults to evaluating the last epoch
-            self.params['model'][
-                'epochs_eval'] = self.params['model']['epochs'] - 1
+            self.params['model']['epochs_eval'] = self.params['model']['epochs'] - 1
 
         for epoch in range(self.params['model']['epochs']):
-            logger.debug(f"Executing training step for epoch={epoch}")
+            logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
 
             if self.params['noise']['noise_type'] == "dominik_noise":
                 self._init_noise_iteration()
 
-            if self.params['model']['profiler']['profile'] and epoch in self.params['model']['profiler']['epochs']:
+            epoch_cond = epoch in self.params['model']['profiler']['epochs']
+            if self.params['model']['profiler']['profile'] and epoch_cond and self.is_root_worker:
                 log_dir = self._make_log_dir(epoch)
-                logger.info("Starting profiling \n")
+                logger.info("Starting profiling" + self.worker_id + "\n")
                 with tf.profiler.experimental.Profile(log_dir):
-                    epoch_loss_avg, epo_glob_norm = self.train_step()
+                    epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
             else:
-                epoch_loss_avg, epo_glob_norm = self.train_step()
+                epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
 
             # End epoch
             if epoch % 10 == 0:
                 loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
                 glob_norm = sum(epo_glob_norm) / len(epo_glob_norm)
 
-                logger.info(f"Finished epoch {epoch}. Loss was {loss}")
+                logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
 
                 train_loss_results = train_loss_results.write(epoch, loss)
                 global_norm_results = global_norm_results.write(epoch, glob_norm)
 
-            if epoch > 0 and epoch % self.params['model']['epochs_save'] and not self.params['model']['debug']:
+            epoch_cond = epoch % self.params['model']['epochs_save'] == 0
+            if epoch > 0 and epoch_cond and self.is_root_worker and not self.params['model']['debug']:
                 self._save_model(epoch + 1)
 
-            epoch_cond = (epoch > 0)
             eval_cond = (epoch % (self.params['model']['epochs'] // self.params['model']['number_of_epochs_eval']) == 0)
-            final_epoch_cond = (epoch + 1 == self.params['model']['epochs'])
-            if (epoch_cond and eval_cond) or final_epoch_cond and not self.params['model']['debug']:
+            epoch_cond = (epoch + 1 == self.params['model']['epochs'])
+            if (epoch > 0 and eval_cond) or epoch_cond and self.is_root_worker and not self.params['model']['debug']:
                 # Evaluate the model and plot the results
-                logger.info(f"Evaluating the model and plotting results for epoch={epoch}")
+                logger.info(f"Evaluating the model and plotting results for epoch={epoch}" + self.worker_id)
                 epoch_non_zero = epoch + 1
 
                 color_predictions = []
@@ -419,7 +476,7 @@ class Trainer:
                 om_pred_check.save_plot()
                 s8_pred_check.save_plot()
 
-        if not self.params['model']['debug']:
+        if not self.params['model']['debug'] and self.is_root_worker:
             stats(train_loss_results.stack().numpy(),
                   "training_loss",
                   layer=self.params['model']['layer'],
@@ -498,8 +555,6 @@ if __name__ == "__main__":
 
     logger.addHandler(handler)
 
-    print("Starting RegressionModelTrainer")
-
     parameters = {
         'dataloader': {
             'data_dirs': ARGS.data_dirs,
@@ -526,6 +581,7 @@ if __name__ == "__main__":
         },
         'model': {
             'layer': ARGS.layer,
+            'epochs': ARGS.epochs,
             'l_rate': ARGS.l_rate,
             'nside': ARGS.nside,
             'continue_training': ARGS.continue_training,
