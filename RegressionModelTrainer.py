@@ -58,10 +58,10 @@ class Trainer:
         print(' DATALOADER ')
         print(' ---------- ')
         print(f"- Loaded Data from {self.params['dataloader']['data_dirs']}")
-        print(f"-- Batch Size is  {self.params['dataloader']['batch_size']}")
-        print(f"--- Shuffle Size is {self.params['dataloader']['shuffle_size']}")
-        print(f"---- Prefetch Size is {self.params['dataloader']['prefetch_size']}")
-        print(f"----- Number of Tomographic Bins is {self.params['dataloader']['tomographic_bin_number']}")
+        print(f"- Batch Size is  {self.params['dataloader']['batch_size']}")
+        print(f"- Shuffle Size is {self.params['dataloader']['shuffle_size']}")
+        print(f"- Prefetch Size is {self.params['dataloader']['batch']}")
+        print(f"- Number of Tomographic Bins is {self.params['dataloader']['tomographic_bin_number']}")
         if self.params['dataloader']['split_data']:
             print(" !!!!! DATA WILL BE SPLIT INTO TRAINING AND EVALUATION DATA !!!!! ")
         else:
@@ -72,22 +72,22 @@ class Trainer:
         print(' ----- ')
         print(f"- Noise Type is {self.params['noise']['noise_type']}")
         if self.params['noise']['noise_type'] == 'dominik_noise':
-            print(f"-- Loaded Noise from {self.params['noise']['noise_dataloader']['data_dirs']}")
-            print(f"--- Noise Shuffle Size is {self.params['noise']['noise_dataloader']['shuffle_size']}")
-            print(f"---- Noise Repeat Count is {self.params['noise']['noise_dataloader']['repeat_count']}")
+            print(f" -- Loaded Noise from {self.params['noise']['noise_dataloader']['data_dirs']}")
+            print(f" -- Noise Shuffle Size is {self.params['noise']['noise_dataloader']['shuffle_size']}")
+            print(f" -- Noise Repeat Count is {self.params['noise']['noise_dataloader']['repeat_count']}")
 
         print('')
         print(' MODEL ')
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
-        print(f"-- NSIDE set to {self.params['model']['nside']}")
-        print(f"--- Learning Rate is set to {self.params['model']['l_rate']}")
+        print(f"- NSIDE set to {self.params['model']['nside']}")
+        print(f"- Learning Rate is set to {self.params['model']['l_rate']}")
         if self.params['model']['profiler']['profile']:
-            print(f"---- Profiling Training for Epochs {self.params['model']['profiler']['epochs']}")
-            print(f"----- Saving Profile Log to {self.params['model']['profiler']['log_dir']}")
+            print(f" -- Profiling Training for Epochs {self.params['model']['profiler']['epochs']}")
+            print(f" -- Saving Profile Log to {self.params['model']['profiler']['log_dir']}")
         if self.params['model']['continue_training']:
             print('')
-            print(f" CONTINUING TRAINING ")
+            print(f" !! CONTINUING TRAINING !! ")
             path = os.path.join(self.params['model']['weights_dir'], self.params['model']['checkpoint_dir'])
             print(f"- Loading Weights from {path}")
 
