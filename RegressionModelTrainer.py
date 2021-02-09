@@ -600,6 +600,6 @@ if __name__ == "__main__":
             'distributed': ARGS.distributed_training
         }
     }
-    tf.config.run_functions_eagerly(True)
+    tf.config.experimental_functions_run_eagerly()
     trainer = Trainer(parameters)
     trainer.train()
