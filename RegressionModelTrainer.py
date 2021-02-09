@@ -357,6 +357,7 @@ class Trainer:
             self.params['model']['number_of_epochs_eval'] = self.params['model']['epochs'] - 1
 
         for epoch in range(self.params['model']['epochs']):
+            first_epoch = (epoch == 0)
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
 
             if self.params['noise']['noise_type'] == "dominik_noise":
@@ -367,9 +368,9 @@ class Trainer:
                 log_dir = self._make_log_dir(epoch)
                 logger.info("Starting profiling" + self.worker_id + "\n")
                 with tf.profiler.experimental.Profile(log_dir):
-                    epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
+                    epoch_loss_avg, epo_glob_norm = self.train_step(first_epoch)
             else:
-                epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
+                epoch_loss_avg, epo_glob_norm = self.train_step(first_epoch)
 
             # End epoch
             if epoch % 10 == 0:
