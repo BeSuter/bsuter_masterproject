@@ -90,6 +90,7 @@ class Trainer:
             print(f" !! CONTINUING TRAINING !! ")
             path = os.path.join(self.params['model']['weights_dir'], self.params['model']['checkpoint_dir'])
             print(f"- Loading Weights from {path}")
+        print('')
 
     def _configure_worker(self):
         self.worker_id = f" -- Worker ID is {hvd.rank()}/{hvd.size()}"
@@ -351,7 +352,7 @@ class Trainer:
                                              size=0,
                                              dynamic_size=True,
                                              clear_after_read=False)
-        if self.params['model']['epochs'] < self.params['model']['epochs_eval']:
+        if self.params['model']['epochs'] < self.params['model']['number_of_epochs_eval']:
             # Defaults to evaluating the last epoch
             self.params['model']['epochs_eval'] = self.params['model']['epochs'] - 1
 
