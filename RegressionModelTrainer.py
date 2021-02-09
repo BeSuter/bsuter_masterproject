@@ -19,7 +19,8 @@ class Trainer:
         self.date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
         self.params = params
         self._set_dataloader()
-        self._set_noise_dataloader()
+        if self.params['noise']['noise_type'] == "dominik_noise":
+            self._set_noise_dataloader()
         self._set_model()
 
     def _train_preprint(self):
@@ -80,6 +81,7 @@ class Trainer:
         self.count_elements()
 
     def _set_noise_dataloader(self):
+        """ Only used if we intedn to use noise maps directly from the NGSF pipeline """
         data_dirs = self.params['noise']['noise_dataloader']['data_dirs']
         shuffle_size = self.params['noise']['noise_dataloader']['shuffle_size']
         repeat_count = self.params['noise']['noise_dataloader']['repeat_count']
@@ -93,6 +95,10 @@ class Trainer:
                                                         drop_remainder=True)
         total_noise_dataset = total_noise_dataset.prefetch(prefetch_batch)
         self.noise_dataset = total_noise_dataset
+
+    def _init_noise_iteration(self):
+        iterator = iter(self.noise_dataset)
+        self.noise_dataset_iterator = iterator
 
     def _set_model(self):
         tf.keras.backend.clear_session()
@@ -110,9 +116,7 @@ class Trainer:
         if self.params['model']['continue_training']:
             if self.params['model']['checkpoint_dir'] == "undefined":
                 logger.critical(
-                    "Please define the directory within NGSFweights containing the desired weights"
-                )
-                logger.critical(
+                    "Please define the directory within NGSFweights containing the desired weights " +
                     "E.g. --checkpoint_dir=layer_2/pixel_noise/01-14-2021-18-38"
                 )
                 sys.exit(0)
@@ -132,13 +136,23 @@ class Trainer:
                                    self.params['noise']['noise_type'],
                                    self.date_time)
         os.makedirs(path_to_dir, exist_ok=True)
-        weight_file_name = f"kappa_batch={self.params['dataloader']['batch_size']}" +\
-                           f"_shuffle={self.params['noise']['noise_dataloader']['shuffle_size']}" +\
+        weight_file_name = f"kappa_batch={self.params['dataloader']['batch_size']}" + \
+                           f"_shuffle={self.params['noise']['noise_dataloader']['shuffle_size']}" + \
                            f"_epoch={epoch}.tf"
         save_weights_to = os.path.join(path_to_dir, weight_file_name)
         logger.info(
             f"Saving model weights to {save_weights_to} for epoch {epoch}")
         self.model.save_weights(save_weights_to)
+
+    def _make_log_dir(self, epoch):
+        path_to_dir = os.path.join(os.path.expandvars("$HOME"),
+                                   self.params['model']['profiler']['log_dir'])
+        os.makedirs(path_to_dir, exist_ok=True)
+
+        log_dir = os.path.join(path_to_dir, f"layer={self.params['model']['layer']}" +
+                               f"_noise={self.params['dataloader']['noise_type']}" +
+                               f"_epoch={epoch}_time={self.date_time}")
+        return log_dir
 
     @tf.function
     def _make_noise(self):
@@ -261,20 +275,12 @@ class Trainer:
 
         for epoch in range(self.params['model']['epochs']):
             logger.debug(f"Executing training step for epoch={epoch}")
-            self.noise_dataset_iterator = iter(self.noise_dataset)
 
-            if self.params['model']['profiler'][
-                    'profile'] and epoch in self.params['model']['profiler'][
-                        'epochs']:
-                path_to_dir = os.path.join(
-                    os.path.expandvars("$HOME"),
-                    self.params['model']['profiler']['log_dir'])
-                os.makedirs(path_to_dir, exist_ok=True)
+            if self.params['noise']['noise_type'] == "dominik_noise":
+                self._init_noise_iteration()
 
-                log_dir = os.path.join(
-                    path_to_dir, f"layer={self.params['model']['layer']}" +
-                    f"_noise={self.params['dataloader']['noise_type']}" +
-                    f"_epoch={epoch}_time={self.date_time}")
+            if self.params['model']['profiler']['profile'] and epoch in self.params['model']['profiler']['epochs']:
+                log_dir = self._make_log_dir(epoch)
                 logger.info("Starting profiling \n")
                 with tf.profiler.experimental.Profile(log_dir):
                     epoch_loss_avg, epo_glob_norm = self.train_step()
@@ -283,127 +289,110 @@ class Trainer:
 
             # End epoch
             if epoch % 10 == 0:
-                logger.info("Epoch {:03d}: Loss: {:.3f}".format(
-                    epoch,
-                    sum(epoch_loss_avg) / len(epoch_loss_avg)))
-                train_loss_results = train_loss_results.write(
-                    epoch,
-                    sum(epoch_loss_avg) / len(epoch_loss_avg))
-                global_norm_results = global_norm_results.write(
-                    epoch,
-                    sum(epo_glob_norm) / len(epo_glob_norm))
-            if epoch > 0 and epoch % self.params['model']['epochs_save']:
+                loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
+                glob_norm = sum(epo_glob_norm) / len(epo_glob_norm)
+
+                logger.info(f"Finished epoch {epoch}. Loss was {loss}")
+
+                train_loss_results = train_loss_results.write(epoch, loss)
+                global_norm_results = global_norm_results.write(epoch, glob_norm)
+
+            if epoch > 0 and epoch % self.params['model']['epochs_save'] and not self.params['model']['debug']:
                 self._save_model(epoch + 1)
-            if (epoch > 0 and  epoch % (self.params['model']['epochs'] //
-                                       self.params['model']['number_of_epochs_eval']) == 0)\
-                    or epoch + 1 == self.params['model']['epochs']:
+
+            epoch_cond = (epoch > 0)
+            eval_cond = (epoch % (self.params['model']['epochs'] // self.params['model']['number_of_epochs_eval']) == 0)
+            final_epoch_cond = (epoch + 1 == self.params['model']['epochs'])
+            if (epoch_cond and eval_cond) or final_epoch_cond and not self.params['model']['debug']:
                 # Evaluate the model and plot the results
-                logger.info(
-                    f"Evaluating the model and plotting results for epoch={epoch}"
-                )
-                if not self.params['model']['debug']:
-                    epoch_non_zero = epoch + 1
+                logger.info(f"Evaluating the model and plotting results for epoch={epoch}")
+                epoch_non_zero = epoch + 1
 
-                    color_predictions = []
-                    color_labels = []
+                color_predictions = []
+                color_labels = []
+                om_histo = []
+                s8_histo = []
 
-                    om_histo = []
-                    s8_histo = []
+                all_results = {"om": collections.OrderedDict(), "s8": collections.OrderedDict()}
+                om_pred_check = PredictionLabelComparisonPlot(
+                    "Omega_m",
+                    epoch=epoch_non_zero,
+                    layer=self.params['model']['layer'],
+                    noise_type=self.params['noise']['noise_type'],
+                    start_time=self.date_time)
+                s8_pred_check = PredictionLabelComparisonPlot(
+                    "Sigma_8",
+                    epoch=epoch_non_zero,
+                    layer=self.params['model']['layer'],
+                    noise_type=self.params['noise']['noise_type'],
+                    start_time=self.date_time)
 
-                    all_results = {}
-                    all_results["om"] = collections.OrderedDict()
-                    all_results["s8"] = collections.OrderedDict()
+                for set in self.test_dataset:
+                    kappa_data = tf.boolean_mask(tf.transpose(
+                        set[0], perm=[0, 2, 1]),
+                        self.bool_mask,
+                        axis=1)
+                    labels = set[1]
+                    labels = labels.numpy()
 
-                    om_pred_check = PredictionLabelComparisonPlot(
-                        "Omega_m",
-                        epoch=epoch_non_zero,
-                        layer=self.params['model']['layer'],
-                        noise_type=self.params['noise']['noise_type'],
-                        start_time=self.date_time)
-                    s8_pred_check = PredictionLabelComparisonPlot(
-                        "Sigma_8",
-                        epoch=epoch_non_zero,
-                        layer=self.params['model']['layer'],
-                        noise_type=self.params['noise']['noise_type'],
-                        start_time=self.date_time)
+                    # Add noise
+                    kappa_data = tf.math.add(kappa_data,
+                                             self._make_noise())
+                    predictions = self.model(kappa_data)
 
-                    for set in self.test_dataset:
-                        kappa_data = tf.boolean_mask(tf.transpose(
-                            set[0], perm=[0, 2, 1]),
-                                                     self.bool_mask,
-                                                     axis=1)
-                        labels = set[1]
-                        labels = labels.numpy()
+                    for ii, prediction in enumerate(predictions.numpy()):
+                        om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
+                        s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
 
-                        # Add noise
-                        kappa_data = tf.math.add(kappa_data,
-                                                 self._make_noise())
-                        predictions = self.model(kappa_data)
+                        color_predictions.append(prediction)
+                        color_labels.append(labels[ii, :])
 
-                        for ii, prediction in enumerate(predictions.numpy()):
-                            om_pred_check.add_to_plot(prediction[0], labels[ii,
-                                                                            0])
-                            s8_pred_check.add_to_plot(prediction[1], labels[ii,
-                                                                            1])
+                        om_histo.append(prediction[0] - labels[ii, 0])
+                        s8_histo.append(prediction[1] - labels[ii, 1])
 
-                            color_predictions.append(prediction)
-                            color_labels.append(labels[ii, :])
+                        try:
+                            all_results["om"][(labels[ii][0], labels[ii][1])].append(prediction[0])
+                        except KeyError:
+                            all_results["om"][(labels[ii][0], labels[ii][1])] = [prediction[0]]
+                        try:
+                            all_results["s8"][(labels[ii][0], labels[ii][1])].append(prediction[1])
+                        except KeyError:
+                            all_results["s8"][(labels[ii][0], labels[ii][1])] = [prediction[1]]
 
-                            om_histo.append(prediction[0] - labels[ii, 0])
-                            s8_histo.append(prediction[1] - labels[ii, 1])
-
-                            try:
-                                all_results["om"][(labels[ii][0],
-                                                   labels[ii][1])].append(
-                                                       prediction[0])
-                            except KeyError:
-                                all_results["om"][(labels[ii][0],
-                                                   labels[ii][1])] = [
-                                                       prediction[0]
-                                                   ]
-                            try:
-                                all_results["s8"][(labels[ii][0],
-                                                   labels[ii][1])].append(
-                                                       prediction[1])
-                            except KeyError:
-                                all_results["s8"][(labels[ii][0],
-                                                   labels[ii][1])] = [
-                                                       prediction[1]
-                                                   ]
-
-                    histo_plot(om_histo,
-                               "Om",
-                               epoch=epoch_non_zero,
-                               layer=self.params['model']['layer'],
-                               noise_type=self.params['noise']['noise_type'],
-                               start_time=self.date_time)
-                    histo_plot(s8_histo,
-                               "S8",
-                               epoch=epoch_non_zero,
-                               layer=self.params['model']['layer'],
-                               noise_type=self.params['noise']['noise_type'],
-                               start_time=self.date_time)
-                    l2_color_plot(
-                        np.asarray(color_predictions),
-                        np.asarray(color_labels),
-                        epoch=epoch_non_zero,
-                        layer=self.params['model']['layer'],
-                        noise_type=self.params['noise']['noise_type'],
-                        start_time=self.date_time)
-                    S8plot(all_results["om"],
+                histo_plot(om_histo,
                            "Om",
                            epoch=epoch_non_zero,
                            layer=self.params['model']['layer'],
                            noise_type=self.params['noise']['noise_type'],
                            start_time=self.date_time)
-                    S8plot(all_results["s8"],
-                           "sigma8",
+                histo_plot(s8_histo,
+                           "S8",
                            epoch=epoch_non_zero,
                            layer=self.params['model']['layer'],
                            noise_type=self.params['noise']['noise_type'],
                            start_time=self.date_time)
-                    om_pred_check.save_plot()
-                    s8_pred_check.save_plot()
+                l2_color_plot(
+                    np.asarray(color_predictions),
+                    np.asarray(color_labels),
+                    epoch=epoch_non_zero,
+                    layer=self.params['model']['layer'],
+                    noise_type=self.params['noise']['noise_type'],
+                    start_time=self.date_time)
+                S8plot(all_results["om"],
+                       "Om",
+                       epoch=epoch_non_zero,
+                       layer=self.params['model']['layer'],
+                       noise_type=self.params['noise']['noise_type'],
+                       start_time=self.date_time)
+                S8plot(all_results["s8"],
+                       "sigma8",
+                       epoch=epoch_non_zero,
+                       layer=self.params['model']['layer'],
+                       noise_type=self.params['noise']['noise_type'],
+                       start_time=self.date_time)
+                om_pred_check.save_plot()
+                s8_pred_check.save_plot()
+
         if not self.params['model']['debug']:
             stats(train_loss_results.stack().numpy(),
                   "training_loss",
@@ -416,7 +405,6 @@ class Trainer:
                   noise_type=self.params['noise']['noise_type'],
                   start_time=self.date_time)
 
-        if not self.params['model']['debug']:
             self._save_model(epoch + 1)
 
 
@@ -469,11 +457,11 @@ if __name__ == "__main__":
                         default=4)
     ARGS = parser.parse_args()
 
-    logger = logging.getLogger(__name__)
     if ARGS.debug:
         lvl = logging.DEBUG
     else:
         lvl = logging.INFO
+    logger = logging.getLogger(__name__)
     logger.setLevel(lvl)
 
     handler = logging.StreamHandler(sys.stdout)
@@ -498,7 +486,7 @@ if __name__ == "__main__":
             'noise_type': ARGS.noise_type,
             'noise_dir': ARGS.noise_dir,
             'noise_dataloader': {
-                'data_dirs': ARGS.noise_dir,
+                'data_dirs': "/scratch/snx3000/bsuter/TFRecordNoise",
                 'shuffle_size': ARGS.noise_shuffle,
                 'repeat_count': ARGS.repeat_count
             },
