@@ -306,7 +306,8 @@ class Trainer:
                                          self.model.trainable_variables)
 
     @tf.function
-    def train_step(self, first_epoch):
+    def train_step(self):
+        first_step = False
         epoch_global_norm = tf.TensorArray(
             tf.float32,
             size=self.params['dataloader']["number_of_elements"],
@@ -368,9 +369,9 @@ class Trainer:
                 log_dir = self._make_log_dir(epoch)
                 logger.info("Starting profiling" + self.worker_id + "\n")
                 with tf.profiler.experimental.Profile(log_dir):
-                    epoch_loss_avg, epo_glob_norm = self.train_step(first_epoch)
+                    epoch_loss_avg, epo_glob_norm = self.train_step()
             else:
-                epoch_loss_avg, epo_glob_norm = self.train_step(first_epoch)
+                epoch_loss_avg, epo_glob_norm = self.train_step()
 
             # End epoch
             if epoch % 10 == 0:
