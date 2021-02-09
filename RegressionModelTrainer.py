@@ -306,7 +306,6 @@ class Trainer:
 
     @tf.function
     def train_step(self):
-        print(1)
         tf.print(1)
         first_epoch = False
         epoch_global_norm = tf.TensorArray(
@@ -321,7 +320,6 @@ class Trainer:
             dynamic_size=False,
             clear_after_read=False,
         )
-        print(2)
         tf.print(2)
         for element in self.train_dataset.enumerate():
             index = tf.dtypes.cast(element[0], tf.int32)
@@ -331,17 +329,15 @@ class Trainer:
                                          axis=1)
             labels = set[1]
             # Add noise
-            print(4)
-            tf.print(4)
+            tf.print(3)
             kappa_data = tf.math.add(kappa_data, self._make_noise())
-            print(5)
-            tf.print(5)
+            tf.print(4)
 
             # Optimize the model
             loss_value, grads = self.grad(kappa_data, labels)
-            print(6)
-            tf.print(6)
+            tf.print(5)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+            tf.print(6)
 
             if self.params['training']['distributed'] and index == 0 and first_epoch:
                 hvd.broadcast_variables(self.model.variables, root_rank=0)
@@ -349,7 +345,7 @@ class Trainer:
 
             epoch_loss_avg = epoch_loss_avg.write(index, loss_value)
             epoch_global_norm = epoch_global_norm.write(index, tf.linalg.global_norm(grads))
-
+        tf.print(7)
         return epoch_loss_avg.stack(), epoch_global_norm.stack()
 
     def train(self):
