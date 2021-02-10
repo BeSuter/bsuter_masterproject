@@ -236,7 +236,6 @@ class Trainer:
                                f"_epoch={epoch}_time={self.date_time}")
         return log_dir
 
-    @tf.function
     def _make_noise(self):
         noises = []
         if self.params['noise']['noise_type'] == "pixel_noise":
@@ -290,21 +289,6 @@ class Trainer:
         return noise
 
     @tf.function
-    def loss(self, inputs, targets):
-        loss_object = tf.keras.losses.MeanAbsoluteError()
-        y_ = self.model.__call__(inputs, training=True)
-
-        return loss_object(y_true=targets, y_pred=y_)
-
-    @tf.function
-    def grad(self, inputs, targets):
-        with tf.GradientTape() as tape:
-            loss_value = self.loss(inputs, targets)
-        if self.params['training']['distributed']:
-            tape = hvd.DistributedGradientTape(tape)
-        return loss_value, tape.gradient(loss_value, self.model.trainable_variables)
-
-    @tf.function
     def train_step(self, first_epoch):
         epoch_global_norm = tf.TensorArray(
             tf.float32,
@@ -329,7 +313,13 @@ class Trainer:
             kappa_data = tf.math.add(kappa_data, self._make_noise())
 
             # Optimize the model
-            loss_value, grads = self.grad(kappa_data, labels)
+            with tf.GradientTape() as tape:
+                loss_object = tf.keras.losses.MeanAbsoluteError()
+                y_ = self.model.__call__(kappa_data, training=True)
+                loss_value = loss_object(y_true=labels, y_pred=y_)
+            if self.params['training']['distributed']:
+                tape = hvd.DistributedGradientTape(tape)
+            grads = tape.gradient(loss_value, self.model.trainable_variables)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
             if self.params['training']['distributed'] and index == 0 and first_epoch:
