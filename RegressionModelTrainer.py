@@ -223,7 +223,7 @@ class Trainer:
                            f"_epoch={epoch}.tf"
         save_weights_to = os.path.join(path_to_dir, weight_file_name)
         logger.info(
-            f"Saving model weights to {save_weights_to} for epoch {epoch} self.worker_id")
+            f"Saving model weights to {save_weights_to} for epoch {epoch}" + self.worker_id)
         self.model.save_weights(save_weights_to)
 
     def _make_log_dir(self, epoch):
@@ -305,8 +305,7 @@ class Trainer:
         return loss_value, tape.gradient(loss_value, self.model.trainable_variables)
 
     @tf.function
-    def train_step(self):
-        first_epoch = False
+    def train_step(self, first_epoch):
         epoch_global_norm = tf.TensorArray(
             tf.float32,
             size=self.params['dataloader']["number_of_elements"],
@@ -356,7 +355,6 @@ class Trainer:
             self.params['model']['number_of_epochs_eval'] = self.params['model']['epochs'] - 1
 
         for epoch in range(self.params['model']['epochs']):
-            first_epoch = (epoch == 0)
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
 
             if self.params['noise']['noise_type'] == "dominik_noise":
@@ -367,9 +365,9 @@ class Trainer:
                 log_dir = self._make_log_dir(epoch)
                 logger.info("Starting profiling" + self.worker_id + "\n")
                 with tf.profiler.experimental.Profile(log_dir):
-                    epoch_loss_avg, epo_glob_norm = self.train_step()
+                    epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
             else:
-                epoch_loss_avg, epo_glob_norm = self.train_step()
+                epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
 
             # End epoch
             if epoch % 10 == 0:
@@ -600,6 +598,5 @@ if __name__ == "__main__":
             'distributed': ARGS.distributed_training
         }
     }
-    tf.config.experimental_functions_run_eagerly()
     trainer = Trainer(parameters)
     trainer.train()
