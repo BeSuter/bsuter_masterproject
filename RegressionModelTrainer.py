@@ -105,7 +105,7 @@ class Trainer:
 
         return bool_mask, indices_ext
 
-    @tf.function()
+    #@tf.function()
     def count_elements(self):
         num = 0
         for element in self.train_dataset.enumerate():
