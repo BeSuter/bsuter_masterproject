@@ -290,18 +290,6 @@ class Trainer:
 
     @tf.function
     def train_step(self, first_epoch):
-        epoch_global_norm = tf.TensorArray(
-            tf.float32,
-            size=self.params['dataloader']["number_of_elements"],
-            dynamic_size=False,
-            clear_after_read=False,
-        )
-        epoch_loss_avg = tf.TensorArray(
-            tf.float32,
-            size=self.params['dataloader']["number_of_elements"],
-            dynamic_size=False,
-            clear_after_read=False,
-        )
         for element in self.train_dataset.enumerate():
             index = tf.dtypes.cast(element[0], tf.int32)
             set = element[1]
@@ -326,9 +314,8 @@ class Trainer:
                 hvd.broadcast_variables(self.model.variables, root_rank=0)
                 hvd.broadcast_variables(self.optimizer.variables(), root_rank=0)
 
-            epoch_loss_avg = epoch_loss_avg.write(index, loss_value)
-            epoch_global_norm = epoch_global_norm.write(index, tf.linalg.global_norm(grads))
-        return epoch_loss_avg.stack(), epoch_global_norm.stack()
+            self.epoch_loss_avg = self.epoch_loss_avg.write(index, loss_value)
+            self.epoch_global_norm = self.epoch_global_norm.write(index, tf.linalg.global_norm(grads))
 
     def train(self):
         # Keep results for plotting
@@ -350,19 +337,34 @@ class Trainer:
             if self.params['noise']['noise_type'] == "dominik_noise":
                 self._init_noise_iteration()
 
+            self.epoch_global_norm = tf.TensorArray(
+                tf.float32,
+                size=self.params['dataloader']["number_of_elements"],
+                dynamic_size=False,
+                clear_after_read=False,
+            )
+            self.epoch_loss_avg = tf.TensorArray(
+                tf.float32,
+                size=self.params['dataloader']["number_of_elements"],
+                dynamic_size=False,
+                clear_after_read=False,
+            )
+
             epoch_cond = epoch in self.params['model']['profiler']['epochs']
             if self.params['model']['profiler']['profile'] and epoch_cond and self.is_root_worker:
                 log_dir = self._make_log_dir(epoch)
                 logger.info("Starting profiling" + self.worker_id + "\n")
                 with tf.profiler.experimental.Profile(log_dir):
-                    epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
+                    self.train_step(epoch == 0)
             else:
-                epoch_loss_avg, epo_glob_norm = self.train_step(epoch == 0)
+                self.train_step(epoch == 0)
+            self.epoch_loss_avg = self.epoch_loss_avg.stack()
+            self.epoch_global_norm = self.epoch_global_norm.stack()
 
             # End epoch
             if epoch % 10 == 0:
-                loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
-                glob_norm = sum(epo_glob_norm) / len(epo_glob_norm)
+                loss = sum(self.epoch_loss_avg) / len(self.epoch_loss_avg)
+                glob_norm = sum(self.epoch_global_norm) / len(self.epoch_global_norm)
 
                 logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
 
@@ -588,6 +590,6 @@ if __name__ == "__main__":
             'distributed': ARGS.distributed_training
         }
     }
-    tf.config.experimental_run_functions_eagerly(True)
+    #tf.config.experimental_run_functions_eagerly(True)
     trainer = Trainer(parameters)
     trainer.train()
