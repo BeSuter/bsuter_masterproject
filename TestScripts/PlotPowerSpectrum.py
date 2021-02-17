@@ -72,20 +72,20 @@ if __name__ == "__main__":
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
 
-    fiducial_map_2 = iter(get_dataset()).get_next()[0][1]
-    noise_map_2 = iter(get_dataset()).get_next()[0][1]
+    fiducial_map_2 = iter(get_dataset(fid_dir)).get_next()[0][1]
+    noise_map_2 = iter(get_dataset(noise_dir)).get_next()[0][1]
 
     full_double_smoothed_2 = tf.math.add(fiducial_map_2, noise_map_2).numpy()
     pp_double_smoothed_2 = hp.anafast(full_double_smoothed_2)
 
-    fiducial_map_3 = iter(get_dataset()).get_next()[0][2]
-    noise_map_3 = iter(get_dataset()).get_next()[0][2]
+    fiducial_map_3 = iter(get_dataset(fid_dir)).get_next()[0][2]
+    noise_map_3 = iter(get_dataset(noise_dir)).get_next()[0][2]
 
     full_double_smoothed_3 = tf.math.add(fiducial_map_3, noise_map_3).numpy()
     pp_double_smoothed_3 = hp.anafast(full_double_smoothed_3)
 
-    fiducial_map_4 = iter(get_dataset()).get_next()[0][3]
-    noise_map_4 = iter(get_dataset()).get_next()[0][3]
+    fiducial_map_4 = iter(get_dataset(fid_dir)).get_next()[0][3]
+    noise_map_4 = iter(get_dataset(noise_dir)).get_next()[0][3]
 
     full_double_smoothed_4 = tf.math.add(fiducial_map_4, noise_map_4).numpy()
     pp_double_smoothed_4 = hp.anafast(full_double_smoothed_4)
