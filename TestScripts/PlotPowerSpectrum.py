@@ -74,24 +74,28 @@ if __name__ == "__main__":
     noise_map_1 = noise_maps[0][0]
 
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
+    full_double_smoothed_1 = full_double_smoothed_1 - np.mean(full_double_smoothed_1)
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
 
     fiducial_map_2 = fid_maps[0][1]
     noise_map_2 = noise_maps[0][1]
 
     full_double_smoothed_2 = tf.math.add(fiducial_map_2, noise_map_2).numpy()
+    full_double_smoothed_2 = full_double_smoothed_2 - np.mean(full_double_smoothed_2)
     pp_double_smoothed_2 = hp.anafast(full_double_smoothed_2)
 
     fiducial_map_3 = fid_maps[0][2]
     noise_map_3 = noise_maps[0][2]
 
     full_double_smoothed_3 = tf.math.add(fiducial_map_3, noise_map_3).numpy()
+    full_double_smoothed_3 = full_double_smoothed_3 - np.mean(full_double_smoothed_3)
     pp_double_smoothed_3 = hp.anafast(full_double_smoothed_3)
 
     fiducial_map_4 = fid_maps[0][3]
     noise_map_4 = noise_maps[0][3]
 
     full_double_smoothed_4 = tf.math.add(fiducial_map_4, noise_map_4).numpy()
+    full_double_smoothed_4 = full_double_smoothed_4 - np.mean(full_double_smoothed_4)
     pp_double_smoothed_4 = hp.anafast(full_double_smoothed_4)
 
     dir = "/scratch/snx3000/bsuter/Maps"
