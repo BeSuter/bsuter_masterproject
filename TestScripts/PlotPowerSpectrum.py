@@ -66,26 +66,30 @@ def get_dataset(path=[]):
 if __name__ == "__main__":
     fid_dir = "/scratch/snx3000/bsuter/TFRecordFiducial"
     noise_dir = "/scratch/snx3000/bsuter/TFRecordNoise"
-    fiducial_map_1 = iter(get_dataset(fid_dir)).get_next()[0][0]
-    noise_map_1 = iter(get_dataset(noise_dir)).get_next()[0][0]
+
+    fid_maps = iter(get_dataset(fid_dir)).get_next()
+    noise_maps = iter(get_dataset(noise_dir)).get_next()
+
+    fiducial_map_1 = fid_maps[0][0]
+    noise_map_1 = noise_maps[0][0]
 
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
 
-    fiducial_map_2 = iter(get_dataset(fid_dir)).get_next()[0][1]
-    noise_map_2 = iter(get_dataset(noise_dir)).get_next()[0][1]
+    fiducial_map_2 = fid_maps[0][1]
+    noise_map_2 = noise_maps[0][1]
 
     full_double_smoothed_2 = tf.math.add(fiducial_map_2, noise_map_2).numpy()
     pp_double_smoothed_2 = hp.anafast(full_double_smoothed_2)
 
-    fiducial_map_3 = iter(get_dataset(fid_dir)).get_next()[0][2]
-    noise_map_3 = iter(get_dataset(noise_dir)).get_next()[0][2]
+    fiducial_map_3 = fid_maps[0][2]
+    noise_map_3 = noise_maps[0][2]
 
     full_double_smoothed_3 = tf.math.add(fiducial_map_3, noise_map_3).numpy()
     pp_double_smoothed_3 = hp.anafast(full_double_smoothed_3)
 
-    fiducial_map_4 = iter(get_dataset(fid_dir)).get_next()[0][3]
-    noise_map_4 = iter(get_dataset(noise_dir)).get_next()[0][3]
+    fiducial_map_4 = fid_maps[0][3]
+    noise_map_4 = noise_maps[0][3]
 
     full_double_smoothed_4 = tf.math.add(fiducial_map_4, noise_map_4).numpy()
     pp_double_smoothed_4 = hp.anafast(full_double_smoothed_4)
