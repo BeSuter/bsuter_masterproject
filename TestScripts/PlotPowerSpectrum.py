@@ -105,11 +105,11 @@ if __name__ == "__main__":
             except FileNotFoundError:
                 continue
             ps = hp.anafast(map)
-            plt.loglog(ps, label=f"Fiducial Map tomo={tomo}")
-    plt.loglog(pp_double_smoothed_1, label="Double Smoothed Map tomo=1")
-    plt.loglog(pp_double_smoothed_2, label="Double Smoothed Map tomo=2")
-    plt.loglog(pp_double_smoothed_3, label="Double Smoothed Map tomo=3")
-    plt.loglog(pp_double_smoothed_4, label="Double Smoothed Map tomo=4")
+            plt.loglog(ps, label=f"Fiducial Map tomo={tomo}", alpha=0.4)
+    plt.loglog(pp_double_smoothed_1, label="Double Smoothed Map tomo=1", alpha=0.4)
+    plt.loglog(pp_double_smoothed_2, label="Double Smoothed Map tomo=2", alpha=0.4)
+    plt.loglog(pp_double_smoothed_3, label="Double Smoothed Map tomo=3", alpha=0.4)
+    plt.loglog(pp_double_smoothed_4, label="Double Smoothed Map tomo=4", alpha=0.4)
     plt.title("PowerSpectrum comparison: Pipeline Map vs. Double Smoothed Map")
     print("Saving Figure")
     plt.legend()
