@@ -72,9 +72,16 @@ if __name__ == "__main__":
 
     fiducial_map_1 = fid_maps[0][0]
     noise_map_1 = noise_maps[0][0]
+    
+    hp.mollview(fiducial_map_1.numpy(), nest=True)
+    plt.savefig("/users/bsuter/fiducial_map_1.png")
+
+    hp.mollview(noise_map_1.numpy(), nest=True)
+    plt.savefig("/users/bsuter/noise_map_1.png")
 
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
     full_double_smoothed_1 = full_double_smoothed_1 - np.mean(full_double_smoothed_1)
+    full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
 
     fiducial_map_2 = fid_maps[0][1]
@@ -82,6 +89,7 @@ if __name__ == "__main__":
 
     full_double_smoothed_2 = tf.math.add(fiducial_map_2, noise_map_2).numpy()
     full_double_smoothed_2 = full_double_smoothed_2 - np.mean(full_double_smoothed_2)
+    full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
     pp_double_smoothed_2 = hp.anafast(full_double_smoothed_2)
 
     fiducial_map_3 = fid_maps[0][2]
@@ -89,6 +97,7 @@ if __name__ == "__main__":
 
     full_double_smoothed_3 = tf.math.add(fiducial_map_3, noise_map_3).numpy()
     full_double_smoothed_3 = full_double_smoothed_3 - np.mean(full_double_smoothed_3)
+    full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
     pp_double_smoothed_3 = hp.anafast(full_double_smoothed_3)
 
     fiducial_map_4 = fid_maps[0][3]
@@ -96,6 +105,7 @@ if __name__ == "__main__":
 
     full_double_smoothed_4 = tf.math.add(fiducial_map_4, noise_map_4).numpy()
     full_double_smoothed_4 = full_double_smoothed_4 - np.mean(full_double_smoothed_4)
+    full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
     pp_double_smoothed_4 = hp.anafast(full_double_smoothed_4)
 
     dir = "/scratch/snx3000/bsuter/Maps"
@@ -106,6 +116,7 @@ if __name__ == "__main__":
         for tomo in range(1, 5):
             try:
                 map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo={tomo}_id={id}.npy"))
+                map = hp.reorder(map, n2r=True)
             except FileNotFoundError:
                 continue
             ps = hp.anafast(map)
@@ -118,3 +129,7 @@ if __name__ == "__main__":
     print("Saving Figure")
     plt.legend()
     plt.savefig("/users/bsuter/PowerSpectrum_comparison.png")
+
+    map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo=1_id={id}.npy"))
+    hp.mollview(map, nest=True)
+    plt.savefig()
