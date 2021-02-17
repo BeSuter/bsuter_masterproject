@@ -90,7 +90,9 @@ if __name__ == "__main__":
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
     full_double_smoothed_1 = full_double_smoothed_1 - np.mean(full_double_smoothed_1)
     full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
-    full_double_smoothed_1[full_double_smoothed_1 < -1.2e20] = 0
+    for idx, val in full_double_smoothed_1:
+        if val < hp.UNSEEN:
+            full_double_smoothed_1[idx] = hp.UNSEEN
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
 
     fiducial_map_2 = fid_maps[0][1]
