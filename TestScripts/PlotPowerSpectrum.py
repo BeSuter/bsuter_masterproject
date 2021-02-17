@@ -64,10 +64,10 @@ def get_dataset(path=[]):
     return decoded_dset
 
 if __name__ == "__main__":
-    fid_path = "/scratch/snx3000/bsuter/TFRecordFiducial/fiducial_map_cosmo_shapes=4,3145728&2_start=0_step=16_dff6fb8ef0e6490ca52ec52588e63a6a.tfrecord"
-    noise_path = "/scratch/snx3000/bsuter/TFRecordNoise/noise_map_cosmo_shapes=4,3145728&1_09e500f39ada49fda6d2612586265db5.tfrecord"
-    fiducial_map_1 = iter(get_dataset(fid_path)).get_next()[0][0]
-    noise_map_1 = iter(get_dataset(noise_path)).get_next()[0][0]
+    fid_dir = "/scratch/snx3000/bsuter/TFRecordFiducial"
+    noise_dir = "/scratch/snx3000/bsuter/TFRecordNoise"
+    fiducial_map_1 = iter(get_dataset(fid_dir)).get_next()[0][0]
+    noise_map_1 = iter(get_dataset(noise_dir)).get_next()[0][0]
 
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
