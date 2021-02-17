@@ -72,6 +72,14 @@ if __name__ == "__main__":
 
     fiducial_map_1 = fid_maps[0][0]
     noise_map_1 = noise_maps[0][0]
+
+    fpp1 = hp.anafast(fiducial_map_1.numpy())
+    npp1 = hp.anafast(noise_map_1.numpy())
+    plt.figure()
+    plt.loglog(fpp1, label="Only double smoothed fiducial")
+    plt.loglog(npp1, label="Only double smoothed noise")
+    plt.legend()
+    plt.savefig("/users/bsuter/Compare_PP/Single_Double_Smoothed.png")
     
     hp.mollview(fiducial_map_1.numpy(), nest=True, title="Double Smoothed Fiducial Map")
     plt.savefig("/users/bsuter/Compare_PP/fiducial_map_1.png")
