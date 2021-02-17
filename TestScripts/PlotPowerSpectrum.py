@@ -74,10 +74,10 @@ if __name__ == "__main__":
     noise_map_1 = noise_maps[0][0]
     
     hp.mollview(fiducial_map_1.numpy(), nest=True)
-    plt.savefig("/users/bsuter/fiducial_map_1.png")
+    plt.savefig("/users/bsuter/Compare_PP/fiducial_map_1.png")
 
     hp.mollview(noise_map_1.numpy(), nest=True)
-    plt.savefig("/users/bsuter/noise_map_1.png")
+    plt.savefig("/users/bsuter/Compare_PP/noise_map_1.png")
 
     full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
     full_double_smoothed_1 = full_double_smoothed_1 - np.mean(full_double_smoothed_1)
@@ -128,8 +128,8 @@ if __name__ == "__main__":
     plt.title("PowerSpectrum comparison: Pipeline Map vs. Double Smoothed Map")
     print("Saving Figure")
     plt.legend()
-    plt.savefig("/users/bsuter/PowerSpectrum_comparison.png")
+    plt.savefig("/users/bsuter/Compare_PP/PowerSpectrum_comparison.png")
 
     map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo=1_id={id}.npy"))
     hp.mollview(map, nest=True)
-    plt.savefig()
+    plt.savefig("/users/bsuter/Compare_PP/FiducialMap.png")
