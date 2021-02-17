@@ -111,4 +111,5 @@ if __name__ == "__main__":
     plt.loglog(pp_double_smoothed_3, label="Double Smoothed Map tomo=3")
     plt.loglog(pp_double_smoothed_4, label="Double Smoothed Map tomo=4")
     plt.title("PowerSpectrum comparison: Pipeline Map vs. Double Smoothed Map")
-    plt.savefig("PowerSpectrum_comparison.png")
+    print("Saving Figure")
+    plt.savefig("/users/bsuter/PowerSpectrum_comparison.png")
