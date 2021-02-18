@@ -87,13 +87,22 @@ if __name__ == "__main__":
     hp.mollview(noise_map_1.numpy(), nest=True, title="Double Smoothed Noise Map")
     plt.savefig("/users/bsuter/Compare_PP/noise_map_1.png")
 
-    full_double_smoothed_1 = tf.math.add(fiducial_map_1, noise_map_1).numpy()
-    full_double_smoothed_1 = full_double_smoothed_1 - np.mean(full_double_smoothed_1)
+    full_double_smoothed_1 = np.full_like(fiducial_map_1.numpy(), hp.UNSEEN)
+    for idx, val in fiducial_map_1.numpy():
+        if val < -1e25:
+            continue
+        else:
+            full_double_smoothed_1[idx] = fiducial_map_1.numpy()[idx] + noise_map_1.numpy()[idx]
+    hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
+    plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")
+
     full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
-    for idx, val in full_double_smoothed_1:
-        if val < hp.UNSEEN:
-            full_double_smoothed_1[idx] = hp.UNSEEN
     pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
+
+    plt.figure()
+    plt.loglog(pp_double_smoothed_1, label="Full Double Smoothed 1")
+    plt.legend()
+    plt.savefig("/users/bsuter/Compare_PP/only_DoubleSmoothedPP.png")
 
     fiducial_map_2 = fid_maps[0][1]
     noise_map_2 = noise_maps[0][1]
