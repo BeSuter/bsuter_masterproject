@@ -88,7 +88,7 @@ if __name__ == "__main__":
     plt.savefig("/users/bsuter/Compare_PP/noise_map_1.png")
 
     full_double_smoothed_1 = np.full_like(fiducial_map_1.numpy(), hp.UNSEEN)
-    for idx, val in fiducial_map_1.numpy():
+    for idx, val in enumerate(fiducial_map_1.numpy()):
         if val < -1e25:
             continue
         else:
