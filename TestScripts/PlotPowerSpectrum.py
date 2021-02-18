@@ -66,76 +66,78 @@ def get_dataset(path=[]):
 if __name__ == "__main__":
     fid_dir = "/scratch/snx3000/bsuter/TFRecordFiducial"
     noise_dir = "/scratch/snx3000/bsuter/TFRecordNoise"
-
-    fid_maps = iter(get_dataset(fid_dir)).get_next()
-    noise_maps = iter(get_dataset(noise_dir)).get_next()
-
-    fiducial_map_1 = fid_maps[0][0]
-    noise_map_1 = noise_maps[0][0]
-
-    fpp1 = hp.anafast(fiducial_map_1.numpy())
-    npp1 = hp.anafast(noise_map_1.numpy())
-    plt.figure()
-    plt.loglog(fpp1, label="Only double smoothed fiducial")
-    plt.loglog(npp1, label="Only double smoothed noise")
-    plt.legend()
-    plt.savefig("/users/bsuter/Compare_PP/Single_Double_Smoothed.png")
     
-    hp.mollview(fiducial_map_1.numpy(), nest=True, title="Double Smoothed Fiducial Map")
-    plt.savefig("/users/bsuter/Compare_PP/fiducial_map_1.png")
+    count = 0
+    final_res = {}
+    
+    for fid_maps, noise_maps in zip(get_dataset(fid_dir), get_dataset(noise_dir)):
+        count += 1
+        
+        results = {}
 
-    hp.mollview(noise_map_1.numpy(), nest=True, title="Double Smoothed Noise Map")
-    plt.savefig("/users/bsuter/Compare_PP/noise_map_1.png")
+        fiducial_map_1 = fid_maps[0][0]
+        noise_map_1 = noise_maps[0][0]
+    
+        """fpp1 = hp.anafast(fiducial_map_1.numpy())
+        npp1 = hp.anafast(noise_map_1.numpy())
+        plt.figure()
+        plt.loglog(fpp1, label="Only double smoothed fiducial")
+        plt.loglog(npp1, label="Only double smoothed noise")
+        plt.legend()
+        plt.savefig("/users/bsuter/Compare_PP/Single_Double_Smoothed.png")"""
+        
+        """hp.mollview(fiducial_map_1.numpy(), nest=True, title="Double Smoothed Fiducial Map")
+        plt.savefig("/users/bsuter/Compare_PP/fiducial_map_1.png")
+    
+        hp.mollview(noise_map_1.numpy(), nest=True, title="Double Smoothed Noise Map")
+        plt.savefig("/users/bsuter/Compare_PP/noise_map_1.png")"""
+    
+        mask = fiducial_map_1.numpy() < -1e25
+        full_double_smoothed_1 = fiducial_map_1.numpy() + noise_map_1.numpy()
+        full_double_smoothed_1[mask] = hp.UNSEEN
+        """hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
+        plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
+    
+        full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
+        results[1] = hp.anafast(full_double_smoothed_1)
+    
+        """plt.figure()
+        plt.loglog(pp_double_smoothed_1, label="Full Double Smoothed 1")
+        plt.legend()
+        plt.savefig("/users/bsuter/Compare_PP/only_DoubleSmoothedPP.png")"""
+    
+        fiducial_map_2 = fid_maps[0][1]
+        noise_map_2 = noise_maps[0][1]
+    
+        mask = fiducial_map_2.numpy() < -1e25
+        full_double_smoothed_2 = fiducial_map_2.numpy() + noise_map_2.numpy()
+        full_double_smoothed_2[mask] = hp.UNSEEN
+        full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
+        results[2] = hp.anafast(full_double_smoothed_2)
+    
+        fiducial_map_3 = fid_maps[0][2]
+        noise_map_3 = noise_maps[0][2]
+    
+        mask = fiducial_map_3.numpy() < -1e25
+        full_double_smoothed_3 = fiducial_map_3.numpy() + noise_map_3.numpy()
+        full_double_smoothed_3[mask] = hp.UNSEEN
+        full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
+        results[3] = hp.anafast(full_double_smoothed_3)
+    
+        fiducial_map_4 = fid_maps[0][3]
+        noise_map_4 = noise_maps[0][3]
+    
+        mask = fiducial_map_4.numpy() < -1e25
+        full_double_smoothed_4 = fiducial_map_4.numpy() + noise_map_4.numpy()
+        full_double_smoothed_4[mask] = hp.UNSEEN
+        full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
+        results[4] = hp.anafast(full_double_smoothed_4)
 
-    mask = fiducial_map_1.numpy() < -1e25
-    full_double_smoothed_1 = fiducial_map_1.numpy() + noise_map_1.numpy()
-    full_double_smoothed_1[mask] = hp.UNSEEN
-    hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
-    plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")
+        dir = "/scratch/snx3000/bsuter/Maps"
+        all_ids = np.load(os.path.join(dir, "Map_ids.npy"))
+    
 
-    full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
-    pp_double_smoothed_1 = hp.anafast(full_double_smoothed_1)
-
-    plt.figure()
-    plt.loglog(pp_double_smoothed_1, label="Full Double Smoothed 1")
-    plt.legend()
-    plt.savefig("/users/bsuter/Compare_PP/only_DoubleSmoothedPP.png")
-
-    fiducial_map_2 = fid_maps[0][1]
-    noise_map_2 = noise_maps[0][1]
-
-    mask = fiducial_map_2.numpy() < -1e25
-    full_double_smoothed_2 = fiducial_map_2.numpy() + noise_map_2.numpy()
-    full_double_smoothed_2[mask] = hp.UNSEEN
-    full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
-    full_double_smoothed_2[full_double_smoothed_2 < -1.2e20] = 0
-    pp_double_smoothed_2 = hp.anafast(full_double_smoothed_2)
-
-    fiducial_map_3 = fid_maps[0][2]
-    noise_map_3 = noise_maps[0][2]
-
-    mask = fiducial_map_3.numpy() < -1e25
-    full_double_smoothed_3 = fiducial_map_3.numpy() + noise_map_3.numpy()
-    full_double_smoothed_3[mask] = hp.UNSEEN
-    full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
-    full_double_smoothed_3[full_double_smoothed_3 < -1.2e20] = 0
-    pp_double_smoothed_3 = hp.anafast(full_double_smoothed_3)
-
-    fiducial_map_4 = fid_maps[0][3]
-    noise_map_4 = noise_maps[0][3]
-
-    mask = fiducial_map_4.numpy() < -1e25
-    full_double_smoothed_4 = fiducial_map_4.numpy() + noise_map_4.numpy()
-    full_double_smoothed_4[mask] = hp.UNSEEN
-    full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
-    full_double_smoothed_4[full_double_smoothed_4 < -1.2e20] = 0
-    pp_double_smoothed_4 = hp.anafast(full_double_smoothed_4)
-
-    dir = "/scratch/snx3000/bsuter/Maps"
-    all_ids = np.load(os.path.join(dir, "Map_ids.npy"))
-
-    plt.figure()
-    for id in all_ids[-1:]:
+        id = all_ids[int(count * -1)]
         for tomo in range(1, 5):
             try:
                 map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo={tomo}_id={id}.npy"))
@@ -143,16 +145,20 @@ if __name__ == "__main__":
             except FileNotFoundError:
                 continue
             ps = hp.anafast(map)
-            plt.loglog(ps, label=f"Fiducial Map tomo={tomo}", alpha=0.4)
-    plt.loglog(pp_double_smoothed_1, label="Double Smoothed Map tomo=1", alpha=0.4)
-    plt.loglog(pp_double_smoothed_2, label="Double Smoothed Map tomo=2", alpha=0.4)
-    plt.loglog(pp_double_smoothed_3, label="Double Smoothed Map tomo=3", alpha=0.4)
-    plt.loglog(pp_double_smoothed_4, label="Double Smoothed Map tomo=4", alpha=0.4)
-    plt.title("PowerSpectrum comparison: Pipeline Map vs. Double Smoothed Map")
-    print("Saving Figure")
-    plt.legend()
-    plt.savefig("/users/bsuter/Compare_PP/PowerSpectrum_comparison.png")
+            results[tomo] = np.divide(ps, results[tomo])
 
-    map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo=1_id={id}.npy"))
-    hp.mollview(map, nest=True, title="Fiducial Map")
-    plt.savefig("/users/bsuter/Compare_PP/FiducialMap.png")
+            try:
+                final_res[tomo] += results[tomo]
+            except KeyError:
+                final_res[tomo] = results[tomo]
+
+        if count == 2:
+            break
+    
+    plt.figure()
+    for tomo in range(1,5):
+        final_res[tomo] /= count
+        plt.loglog(final_res[tomo], label=f"Smoothing CLs for tomo={tomo}")
+    plt.title(f"Smoothing CLs averaged over {count} Fiducial Maps")
+    plt.legend()
+    plt.savefig("/users/bsuter/SmoothingCLs.png")
