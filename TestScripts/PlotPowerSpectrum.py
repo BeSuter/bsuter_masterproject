@@ -152,7 +152,7 @@ if __name__ == "__main__":
             except KeyError:
                 final_res[tomo] = results[tomo]
 
-        if count == 2:
+        if count == 200:
             break
     
     plt.figure()
