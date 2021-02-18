@@ -107,7 +107,12 @@ if __name__ == "__main__":
     fiducial_map_2 = fid_maps[0][1]
     noise_map_2 = noise_maps[0][1]
 
-    full_double_smoothed_2 = tf.math.add(fiducial_map_2, noise_map_2).numpy()
+    full_double_smoothed_2 = np.full_like(fiducial_map_2.numpy(), hp.UNSEEN)
+    for idx, val in enumerate(fiducial_map_2.numpy()):
+        if val < -1e25:
+            continue
+        else:
+            full_double_smoothed_2[idx] = fiducial_map_2.numpy()[idx] + noise_map_2.numpy()[idx]
     full_double_smoothed_2 = full_double_smoothed_2 - np.mean(full_double_smoothed_2)
     full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
     full_double_smoothed_2[full_double_smoothed_2 < -1.2e20] = 0
@@ -116,7 +121,12 @@ if __name__ == "__main__":
     fiducial_map_3 = fid_maps[0][2]
     noise_map_3 = noise_maps[0][2]
 
-    full_double_smoothed_3 = tf.math.add(fiducial_map_3, noise_map_3).numpy()
+    full_double_smoothed_3 = np.full_like(fiducial_map_3.numpy(), hp.UNSEEN)
+    for idx, val in enumerate(fiducial_map_3.numpy()):
+        if val < -1e25:
+            continue
+        else:
+            full_double_smoothed_3[idx] = fiducial_map_3.numpy()[idx] + noise_map_3.numpy()[idx]
     full_double_smoothed_3 = full_double_smoothed_3 - np.mean(full_double_smoothed_3)
     full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
     full_double_smoothed_3[full_double_smoothed_3 < -1.2e20] = 0
@@ -125,7 +135,12 @@ if __name__ == "__main__":
     fiducial_map_4 = fid_maps[0][3]
     noise_map_4 = noise_maps[0][3]
 
-    full_double_smoothed_4 = tf.math.add(fiducial_map_4, noise_map_4).numpy()
+    full_double_smoothed_4 = np.full_like(fiducial_map_4.numpy(), hp.UNSEEN)
+    for idx, val in enumerate(fiducial_map_4.numpy()):
+        if val < -1e25:
+            continue
+        else:
+            full_double_smoothed_4[idx] = fiducial_map_4.numpy()[idx] + noise_map_4.numpy()[idx]
     full_double_smoothed_4 = full_double_smoothed_4 - np.mean(full_double_smoothed_4)
     full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
     full_double_smoothed_4[full_double_smoothed_4 < -1.2e20] = 0
