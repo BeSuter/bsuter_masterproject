@@ -179,7 +179,7 @@ if __name__ == "__main__":
             except KeyError:
                 final_res["smoothed"][tomo] = ps
         indices_pipeline = np.arange(len(map))[map > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_pipeline)
+        np.save(os.path.join(map_save_dir, f"Pipeline_Indices"), indices_pipeline)
 
         if count == 1:
             break
