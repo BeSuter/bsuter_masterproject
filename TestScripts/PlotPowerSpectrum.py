@@ -164,7 +164,7 @@ if __name__ == "__main__":
             except KeyError:
                 final_res["smoothed"][tomo] = ps
 
-        if count == 2:
+        if count == 200:
             break
 
     id = all_ids[-1]
