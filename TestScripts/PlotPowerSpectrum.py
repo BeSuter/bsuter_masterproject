@@ -101,7 +101,7 @@ if __name__ == "__main__":
         only_network_input = full_double_smoothed_1[full_double_smoothed_1 > hp.UNSEEN]
         np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={1}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_1))[full_double_smoothed_1 > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Indices", indices_tfr))
+        np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_tfr)
         """hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
         plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
     
@@ -179,7 +179,7 @@ if __name__ == "__main__":
             except KeyError:
                 final_res["smoothed"][tomo] = ps
         indices_pipeline = np.arange(len(map))[map > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Indices", indices_pipeline))
+        np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_pipeline)
 
         if count == 1:
             break
