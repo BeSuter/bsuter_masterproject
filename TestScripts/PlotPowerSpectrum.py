@@ -66,6 +66,9 @@ def get_dataset(path=[]):
 if __name__ == "__main__":
     fid_dir = "/scratch/snx3000/bsuter/TFRecordFiducial"
     noise_dir = "/scratch/snx3000/bsuter/TFRecordNoise"
+
+    map_save_dir = "/users/bsuter/maps_for_janis"
+    os.makedirs(map_save_dir, exist_ok=True)
     
     count = 0
     count_count = 0
@@ -95,6 +98,8 @@ if __name__ == "__main__":
         mask = fiducial_map_1.numpy() < -1e25
         full_double_smoothed_1 = fiducial_map_1.numpy() + noise_map_1.numpy()
         full_double_smoothed_1[mask] = hp.UNSEEN
+        only_network_input = full_double_smoothed_1[full_double_smoothed_1 > hp.UNSEEN]
+        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={1}"))
         """hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
         plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
     
@@ -116,6 +121,8 @@ if __name__ == "__main__":
         full_double_smoothed_2 = fiducial_map_2.numpy() + noise_map_2.numpy()
         full_double_smoothed_2[mask] = hp.UNSEEN
         full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
+        only_network_input = full_double_smoothed_2[full_double_smoothed_2 > hp.UNSEEN]
+        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={2}"))
         try:
             final_res["double_smoothed"][2] += hp.anafast(full_double_smoothed_2)
         except KeyError:
@@ -128,6 +135,8 @@ if __name__ == "__main__":
         full_double_smoothed_3 = fiducial_map_3.numpy() + noise_map_3.numpy()
         full_double_smoothed_3[mask] = hp.UNSEEN
         full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
+        only_network_input = full_double_smoothed_3[full_double_smoothed_3 > hp.UNSEEN]
+        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={3}"))
         try:
             final_res["double_smoothed"][3] += hp.anafast(full_double_smoothed_3)
         except KeyError:
@@ -140,6 +149,8 @@ if __name__ == "__main__":
         full_double_smoothed_4 = fiducial_map_4.numpy() + noise_map_4.numpy()
         full_double_smoothed_4[mask] = hp.UNSEEN
         full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
+        only_network_input = full_double_smoothed_4[full_double_smoothed_4 > hp.UNSEEN]
+        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={4}"))
         try:
             final_res["double_smoothed"][4] += hp.anafast(full_double_smoothed_4)
         except KeyError:
@@ -154,6 +165,8 @@ if __name__ == "__main__":
             try:
                 map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo={tomo}_id={id}.npy"))
                 map = hp.reorder(map, n2r=True)
+                only_network_input = map[map > hp.UNSEEN]
+                np.save(os.path.join(map_save_dir, f"Pipeline_Map_{count_count}_tomo={tomo}"))
             except FileNotFoundError:
                 count_count -= 1
                 continue
@@ -164,7 +177,7 @@ if __name__ == "__main__":
             except KeyError:
                 final_res["smoothed"][tomo] = ps
 
-        if count == 200:
+        if count == 5:
             break
 
     id = all_ids[-1]
@@ -198,4 +211,4 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig("/users/bsuter/Ratios.png")
 
-    np.savez("/users/bsuter/CLs.npz", **final_res)
+    #np.savez("/users/bsuter/CLs.npz", **final_res)
