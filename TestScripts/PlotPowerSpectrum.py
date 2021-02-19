@@ -68,12 +68,10 @@ if __name__ == "__main__":
     noise_dir = "/scratch/snx3000/bsuter/TFRecordNoise"
     
     count = 0
-    final_res = {}
+    final_res = {"smoothed": {}, "double_smoothed": {}, "gauss_CL": {}}
     
     for fid_maps, noise_maps in zip(get_dataset(fid_dir), get_dataset(noise_dir)):
         count += 1
-        
-        results = {}
 
         fiducial_map_1 = fid_maps[0][0]
         noise_map_1 = noise_maps[0][0]
@@ -99,7 +97,10 @@ if __name__ == "__main__":
         plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
     
         full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
-        results[1] = hp.anafast(full_double_smoothed_1)
+        try:
+            final_res["double_smoothed"][1] += hp.anafast(full_double_smoothed_1)
+        except KeyError:
+            final_res["double_smoothed"][1] += hp.anafast(full_double_smoothed_1)
     
         """plt.figure()
         plt.loglog(pp_double_smoothed_1, label="Full Double Smoothed 1")
@@ -113,7 +114,10 @@ if __name__ == "__main__":
         full_double_smoothed_2 = fiducial_map_2.numpy() + noise_map_2.numpy()
         full_double_smoothed_2[mask] = hp.UNSEEN
         full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
-        results[2] = hp.anafast(full_double_smoothed_2)
+        try:
+            final_res["double_smoothed"][2] += hp.anafast(full_double_smoothed_2)
+        except KeyError:
+            final_res["double_smoothed"][2] += hp.anafast(full_double_smoothed_2)
     
         fiducial_map_3 = fid_maps[0][2]
         noise_map_3 = noise_maps[0][2]
@@ -122,7 +126,10 @@ if __name__ == "__main__":
         full_double_smoothed_3 = fiducial_map_3.numpy() + noise_map_3.numpy()
         full_double_smoothed_3[mask] = hp.UNSEEN
         full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
-        results[3] = hp.anafast(full_double_smoothed_3)
+        try:
+            final_res["double_smoothed"][3] += hp.anafast(full_double_smoothed_3)
+        except KeyError:
+            final_res["double_smoothed"][3] += hp.anafast(full_double_smoothed_3)
     
         fiducial_map_4 = fid_maps[0][3]
         noise_map_4 = noise_maps[0][3]
@@ -131,7 +138,10 @@ if __name__ == "__main__":
         full_double_smoothed_4 = fiducial_map_4.numpy() + noise_map_4.numpy()
         full_double_smoothed_4[mask] = hp.UNSEEN
         full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
-        results[4] = hp.anafast(full_double_smoothed_4)
+        try:
+            final_res["double_smoothed"][4] += hp.anafast(full_double_smoothed_4)
+        except KeyError:
+            final_res["double_smoothed"][4] += hp.anafast(full_double_smoothed_4)
 
         dir = "/scratch/snx3000/bsuter/Maps"
         all_ids = np.load(os.path.join(dir, "Map_ids.npy"))
@@ -145,20 +155,44 @@ if __name__ == "__main__":
             except FileNotFoundError:
                 continue
             ps = hp.anafast(map)
-            results[tomo] = np.divide(ps, results[tomo])
 
             try:
-                final_res[tomo] += results[tomo]
+                final_res["smoothed"][tomo] += ps
             except KeyError:
-                final_res[tomo] = results[tomo]
+                final_res["smoothed"][tomo] = ps
 
-        if count == 200:
+        if count == 2:
             break
-    
+
+    id = all_ids[-1]
+    tomo = 1
+    map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo={tomo}_id={id}.npy"))
+    map = hp.reorder(map, n2r=True)
+    mask = map < -1e25
+    smoothed_map = hp.sphtfunc.smoothing(map, fwhm=np.radians(float(2.6) / 60.))
+    smoothed_map[mask] = hp.UNSEEN
+    mCL = hp.anafast(map)
+    sCL = hp.anafast(smoothed_map)
+    final_res["gauss_CL"] = np.divide(sCL, mCL)
+
     plt.figure()
-    for tomo in range(1,5):
-        final_res[tomo] /= count
-        plt.loglog(final_res[tomo], label=f"Smoothing CLs for tomo={tomo}")
+    for tomo in range(1, 5):
+        final_res["smoothed"][tomo] /= count
+        final_res["double_smoothed"][tomo] /= count
+        plt.plot(np.divide(final_res["double_smoothed"][tomo], final_res["smoothed"][tomo]),
+                 label=f"Smoothing CLs for tomo={tomo}")
+    plt.plot(final_res["gauss_CL"], label="Gauss CLs")
     plt.title(f"Smoothing CLs averaged over {count} Fiducial Maps")
     plt.legend()
     plt.savefig("/users/bsuter/SmoothingCLs.png")
+
+    plt.figure()
+    for tomo in range(1, 5):
+        ratio = np.divide(np.divide(final_res["double_smoothed"][tomo], final_res["smoothed"][tomo]),
+                          final_res["gauss_CL"])
+        plt.plot(ratio, label=f"Ratio for tomo={tomo}")
+    plt.title(f"CL ratios")
+    plt.legend()
+    plt.savefig("/users/bsuter/Ratios.png")
+
+    np.savez("/users/bsuter/CLs.npz", **final_res)
