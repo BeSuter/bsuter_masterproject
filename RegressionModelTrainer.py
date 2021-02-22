@@ -113,7 +113,8 @@ class Trainer:
             num = tf.dtypes.cast(element[0], tf.int32)
         num = num + 1
         self.params['dataloader']['number_of_elements'] = tf.dtypes.cast(
-            num, tf.int32)
+            num, tf.int32).eval()
+        logger.debug(f"self.params['dataloader']['number_of_elements'] has type {type(self.params['dataloader']['number_of_elements'])}")
 
     def _set_dataloader(self):
         def is_test(index, value):
