@@ -104,7 +104,7 @@ if __name__ == "__main__":
         hp.mollview(noise_map_1.numpy(), nest=True, title="Double Smoothed Noise Map")
         plt.savefig("/users/bsuter/Compare_PP/noise_map_1.png")"""
     
-        mask = fiducial_map_1.numpy() < -1e25
+        mask = fiducial_map_1.numpy() < hp.UNSEEN
         full_double_smoothed_1 = fiducial_map_1.numpy() + noise_map_1.numpy()
         full_double_smoothed_1[mask] = hp.UNSEEN
         only_network_input = full_double_smoothed_1[full_double_smoothed_1 > hp.UNSEEN]
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         print(np.arange(len(noise_map_2))[noise_map_2 > hp.UNSEEN])
         print("Combined")
     
-        mask = fiducial_map_2.numpy() < -1e25
+        mask = fiducial_map_2.numpy() < hp.UNSEEN
         full_double_smoothed_2 = fiducial_map_2.numpy() + noise_map_2.numpy()
         full_double_smoothed_2[mask] = hp.UNSEEN
         full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         print(np.arange(len(noise_map_3))[noise_map_3 > hp.UNSEEN])
         print("Combined")
     
-        mask = fiducial_map_3.numpy() < -1e25
+        mask = fiducial_map_3.numpy() < hp.UNSEEN
         full_double_smoothed_3 = fiducial_map_3.numpy() + noise_map_3.numpy()
         full_double_smoothed_3[mask] = hp.UNSEEN
         full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
@@ -194,7 +194,7 @@ if __name__ == "__main__":
         print(np.arange(len(noise_map_3))[noise_map_3 > hp.UNSEEN])
         print("Combined")
     
-        mask = fiducial_map_4.numpy() < -1e25
+        mask = fiducial_map_4.numpy() < hp.UNSEEN
         full_double_smoothed_4 = fiducial_map_4.numpy() + noise_map_4.numpy()
         full_double_smoothed_4[mask] = hp.UNSEEN
         full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
