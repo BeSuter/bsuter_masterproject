@@ -102,10 +102,11 @@ class Trainer:
         iterator = iter(raw_dset)
         bool_mask = hp.mask_good(iterator.get_next()[0][0].numpy())
         indices_ext = np.arange(len(bool_mask))[bool_mask > 0.5]
+        logger.debug(f"Extended indices are {indices_ext}")
 
         return bool_mask, indices_ext
 
-    #@tf.function()
+    @tf.function()
     def count_elements(self):
         num = 0
         for element in self.train_dataset.enumerate():
