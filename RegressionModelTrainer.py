@@ -300,9 +300,11 @@ class Trainer:
                                          self.bool_mask,
                                          axis=1),
                                          shape)
+            logger.debug(f"Kappa Data has shape {tf.shape(kappa_data)}")
             labels = set[1]
             # Add noise
             noise = tf.ensure_shape(self._make_noise(), shape)
+            logger.debug(f"Noise has shape {tf.shape(noise)}")
             kappa_data = tf.math.add(kappa_data, noise)
 
             # Optimize the model
