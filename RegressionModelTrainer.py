@@ -293,12 +293,17 @@ class Trainer:
         for element in self.train_dataset.enumerate():
             index = tf.dtypes.cast(element[0], tf.int32)
             set = element[1]
-            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
+            shape = [self.params['dataloader']['batch_size'],
+                     self.pixel_num,
+                     self.params['dataloader']['tomographic_bin_number']]
+            kappa_data = tf.ensure_shape(tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                          self.bool_mask,
-                                         axis=1)
+                                         axis=1),
+                                         shape)
             labels = set[1]
             # Add noise
-            kappa_data = tf.math.add(kappa_data, self._make_noise())
+            noise = tf.ensure_shape(self._make_noise(), shape)
+            kappa_data = tf.math.add(kappa_data, noise)
 
             # Optimize the model
             with tf.GradientTape() as tape:
