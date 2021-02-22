@@ -73,7 +73,8 @@ if __name__ == "__main__":
     count = 0
     count_count = 0
     final_res = {"smoothed": {}, "double_smoothed": {}, "gauss_CL": {}}
-    
+    store_indices = {"smoothed": {}, "double_smoothed": {}}
+    check_indices = {"smoothed": [], "double_smoothed": []}
     for fid_maps, noise_maps in zip(get_dataset(fid_dir), get_dataset(noise_dir)):
         count += 1
         count_count += 1
@@ -101,10 +102,15 @@ if __name__ == "__main__":
         only_network_input = full_double_smoothed_1[full_double_smoothed_1 > hp.UNSEEN]
         np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={1}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_1))[full_double_smoothed_1 > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_tfr)
+        # np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_tfr)
         """hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
         plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
-    
+        try:
+            check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
+        except KeyError:
+            store_indices["double_smoothed"][1] = indices_tfr
+            check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
+
         full_double_smoothed_1 = hp.reorder(full_double_smoothed_1, n2r=True)
         try:
             final_res["double_smoothed"][1] += hp.anafast(full_double_smoothed_1)
@@ -124,7 +130,10 @@ if __name__ == "__main__":
         full_double_smoothed_2[mask] = hp.UNSEEN
         full_double_smoothed_2 = hp.reorder(full_double_smoothed_2, n2r=True)
         only_network_input = full_double_smoothed_2[full_double_smoothed_2 > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={2}"), only_network_input)
+        # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={2}"), only_network_input)
+        indices_tfr = np.arange(len(full_double_smoothed_2))[full_double_smoothed_2 > hp.UNSEEN]
+        check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
+
         try:
             final_res["double_smoothed"][2] += hp.anafast(full_double_smoothed_2)
         except KeyError:
@@ -138,7 +147,10 @@ if __name__ == "__main__":
         full_double_smoothed_3[mask] = hp.UNSEEN
         full_double_smoothed_3 = hp.reorder(full_double_smoothed_3, n2r=True)
         only_network_input = full_double_smoothed_3[full_double_smoothed_3 > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={3}"), only_network_input)
+        # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={3}"), only_network_input)
+        indices_tfr = np.arange(len(full_double_smoothed_3))[full_double_smoothed_3 > hp.UNSEEN]
+        check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
+
         try:
             final_res["double_smoothed"][3] += hp.anafast(full_double_smoothed_3)
         except KeyError:
@@ -152,7 +164,10 @@ if __name__ == "__main__":
         full_double_smoothed_4[mask] = hp.UNSEEN
         full_double_smoothed_4 = hp.reorder(full_double_smoothed_4, n2r=True)
         only_network_input = full_double_smoothed_4[full_double_smoothed_4 > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={4}"), only_network_input)
+        # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={4}"), only_network_input)
+        indices_tfr = np.arange(len(full_double_smoothed_4))[full_double_smoothed_4 > hp.UNSEEN]
+        check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
+
         try:
             final_res["double_smoothed"][4] += hp.anafast(full_double_smoothed_4)
         except KeyError:
@@ -168,7 +183,13 @@ if __name__ == "__main__":
                 map = np.load(os.path.join(dir, "FullMaps", f"Map_Om=0.26_s8=0.84_tomo={tomo}_id={id}.npy"))
                 map = hp.reorder(map, n2r=True)
                 only_network_input = map[map > hp.UNSEEN]
-                np.save(os.path.join(map_save_dir, f"Pipeline_Map_{count_count}_tomo={tomo}"), only_network_input)
+                # np.save(os.path.join(map_save_dir, f"Pipeline_Map_{count_count}_tomo={tomo}"), only_network_input)
+                indices_pipeline = np.arange(len(map))[map > hp.UNSEEN]
+                try:
+                    check_indices["smoothed"].append(store_indices["smoothed"][1] == indices_pipeline)
+                except KeyError:
+                    store_indices["smoothed"][1] = indices_pipeline
+                    check_indices["smoothed"].append(store_indices["smoothed"][1] == indices_pipeline)
             except FileNotFoundError:
                 count_count -= 1
                 continue
@@ -178,11 +199,13 @@ if __name__ == "__main__":
                 final_res["smoothed"][tomo] += ps
             except KeyError:
                 final_res["smoothed"][tomo] = ps
-        indices_pipeline = np.arange(len(map))[map > hp.UNSEEN]
-        np.save(os.path.join(map_save_dir, f"Pipeline_Indices"), indices_pipeline)
+        # indices_pipeline = np.arange(len(map))[map > hp.UNSEEN]
+        # np.save(os.path.join(map_save_dir, f"Pipeline_Indices"), indices_pipeline)
 
-        if count == 1:
+        if count == 25:
             break
+    print(check_indices)
+    np.savez("/users/bsuter/check_indices.npz", **check_indices)
 
     id = all_ids[-1]
     tomo = 1
