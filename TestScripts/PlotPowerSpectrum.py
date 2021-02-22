@@ -75,12 +75,10 @@ if __name__ == "__main__":
     final_res = {"smoothed": {}, "double_smoothed": {}, "gauss_CL": {}}
     store_indices = {"smoothed": {}, "double_smoothed": {}}
     check_indices = {"smoothed": [], "double_smoothed": []}
-    tfr_indices = {}
     for fid_maps, noise_maps in zip(get_dataset(fid_dir), get_dataset(noise_dir)):
         count += 1
         count_count += 1
 
-        tfr_indices[str(count)] = {}
 
         fiducial_map_1 = fid_maps[0][0]
         noise_map_1 = noise_maps[0][0]
@@ -105,7 +103,7 @@ if __name__ == "__main__":
         only_network_input = full_double_smoothed_1[full_double_smoothed_1 > hp.UNSEEN]
         np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={1}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_1))[full_double_smoothed_1 > hp.UNSEEN]
-        tfr_indices[str(count)][1] = indices_tfr
+        print(indices_tfr)
         # np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_tfr)
         """hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
         plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
@@ -136,7 +134,7 @@ if __name__ == "__main__":
         only_network_input = full_double_smoothed_2[full_double_smoothed_2 > hp.UNSEEN]
         # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={2}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_2))[full_double_smoothed_2 > hp.UNSEEN]
-        tfr_indices[str(count)][2] = indices_tfr
+        print(indices_tfr)
         check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
 
         try:
@@ -154,7 +152,7 @@ if __name__ == "__main__":
         only_network_input = full_double_smoothed_3[full_double_smoothed_3 > hp.UNSEEN]
         # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={3}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_3))[full_double_smoothed_3 > hp.UNSEEN]
-        tfr_indices[str(count)][3] = indices_tfr
+        print(indices_tfr)
         check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
 
         try:
@@ -172,7 +170,7 @@ if __name__ == "__main__":
         only_network_input = full_double_smoothed_4[full_double_smoothed_4 > hp.UNSEEN]
         # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={4}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_4))[full_double_smoothed_4 > hp.UNSEEN]
-        tfr_indices[str(count)][4] = indices_tfr
+        print(indices_tfr)
         check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
 
         try:
@@ -211,9 +209,8 @@ if __name__ == "__main__":
         print(f"Finished with count={count}")
         if count == 10:
             break
-    print(check_indices)
+    # print(check_indices)
     np.savez("/users/bsuter/check_indices.npz", **check_indices)
-    np.savez("/users/bsuter/tfr_indices.npz", **tfr_indices)
 
     id = all_ids[-1]
     tomo = 1
