@@ -82,6 +82,13 @@ if __name__ == "__main__":
 
         fiducial_map_1 = fid_maps[0][0]
         noise_map_1 = noise_maps[0][0]
+
+        print("Tomo 1")
+        print("Map")
+        print(np.arange(len(fiducial_map_1))[fiducial_map_1 > hp.UNSEEN])
+        print("Noise")
+        print(np.arange(len(noise_map_1))[noise_map_1 > hp.UNSEEN])
+        print("Combined")
     
         """fpp1 = hp.anafast(fiducial_map_1.numpy())
         npp1 = hp.anafast(noise_map_1.numpy())
@@ -104,6 +111,7 @@ if __name__ == "__main__":
         np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={1}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_1))[full_double_smoothed_1 > hp.UNSEEN]
         print(indices_tfr)
+        print("\n")
         # np.save(os.path.join(map_save_dir, f"TFRecord_Indices"), indices_tfr)
         """hp.mollview(full_double_smoothed_1, nest=True, title="Full Double Smoothed map")
         plt.savefig("/users/bsuter/Compare_PP/full_double_smoothed_1.png")"""
@@ -126,6 +134,13 @@ if __name__ == "__main__":
     
         fiducial_map_2 = fid_maps[0][1]
         noise_map_2 = noise_maps[0][1]
+
+        print("Tomo 2")
+        print("Map")
+        print(np.arange(len(fiducial_map_2))[fiducial_map_2 > hp.UNSEEN])
+        print("Noise")
+        print(np.arange(len(noise_map_2))[noise_map_2 > hp.UNSEEN])
+        print("Combined")
     
         mask = fiducial_map_2.numpy() < -1e25
         full_double_smoothed_2 = fiducial_map_2.numpy() + noise_map_2.numpy()
@@ -135,6 +150,7 @@ if __name__ == "__main__":
         # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={2}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_2))[full_double_smoothed_2 > hp.UNSEEN]
         print(indices_tfr)
+        print("\n")
         check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
 
         try:
@@ -144,6 +160,13 @@ if __name__ == "__main__":
     
         fiducial_map_3 = fid_maps[0][2]
         noise_map_3 = noise_maps[0][2]
+
+        print("Tomo 3")
+        print("Map")
+        print(np.arange(len(fiducial_map_3))[fiducial_map_3 > hp.UNSEEN])
+        print("Noise")
+        print(np.arange(len(noise_map_3))[noise_map_3 > hp.UNSEEN])
+        print("Combined")
     
         mask = fiducial_map_3.numpy() < -1e25
         full_double_smoothed_3 = fiducial_map_3.numpy() + noise_map_3.numpy()
@@ -153,6 +176,7 @@ if __name__ == "__main__":
         # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={3}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_3))[full_double_smoothed_3 > hp.UNSEEN]
         print(indices_tfr)
+        print("\n")
         check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
 
         try:
@@ -162,6 +186,13 @@ if __name__ == "__main__":
     
         fiducial_map_4 = fid_maps[0][3]
         noise_map_4 = noise_maps[0][3]
+
+        print("Tomo 4")
+        print("Map")
+        print(np.arange(len(fiducial_map_3))[fiducial_map_3 > hp.UNSEEN])
+        print("Noise")
+        print(np.arange(len(noise_map_3))[noise_map_3 > hp.UNSEEN])
+        print("Combined")
     
         mask = fiducial_map_4.numpy() < -1e25
         full_double_smoothed_4 = fiducial_map_4.numpy() + noise_map_4.numpy()
@@ -171,6 +202,7 @@ if __name__ == "__main__":
         # np.save(os.path.join(map_save_dir, f"TFRecord_Full_Map_{count}_tomo={4}"), only_network_input)
         indices_tfr = np.arange(len(full_double_smoothed_4))[full_double_smoothed_4 > hp.UNSEEN]
         print(indices_tfr)
+        print("\n")
         check_indices["double_smoothed"].append(store_indices["double_smoothed"][1] == indices_tfr)
 
         try:
