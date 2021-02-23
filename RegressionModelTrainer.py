@@ -294,16 +294,15 @@ class Trainer:
         for element in self.train_dataset.enumerate():
             index = tf.dtypes.cast(element[0], tf.int32)
             set = element[1]
-            print(f"Set is {set}")
-            tf.print(f"Set is  {set}")
             shape = [self.params['dataloader']['batch_size'],
                      self.pixel_num,
                      self.params['dataloader']['tomographic_bin_number']]
-            kappa_data = tf.ensure_shape(tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
+            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                          self.bool_mask,
-                                         axis=1),
-                                         shape)
-            logger.debug(f"Kappa Data has shape {tf.shape(kappa_data)}")
+                                         axis=1)
+            print(f"Kapadata is {kappa_data}")
+            kappa_data = tf.ensure_shape(kappa_data, shape)
+            print(f"New Kapadata is {kappa_data}")
             labels = set[1]
             # Add noise
             noise = tf.ensure_shape(self._make_noise(), shape)
