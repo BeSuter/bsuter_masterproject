@@ -294,6 +294,8 @@ class Trainer:
         for element in self.train_dataset.enumerate():
             index = tf.dtypes.cast(element[0], tf.int32)
             set = element[1]
+            print(f"Set is {set}")
+            tf.print(f"Set is  {set}")
             shape = [self.params['dataloader']['batch_size'],
                      self.pixel_num,
                      self.params['dataloader']['tomographic_bin_number']]
