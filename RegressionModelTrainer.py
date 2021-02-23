@@ -195,6 +195,7 @@ class Trainer:
             input_shape=(self.params['dataloader']['batch_size'],
                          self.pixel_num,
                          self.params['dataloader']['tomographic_bin_number']))
+        logger.debug(f"Building model with input shape ({self.params['dataloader']['batch_size'], self.pixel_num, self.params['dataloader']['tomographic_bin_number']})")
         if self.params['model']['continue_training']:
             if self.params['model']['checkpoint_dir'] == "undefined":
                 logger.critical(
