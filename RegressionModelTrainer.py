@@ -300,20 +300,22 @@ class Trainer:
             kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
                                          self.bool_mask,
                                          axis=1)
-            print(f"Kapadata is {kappa_data}")
             kappa_data = tf.ensure_shape(kappa_data, shape)
-            print(f"New Kapadata is {kappa_data}")
             labels = set[1]
+            print(f"Labels are {labels}")
             # Add noise
             noise = tf.ensure_shape(self._make_noise(), shape)
-            logger.debug(f"Noise has shape {tf.shape(noise)}")
+            print(f"Noise is {noise}")
             kappa_data = tf.math.add(kappa_data, noise)
+            print(f"Total data is {kappa_data}")
 
             # Optimize the model
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
                 y_ = self.model.__call__(kappa_data, training=True)
+                print(f"Predictions are {y_}")
                 loss_value = loss_object(y_true=labels, y_pred=y_)
+                print(f"Loss Value is {loss_value}")
             if self.params['training']['distributed']:
                 tape = hvd.DistributedGradientTape(tape)
             grads = tape.gradient(loss_value, self.model.trainable_variables)
