@@ -33,8 +33,6 @@ class Evaluator:
         self.worker_id = ""
         self.is_root_worker = True
 
-        print("Doing Stuff...")
-
         self._train_preprint()
 
         self._set_dataloader()
@@ -371,12 +369,11 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    print("In MAIN")
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dirs', nargs='+', type=str, action='store')
     parser.add_argument('--weights_dir', type=str, action='store')
     parser.add_argument('--noise_dir', type=str, action='store')
-    parser.add_argument('--batch_size', type=int, action='store')
+    parser.add_argument('--batch_size', type=int, action='store', default=1)
     parser.add_argument('--shuffle_size', type=int, action='store')
     parser.add_argument('--epochs', type=int, action='store')
     parser.add_argument('--layer', type=str, action='store')
