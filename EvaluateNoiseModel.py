@@ -262,6 +262,9 @@ class Evaluator:
             start_time=self.date_time,
             evaluation="Evaluation")
 
+        if self.params['noise']['noise_type'] == "dominik_noise":
+            self._init_noise_iteration()
+
         for set in self.test_dataset:
             shape = [self.params['dataloader']['batch_size'],
                      self.pixel_num,
@@ -449,6 +452,5 @@ if __name__ == "__main__":
             'checkpoint_dir': ARGS.checkpoint_dir,
             }
         }
-    print("Before Evaluator is initiated...")
     evaluator = Evaluator(parameters)
     evaluator.evaluate()
