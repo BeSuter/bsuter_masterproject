@@ -94,12 +94,39 @@ class Evaluator:
 
         return bool_mask, indices_ext
 
-    def count_elements(self):
-        num = 0
-        for element in self.train_dataset.enumerate():
-            num += 1
-        self.params['dataloader']['number_of_elements'] = int(num)
-        logger.debug(f"self.params['dataloader']['number_of_elements'] has type {type(self.params['dataloader']['number_of_elements'])}")
+    @staticmethod
+    def _label_finder(str):
+        Om_label = re.search(r"(?<=Om=).+(?=_s8=)", str).group(0)
+        s8_label = re.search(r"(?<=s8=).+(?=_tomo)", str).group(0)
+        return float(Om_label), float(s8_label)
+
+    def import_pipeline_maps(self):
+        full_tomo_map = []
+        logger.info(f"Loading pipeline maps")
+        path_to_map_ids = os.path.join("/scratch/snx3000/bsuter/Maps", "Map_ids.npy")
+        all_map_paths = os.listdir("/scratch/snx3000/bsuter/Maps/FullMaps")
+
+        all_ids = np.load(path_to_map_ids)
+        choosen_labels = []
+        random_ids = np.random.randint(0, high=len(all_ids), size=1)
+        for id in random_ids:
+            for file_name in all_map_paths:
+                if file_name.endswith(f"_id={all_ids[id]}.npy"):
+                    choosen_labels.append(self._label_finder(file_name))
+                    break
+
+        for tomo in range(self.params['dataloader']['tomographic_bin_number']):
+            single_tomo_maps = []
+            for idx, id_num in enumerate(random_ids):
+                map_name = os.path.join("/scratch/snx3000/bsuter/Maps",
+                                        "FullMaps",
+                                        f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
+                full_map = np.load(map_name)
+                map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
+                single_tomo_maps.append(map)
+            full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
+
+        return tf.stack(full_tomo_map, axis=-1), choosen_labels
 
     def _set_dataloader(self):
         def is_test(index, value):
@@ -111,34 +138,37 @@ class Evaluator:
         def recover(index, value):
             return value
 
-        data_dirs = self.params['dataloader']['data_dirs']
-        batch_size = self.params['dataloader']['batch_size']
-        shuffle_size = self.params['dataloader']['shuffle_size']
-        prefetch_batch = self.params['dataloader']['prefetch_batch']
-
-        total_dataset = utils.get_dataset(data_dirs)
-
-        bool_mask, indices_ext = Evaluator._mask_maker(total_dataset)
-        self.bool_mask = bool_mask
-        self.indices_ext = indices_ext
-        self.pixel_num = len(indices_ext)
-
-        total_dataset = total_dataset.shuffle(shuffle_size)
-        total_dataset = total_dataset.batch(batch_size, drop_remainder=True)
-
-        if self.params['dataloader']['split_data']:
-            test_dataset = total_dataset.enumerate().filter(is_test).map(
-                recover)
-            train_dataset = total_dataset.enumerate().filter(is_train).map(
-                recover)
-            self.test_dataset = test_dataset.prefetch(prefetch_batch)
-            self.train_dataset = train_dataset.prefetch(prefetch_batch)
+        if self.params['dataloader']['pipeline_data']:
+            self.test_dset = []
+            for i in range(self.params['dataloader']['map_count']):
+                self.test_dset.append(self.import_pipeline_maps())
         else:
-            total_dataset = total_dataset.prefetch(prefetch_batch)
-            self.test_dataset = total_dataset
-            self.train_dataset = total_dataset
+            data_dirs = self.params['dataloader']['data_dirs']
+            batch_size = self.params['dataloader']['batch_size']
+            shuffle_size = self.params['dataloader']['shuffle_size']
+            prefetch_batch = self.params['dataloader']['prefetch_batch']
 
-        self.count_elements()
+            total_dataset = utils.get_dataset(data_dirs)
+
+            bool_mask, indices_ext = Evaluator._mask_maker(total_dataset)
+            self.bool_mask = bool_mask
+            self.indices_ext = indices_ext
+            self.pixel_num = len(indices_ext)
+
+            total_dataset = total_dataset.shuffle(shuffle_size)
+            total_dataset = total_dataset.batch(batch_size, drop_remainder=True)
+
+            if self.params['dataloader']['split_data']:
+                test_dataset = total_dataset.enumerate().filter(is_test).map(
+                    recover)
+                train_dataset = total_dataset.enumerate().filter(is_train).map(
+                    recover)
+                self.test_dataset = test_dataset.prefetch(prefetch_batch)
+                self.train_dataset = train_dataset.prefetch(prefetch_batch)
+            else:
+                total_dataset = total_dataset.prefetch(prefetch_batch)
+                self.test_dataset = total_dataset
+                self.train_dataset = total_dataset
 
     def _set_noise_dataloader(self):
         """ Only used if we intend to use noise maps directly from the NGSF pipeline """
@@ -334,41 +364,6 @@ class Evaluator:
                evaluation="Evaluation")
         om_pred_check.save_plot()
         s8_pred_check.save_plot()
-
-
-"""def _label_finder(str):
-    Om_label = re.search(r"(?<=Om=).+(?=_s8=)", str).group(0)
-    s8_label = re.search(r"(?<=s8=).+(?=_tomo)", str).group(0)
-    return (float(Om_label), float(s8_label))"""
-
-
-"""def import_pipeline_maps():
-    full_tomo_map = []
-    logger.info(f"Loading pipeline maps")
-    path_to_map_ids = os.path.join("/scratch/snx3000/bsuter/Maps", "Map_ids.npy")
-    all_map_paths = os.listdir("/scratch/snx3000/bsuter/Maps/FullMaps")
-
-    all_ids = np.load(path_to_map_ids)
-    choosen_labels = []
-    random_ids = np.random.randint(0, high=len(all_ids), size=1)
-    for id in random_ids:
-        for file_name in all_map_paths:
-            if file_name.endswith(f"_id={all_ids[id]}.npy"):
-                choosen_labels.append(_label_finder(file_name))
-                break
-
-    for tomo in range(const_args["_make_noise"]["tomo_num"]):
-        single_tomo_maps = []
-        for idx, id_num in enumerate(random_ids):
-            map_name = os.path.join("/scratch/snx3000/bsuter/Maps",
-                                    "FullMaps",
-                                    f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
-            full_map = np.load(map_name)
-            map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
-            single_tomo_maps.append(map)
-        full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
-
-    return (tf.stack(full_tomo_map, axis=-1), choosen_labels)"""
 
 
 if __name__ == "__main__":
