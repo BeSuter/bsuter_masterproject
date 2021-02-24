@@ -240,6 +240,9 @@ class Evaluator:
         return noise
 
     def evaluate(self):
+        print('')
+        logger.info(" ----   STARTING EVALUATION   ---- ")
+        print('')
         color_predictions = []
         color_labels = []
         om_histo = []
