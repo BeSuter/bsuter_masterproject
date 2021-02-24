@@ -50,10 +50,10 @@ class Trainer:
 
         if self.params['model']['debug']:
             print('')
-            print('######################################################')
-            print('         !!!!   RUNNING IN DEBUG MODE   !!!!')
-            print('Model evaluation and saving of weights will be skipped')
-            print('######################################################')
+            print(' ######################################################')
+            print('          !!!!   RUNNING IN DEBUG MODE   !!!!')
+            print(' Model evaluation and saving of weights will be skipped')
+            print(' ######################################################')
             print('')
 
         if self.params['training']['distributed'] and IMPORTED_HVD:
@@ -375,7 +375,7 @@ class Trainer:
                 epoch_loss_avg, epoch_global_norm = self.train_step(epoch == 0)
 
             # End epoch
-            if epoch % 10 == 0:
+            if epoch > 0 and epoch % 10 == 0:
                 loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
                 glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
 
