@@ -48,6 +48,14 @@ class Trainer:
         print('')
         print(' -------------- Starting training    ({})'.format(self.date_time))
 
+        if self.params['model']['debug']:
+            print('')
+            print('######################################################')
+            print('         !!!!   RUNNING IN DEBUG MODE   !!!!')
+            print('Model evaluation and saving of weights will be skipped')
+            print('######################################################')
+            print('')
+
         if self.params['training']['distributed'] and IMPORTED_HVD:
             print('')
             print(' IN DISTRIBUTED TRAINING MODE ')
@@ -106,7 +114,6 @@ class Trainer:
 
         return bool_mask, indices_ext
 
-    #@tf.function()
     def count_elements(self):
         num = 0
         for element in self.train_dataset.enumerate():
@@ -315,12 +322,9 @@ class Trainer:
                                          axis=1)
             kappa_data = tf.ensure_shape(kappa_data, shape)
             labels = set[1]
-            print(f"Labels are {labels}")
             # Add noise
             noise = tf.ensure_shape(self._make_noise(), shape)
-            print(f"Noise is {noise}")
             kappa_data = tf.math.add(kappa_data, noise)
-            print(f"Total data is {kappa_data}")
 
             # Optimize the model
             with tf.GradientTape() as tape:
@@ -386,7 +390,7 @@ class Trainer:
 
             eval_cond = (epoch % (self.params['model']['epochs'] // self.params['model']['number_of_epochs_eval']) == 0)
             epoch_cond = (epoch + 1 == self.params['model']['epochs'])
-            if (epoch > 0 and eval_cond) or epoch_cond and self.is_root_worker and not self.params['model']['debug']:
+            if ((epoch > 0 and eval_cond) or epoch_cond) and self.is_root_worker and not self.params['model']['debug']:
                 # Evaluate the model and plot the results
                 logger.info(f"Evaluating the model and plotting results for epoch={epoch}" + self.worker_id)
                 epoch_non_zero = epoch + 1
@@ -580,6 +584,7 @@ if __name__ == "__main__":
             }
         },
         'model': {
+            'debug': ARGS.debug,
             'layer': ARGS.layer,
             'epochs': ARGS.epochs,
             'l_rate': ARGS.l_rate,
