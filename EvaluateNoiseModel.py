@@ -44,7 +44,7 @@ class Evaluator:
 
     def _train_preprint(self):
         print('')
-        print(' -------------- Starting training    ({})'.format(self.date_time))
+        print(' -------------- Starting Evaluation    ({})'.format(self.date_time))
 
         if self.params['model']['debug']:
             print('')
