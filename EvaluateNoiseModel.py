@@ -33,6 +33,8 @@ class Evaluator:
         self.worker_id = ""
         self.is_root_worker = True
 
+        print("Doing Stuff...")
+
         self._train_preprint()
 
         self._set_dataloader()
@@ -369,6 +371,7 @@ class Evaluator:
 
 
 if __name__ == "__main__":
+    print("In MAIN")
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dirs', nargs='+', type=str, action='store')
     parser.add_argument('--weights_dir', type=str, action='store')
@@ -449,5 +452,6 @@ if __name__ == "__main__":
             'checkpoint_dir': ARGS.checkpoint_dir,
             }
         }
+    print("Before Evaluator is initiated...")
     evaluator = Evaluator(parameters)
     evaluator.evaluate()
