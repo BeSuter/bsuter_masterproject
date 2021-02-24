@@ -319,12 +319,15 @@ class Trainer:
             if self.params['training']['distributed']:
                 tape = hvd.DistributedGradientTape(tape)
             grads = tape.gradient(loss_value, self.model.trainable_variables)
+            print(f"Grads are {grads}")
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
             if self.params['training']['distributed'] and index == 0 and first_epoch:
                 hvd.broadcast_variables(self.model.variables, root_rank=0)
                 hvd.broadcast_variables(self.optimizer.variables(), root_rank=0)
 
+            print(f"Epoch Loss AVG is {self.epoch_loss_avg}")
+            print(f"Epoch Global Norm is {self.epoch_global_norm}")
             self.epoch_loss_avg = self.epoch_loss_avg.write(index, loss_value)
             self.epoch_global_norm = self.epoch_global_norm.write(index, tf.linalg.global_norm(grads))
 
