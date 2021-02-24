@@ -81,7 +81,6 @@ class Evaluator:
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
-        print(f"- Learning Rate is set to {self.params['model']['l_rate']}")
         path = os.path.join(self.params['model']['weights_dir'], self.params['model']['checkpoint_dir'])
         print(f"- Loading Weights from {path}")
         print('')
