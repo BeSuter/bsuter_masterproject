@@ -101,7 +101,7 @@ class Trainer:
         print('')
 
     def _configure_worker(self):
-        self.worker_id = f" -- Worker ID is {hvd.rank()}/{hvd.size()}"
+        self.worker_id = f" -- Worker ID is {hvd.rank() + 1}/{hvd.size()}"
         if hvd.rank() != 0:
             self.is_root_worker = False
 
