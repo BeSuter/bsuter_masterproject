@@ -399,6 +399,8 @@ if __name__ == "__main__":
                         action='store',
                         default=75)
     parser.add_argument('--repeat_count', type=int, action='store', default=2)
+    parser.add_argument('--pipeline_data', action='store_true', default=False)
+    parser.add_argument('--map_count', type=int, action='store', default=0)
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -422,7 +424,9 @@ if __name__ == "__main__":
             'shuffle_size': ARGS.shuffle_size,
             'prefetch_batch': ARGS.prefetch_batch,
             'tomographic_bin_number': ARGS.tomographic_bin_number,
-            'split_data': ARGS.split_data
+            'split_data': ARGS.split_data,
+            'pipeline_data': ARGS.pipeline_data,
+            'map_count': ARGS.map_count
         },
         'noise': {
             'noise_type': ARGS.noise_type,
