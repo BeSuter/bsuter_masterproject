@@ -308,8 +308,10 @@ class Evaluator:
             labels = labels.numpy()
 
             # Add noise
-            noise = tf.ensure_shape(self._make_noise(), shape)
-            kappa_data = tf.math.add(kappa_data, noise)
+            if not self.params['noise']['noise_free']:
+                noise = tf.ensure_shape(self._make_noise(), shape)
+                kappa_data = tf.math.add(kappa_data, noise)
+
             predictions = self.model.__call__(kappa_data)
 
             for ii, prediction in enumerate(predictions.numpy()):
@@ -375,6 +377,7 @@ if __name__ == "__main__":
     parser.add_argument('--shuffle_size', type=int, action='store')
     parser.add_argument('--epochs', type=int, action='store')
     parser.add_argument('--layer', type=str, action='store')
+    parser.add_argument('--noise_free', action='store_true', default=False)
     parser.add_argument('--noise_type',
                         type=str,
                         action='store',
@@ -429,6 +432,7 @@ if __name__ == "__main__":
             'map_count': ARGS.map_count
         },
         'noise': {
+            'noise_free': ARGS.noise_free,
             'noise_type': ARGS.noise_type,
             'noise_dir': ARGS.noise_dir,
             'noise_dataloader': {
