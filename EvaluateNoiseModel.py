@@ -142,11 +142,15 @@ class Evaluator:
             test_dset = []
             for i in range(self.params['dataloader']['map_count']):
                 test_dset.append(self.import_pipeline_maps())
+            logger.debug(f"Shape of Pipeline Data is {np.shape(test_dset)}")
             self.test_dataset = tf.data.Dataset.from_tensor_slices(test_dset)
+            logger.debug(f"Shape of Dataset is ")
+            print(self.test_dataset)
             bool_mask, indices_ext = Evaluator._mask_maker(self.test_dataset)
             self.bool_mask = bool_mask
             self.indices_ext = indices_ext
             self.pixel_num = len(indices_ext)
+            logger.debug(f"Pixel Number is {self.pixel_num}")
 
         else:
             data_dirs = self.params['dataloader']['data_dirs']
