@@ -139,9 +139,15 @@ class Evaluator:
             return value
 
         if self.params['dataloader']['pipeline_data']:
-            self.test_dset = []
+            test_dset = []
             for i in range(self.params['dataloader']['map_count']):
-                self.test_dset.append(self.import_pipeline_maps())
+                test_dset.append(self.import_pipeline_maps())
+            self.test_dataset = tf.data.Dataset.from_tensor_slices(test_dset)
+            bool_mask, indices_ext = Evaluator._mask_maker(self.test_dataset)
+            self.bool_mask = bool_mask
+            self.indices_ext = indices_ext
+            self.pixel_num = len(indices_ext)
+
         else:
             data_dirs = self.params['dataloader']['data_dirs']
             batch_size = self.params['dataloader']['batch_size']
