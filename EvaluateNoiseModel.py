@@ -122,9 +122,11 @@ class Evaluator:
                                         "FullMaps",
                                         f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
                 full_map = np.load(map_name)
-                map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
+                map = tf.convert_to_tensor(full_map, dtype=tf.float32)
+                logger.debug(f"Map is {map}")
                 single_tomo_maps.append(map)
             full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
+            logger.debug(f"Full tomo map is {full_tomo_map}")
 
         return tf.stack(full_tomo_map, axis=-1), choosen_labels
 
