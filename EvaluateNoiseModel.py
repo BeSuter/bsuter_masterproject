@@ -128,7 +128,9 @@ class Evaluator:
             full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
             logger.debug(f"Full tomo map is {full_tomo_map}")
 
-        return tf.stack(full_tomo_map, axis=-1), choosen_labels
+        stacked_maps = tf.stack(full_tomo_map, axis=-1)
+        logger.debug(f"Stacked Maps are {stacked_maps}")
+        return stacked_maps
 
     def _set_dataloader(self):
         def is_test(index, value):
