@@ -86,8 +86,8 @@ if __name__ == "__main__":
             print(f"Noise indices for count={count} and tomo={tomo}: ")
             print(noise_indices)
 
-            mask = tomo_map < -1e25
-            full_map = tomo_map + tomo_noise
+            mask = tomo_map.numpy() < -1e25
+            full_map = tomo_map.numpy() + tomo_noise.numpy()
             full_map[mask] = hp.UNSEEN
             full_map_input = full_map[full_map > hp.UNSEEN]
             full_map_indices = np.arange(len(full_map))[full_map > hp.UNSEEN]
