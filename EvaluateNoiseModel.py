@@ -33,6 +33,9 @@ class Evaluator:
         self.worker_id = ""
         self.is_root_worker = True
 
+        self.indices_ext = None
+        self.pixel_num = None
+
         self._train_preprint()
 
         self._set_dataloader()
@@ -122,15 +125,18 @@ class Evaluator:
                                         "FullMaps",
                                         f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
                 full_map = np.load(map_name)
-                map = tf.convert_to_tensor(full_map, dtype=tf.float32)
-                logger.debug(f"Map is {map}")
+                if not self.indices_ext:
+                    logger.info(f"Initializing extended indices")
+                    self.indices_ext = np.arange(len(full_map))[full_map > hp.UNSEEN]
+                    self.pixel_num = len(self.indices_ext)
+                    logger.debug(f"Extended indices are {self.indices_ext}")
+                map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
                 single_tomo_maps.append(map)
             full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
-            logger.debug(f"Full tomo map is {full_tomo_map}")
 
         stacked_maps = tf.stack(full_tomo_map, axis=-1)
         logger.debug(f"Stacked Maps are {stacked_maps}")
-        return stacked_maps
+        return stacked_maps, choosen_labels
 
     def _set_dataloader(self):
         def is_test(index, value):
@@ -143,17 +149,10 @@ class Evaluator:
             return value
 
         if self.params['dataloader']['pipeline_data']:
-            test_dset = []
+            self.test_dataset = []
             for i in range(self.params['dataloader']['map_count']):
-                test_dset.append(self.import_pipeline_maps())
-            logger.debug(f"Shape of Pipeline Data is {np.shape(test_dset)}")
-            self.test_dataset = tf.data.Dataset.from_tensor_slices(test_dset)
-            logger.debug(f"Shape of Dataset is ")
-            print(self.test_dataset)
-            bool_mask, indices_ext = Evaluator._mask_maker(self.test_dataset)
-            self.bool_mask = bool_mask
-            self.indices_ext = indices_ext
-            self.pixel_num = len(indices_ext)
+                self.test_dataset.append(self.import_pipeline_maps())
+            logger.debug(f"Shape of Pipeline Data is {np.shape(self.test_dataset)}")
             logger.debug(f"Pixel Number is {self.pixel_num}")
 
         else:
@@ -310,21 +309,28 @@ class Evaluator:
             self._init_noise_iteration()
 
         for set in self.test_dataset:
-            shape = [self.params['dataloader']['batch_size'],
-                     self.pixel_num,
-                     self.params['dataloader']['tomographic_bin_number']]
-            kappa_data = tf.boolean_mask(tf.transpose(
-                set[0], perm=[0, 2, 1]),
-                self.bool_mask,
-                axis=1)
-            kappa_data = tf.ensure_shape(kappa_data, shape)
-            labels = set[1]
-            labels = labels.numpy()
+            if not self.params['dataloader']['pipeline_data']:
+                shape = [self.params['dataloader']['batch_size'],
+                         self.pixel_num,
+                         self.params['dataloader']['tomographic_bin_number']]
+                kappa_data = tf.boolean_mask(tf.transpose(
+                    set[0], perm=[0, 2, 1]),
+                    self.bool_mask,
+                    axis=1)
+                kappa_data = tf.ensure_shape(kappa_data, shape)
+                labels = set[1]
+                labels = labels.numpy()
 
-            # Add noise
-            if not self.params['noise']['noise_free']:
-                noise = tf.ensure_shape(self._make_noise(), shape)
-                kappa_data = tf.math.add(kappa_data, noise)
+                # Add noise
+                if not self.params['noise']['noise_free']:
+                    noise = tf.ensure_shape(self._make_noise(), shape)
+                    kappa_data = tf.math.add(kappa_data, noise)
+            else:
+                kappa_data = set[0]
+                labels = np.asarray(set[1])
+
+                logger.debug(f"Kappa Data has shape {kappa_data.shape}")
+                logger.debug(f"Labels have shape {np.shape(labels)}")
 
             predictions = self.model.__call__(kappa_data)
 
