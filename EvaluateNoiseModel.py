@@ -33,7 +33,7 @@ class Evaluator:
         self.worker_id = ""
         self.is_root_worker = True
 
-        self.indices_ext = None
+        self.indices_ext_initialized = None
         self.pixel_num = None
 
         self._train_preprint()
@@ -125,11 +125,12 @@ class Evaluator:
                                         "FullMaps",
                                         f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
                 full_map = np.load(map_name)
-                if not self.indices_ext:
+                if not self.indices_ext_initialized:
                     logger.info(f"Initializing extended indices")
                     self.indices_ext = np.arange(len(full_map))[full_map > hp.UNSEEN]
                     self.pixel_num = len(self.indices_ext)
                     logger.debug(f"Extended indices are {self.indices_ext}")
+                    self.indices_ext_initialized = True
                 map = tf.convert_to_tensor(full_map[full_map > hp.UNSEEN], dtype=tf.float32)
                 single_tomo_maps.append(map)
             full_tomo_map.append(tf.stack(single_tomo_maps, axis=0))
