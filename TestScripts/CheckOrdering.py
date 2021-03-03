@@ -86,11 +86,22 @@ if __name__ == "__main__":
             print(f"Noise indices for count={count} and tomo={tomo}: ")
             print(noise_indices)
 
+            mask = tomo_map < -1e25
+            full_map = tomo_map + tomo_noise
+            full_map[mask] = hp.UNSEEN
+            full_map_input = full_map[full_map > hp.UNSEEN]
+            full_map_indices = np.arange(len(full_map))[full_map > hp.UNSEEN]
+            print(f"Full Map indices for count={count} and tomo={tomo}: ")
+            print(full_map_indices)
+
             np.save(os.path.join(map_save_dir, f"Map_indices_{count}_tomo_{tomo}.npy"), map_indices)
             np.save(os.path.join(map_save_dir, f"noise_indices_{count}_tomo_{tomo}.npy"), noise_indices)
+            np.save(os.path.join(map_save_dir, f"full_map_indices_{count}_tomo_{tomo}.npy"), full_map_indices)
 
             np.save(os.path.join(map_save_dir, f"Map_input_{count}_tomo_{tomo}.npy"), map_input)
             np.save(os.path.join(map_save_dir, f"noise_input_{count}_tomo_{tomo}.npy"), noise_input)
+            np.save(os.path.join(map_save_dir, f"full_map_input_{count}_tomo_{tomo}.npy"), full_map_input)
+
 
             tomo += 1
 
