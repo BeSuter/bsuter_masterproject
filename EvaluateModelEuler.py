@@ -58,6 +58,11 @@ class Evaluator:
             print('')
 
         print('')
+        print(' #######################################################')
+        print(' !! Running on Euler --> Only Pipeline Data supported !!')
+        print(' #######################################################')
+        print('')
+
         print(' DATALOADER ')
         print(' ---------- ')
         print(f"- Loaded Data from {self.params['dataloader']['data_dirs']}")
@@ -106,8 +111,8 @@ class Evaluator:
     def import_pipeline_maps(self):
         full_tomo_map = []
         logger.info(f"Loading pipeline maps")
-        path_to_map_ids = os.path.join("/scratch/snx3000/bsuter/Maps", "Map_ids.npy")
-        all_map_paths = os.listdir("/scratch/snx3000/bsuter/Maps/FullMaps")
+        path_to_map_ids = os.path.join("/cluster/work/refregier/besuter/master_branch/data/Maps", "Map_ids.npy")
+        all_map_paths = os.listdir("/cluster/work/refregier/besuter/master_branch/data/Maps/FullMaps")
 
         all_ids = np.load(path_to_map_ids)
         choosen_labels = []
@@ -122,7 +127,7 @@ class Evaluator:
         for tomo in range(self.params['dataloader']['tomographic_bin_number']):
             single_tomo_maps = []
             for idx, id_num in enumerate(random_ids):
-                map_name = os.path.join("/scratch/snx3000/bsuter/Maps",
+                map_name = os.path.join("/cluster/work/refregier/besuter/master_branch/data/Maps",
                                         "FullMaps",
                                         f"Map_Om={choosen_labels[idx][0]}_s8={choosen_labels[idx][1]}_tomo={tomo + 1}_id={all_ids[id_num]}.npy")
                 full_map = np.load(map_name)
