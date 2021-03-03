@@ -116,7 +116,7 @@ class Evaluator:
 
         all_ids = np.load(path_to_map_ids)
         choosen_labels = []
-        np.random.seed(self.params['dataloader']['seed'])
+        # np.random.seed(self.params['dataloader']['seed'])
         random_ids = np.random.randint(0, high=len(all_ids), size=1)
         for id in random_ids:
             for file_name in all_map_paths:
