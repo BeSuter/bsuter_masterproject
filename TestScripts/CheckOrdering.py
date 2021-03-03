@@ -77,6 +77,8 @@ if __name__ == "__main__":
 
         tomo = 1
         for tomo_map, tomo_noise in zip(fid_maps[0], noise_maps[0]):
+            map_input = tomo_map[tomo_map > hp.UNSEEN]
+            noise_input = tomo_noise[tomo_noise > hp.UNSEEN]
             map_indices = np.arange(len(tomo_map))[tomo_map > hp.UNSEEN]
             noise_indices = np.arange(len(tomo_noise))[tomo_noise > hp.UNSEEN]
             print(f"Map indices for count={count} and tomo={tomo}: ")
@@ -86,6 +88,9 @@ if __name__ == "__main__":
 
             np.save(os.path.join(map_save_dir, f"Map_indices_{count}_tomo_{tomo}.npy"), map_indices)
             np.save(os.path.join(map_save_dir, f"noise_indices_{count}_tomo_{tomo}.npy"), noise_indices)
+
+            np.save(os.path.join(map_save_dir, f"Map_input_{count}_tomo_{tomo}.npy"), map_input)
+            np.save(os.path.join(map_save_dir, f"noise_input_{count}_tomo_{tomo}.npy"), noise_input)
 
             tomo += 1
 
