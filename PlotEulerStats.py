@@ -1,11 +1,7 @@
 import os
-import re
 import sys
-import argparse
 import logging
-import collections
 import numpy as np
-import healpy as hp
 
 from datetime import datetime
 from Plotter import PredictionLabelComparisonPlot
@@ -48,7 +44,7 @@ def plot_euler_stats():
         f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat=FullHealpyGCNN_tomo=1x1_z=0.0.npy"
         predictions = np.load(os.path.join(STATS_DIR, f_name))
 
-        for ii, prediction in enumerate(predictions.numpy()):
+        for ii, prediction in enumerate(predictions):
             om_pred_check.add_to_plot(prediction[0], cosmo[0])
             s8_pred_check.add_to_plot(prediction[1], cosmo[1])
 
