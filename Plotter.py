@@ -295,6 +295,7 @@ class PredictionLabelComparisonPlot:
                     labels = int(labels[0])
                 try:
                     print(type(labels))
+                    print(labels)
                     self.all_values[labels].extend(predictions)
                 except KeyError:
                     if not isinstance(predictions, (list, np.ndarray)):
