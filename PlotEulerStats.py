@@ -71,13 +71,15 @@ def plot_debug_meta_data():
         layer="DEBUG",
         noise_type="Pipeline",
         start_time=date_time,
-        evaluation="Evaluation")
+        evaluation="Evaluation",
+        evaluation_mode="average")
     s8_pred_check = PredictionLabelComparisonPlot(
         "Sigma_8",
         layer="DEBUG",
         noise_type="Pipeline",
         start_time=date_time,
-        evaluation="Evaluation")
+        evaluation="Evaluation",
+        evaluation_mode="average")
 
     for f_name in generate_debug_file_names():
         df = pd.read_csv(f_name)
