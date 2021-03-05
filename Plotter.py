@@ -2,6 +2,7 @@ import os
 import collections
 import numpy as np
 import healpy as hp
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from datetime import datetime
@@ -282,8 +283,12 @@ class PredictionLabelComparisonPlot:
 
     def add_to_plot(self, predictions, labels):
         if self.evaluation_mode == "average":
+            if isinstance(labels, pd.core.series.Series):
+                labels = labels.tolist()
             if isinstance(labels, (list, np.ndarray)) and len(labels) > 1:
                 print("part 1")
+                print(type(labels))
+                print(labels)
                 for idx, label in enumerate(labels):
                     try:
                         self.all_values[label].extend(predictions[idx])
