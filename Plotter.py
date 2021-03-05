@@ -314,10 +314,15 @@ class PredictionLabelComparisonPlot:
 
     def save_plot(self):
         if self.evaluation_mode == "average":
+            all_results = []
             for key, values in self.all_values.items():
                 mean = np.mean(values)
                 stddev = np.std(values)
                 self.fig_ax.errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="blue")
+                all_results.append([key, mean, stddev])
+            all_results = np.asarray(all_results)
+            result_path = self.file_path[:-4] + ".npy"
+            np.save(result_path, all_results)
         xmin, xmax = self.fig_ax.axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
         self.fig_ax.plot(true_line, true_line, alpha=0.3, color="red")
