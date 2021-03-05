@@ -285,10 +285,13 @@ class PredictionLabelComparisonPlot:
         if self.evaluation_mode == "average":
             if isinstance(labels, pd.core.series.Series):
                 labels = labels.tolist()
+            if isinstance(predictions, pd.core.series.Series):
+                predictions = predictions.tolist()
             if isinstance(labels, (list, np.ndarray)) and len(labels) > 1:
                 print("part 1")
                 print(type(labels))
                 print(labels)
+                print(predictions)
                 for idx, label in enumerate(labels):
                     try:
                         self.all_values[label].extend(predictions[idx])
