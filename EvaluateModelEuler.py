@@ -70,6 +70,9 @@ class Evaluator:
         print(f"- Shuffle Size is {self.params['dataloader']['shuffle_size']}")
         print(f"- Prefetch Size is {self.params['dataloader']['prefetch_batch']}")
         print(f"- Number of Tomographic Bins is {self.params['dataloader']['tomographic_bin_number']}")
+        if self.params['dataloader']['pipeline_data']:
+            print(" !!!!! Using Maps generated vrom Dominik's Pipeline !!!!")
+            print(f" Random ordering of Maps is set to {self.params['dataloader']['random']}")
         if self.params['dataloader']['split_data']:
             print(" !!!!! DATA WILL BE SPLIT INTO TRAINING AND EVALUATION DATA !!!!! ")
         else:
@@ -108,7 +111,7 @@ class Evaluator:
         s8_label = re.search(r"(?<=s8=).+(?=_tomo)", str).group(0)
         return float(Om_label), float(s8_label)
 
-    def import_pipeline_maps(self):
+    def import_pipeline_maps(self, index, random=False):
         full_tomo_map = []
         logger.info(f"Loading pipeline maps")
         path_to_map_ids = os.path.join("/cluster/work/refregier/besuter/master_branch/data/Maps", "Map_ids.npy")
@@ -117,8 +120,12 @@ class Evaluator:
         all_ids = np.load(path_to_map_ids)
         choosen_labels = []
         # np.random.seed(self.params['dataloader']['seed'])
-        random_ids = np.random.randint(0, high=len(all_ids), size=1)
+        if random:
+            random_ids = np.random.randint(0, high=len(all_ids), size=1)
+        else:
+            random_ids = [index]
         for id in random_ids:
+            logger.debug(f"Using Id number {id}")
             for file_name in all_map_paths:
                 if file_name.endswith(f"_id={all_ids[id]}.npy"):
                     choosen_labels.append(self._label_finder(file_name))
@@ -158,7 +165,7 @@ class Evaluator:
         if self.params['dataloader']['pipeline_data']:
             self.test_dataset = []
             for i in range(self.params['dataloader']['map_count']):
-                self.test_dataset.append(self.import_pipeline_maps())
+                self.test_dataset.append(self.import_pipeline_maps(i, random=self.params['dataloader']['random']))
             logger.debug(f"Shape of Pipeline Data is {np.shape(self.test_dataset)}")
             logger.debug(f"Pixel Number is {self.pixel_num}")
 
@@ -304,13 +311,15 @@ class Evaluator:
             layer=self.params['model']['layer'],
             noise_type=self.params['noise']['noise_type'],
             start_time=self.date_time,
-            evaluation="Evaluation")
+            evaluation="Evaluation",
+            evaluation_mode=self.params['plots']['PredictionLabelComparisonPlot']['evaluation_mode'])
         s8_pred_check = PredictionLabelComparisonPlot(
             "Sigma_8",
             layer=self.params['model']['layer'],
             noise_type=self.params['noise']['noise_type'],
             start_time=self.date_time,
-            evaluation="Evaluation")
+            evaluation="Evaluation",
+            evaluation_mode=self.params['plots']['PredictionLabelComparisonPlot']['evaluation_mode'])
 
         if self.params['noise']['noise_type'] == "dominik_noise":
             self._init_noise_iteration()
@@ -432,6 +441,8 @@ if __name__ == "__main__":
     parser.add_argument('--pipeline_data', action='store_true', default=False)
     parser.add_argument('--map_count', type=int, action='store', default=0)
     parser.add_argument('--seed', type=int, action='store', default=0)
+    parser.add_argument('--random', action='store_true', default=False)
+    parser.add_argument('--evaluation_mode', action='store', default=None)
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -458,7 +469,8 @@ if __name__ == "__main__":
             'split_data': ARGS.split_data,
             'pipeline_data': ARGS.pipeline_data,
             'map_count': ARGS.map_count,
-            'seed': ARGS.seed
+            'seed': ARGS.seed,
+            'random': ARGS.random
         },
         'noise': {
             'noise_free': ARGS.noise_free,
@@ -482,7 +494,12 @@ if __name__ == "__main__":
             'nside': ARGS.nside,
             'weights_dir': ARGS.weights_dir,
             'checkpoint_dir': ARGS.checkpoint_dir,
+            },
+        'plots': {
+            'PredictionLabelComparisonPlot': {
+                'evaluation_mode': ARGS.evaluation_mode
             }
+        }
         }
     evaluator = Evaluator(parameters)
     evaluator.evaluate()
