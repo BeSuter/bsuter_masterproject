@@ -288,17 +288,12 @@ class PredictionLabelComparisonPlot:
             if isinstance(predictions, pd.core.series.Series):
                 predictions = predictions.tolist()
             if isinstance(labels, (list, np.ndarray)) and len(labels) > 1:
-                print("part 1")
-                print(type(labels))
-                print(labels)
-                print(predictions)
                 for idx, label in enumerate(labels):
                     try:
                         self.all_values[label].append(predictions[idx])
                     except KeyError:
                         self.all_values[label] = [predictions[idx]]
             else:
-                print("Part 2")
                 if isinstance(labels, (list, np.ndarray)) and len(labels) == 1:
                     labels = int(labels[0])
                 if not isinstance(predictions, (list, np.ndarray)):
@@ -309,13 +304,13 @@ class PredictionLabelComparisonPlot:
                     self.all_values[labels].extend(predictions)
                 except KeyError:
                     self.all_values[labels] = predictions
-
-        self.fig_ax.plot(labels,
-                         predictions,
-                         marker='o',
-                         alpha=0.5,
-                         ls='',
-                         color="blue")
+        else:
+            self.fig_ax.plot(labels,
+                             predictions,
+                             marker='o',
+                             alpha=0.5,
+                             ls='',
+                             color="blue")
 
     def save_plot(self):
         if self.evaluation_mode == "average":
