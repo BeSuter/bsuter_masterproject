@@ -263,6 +263,13 @@ class PredictionLabelComparisonPlot:
         start_time = kwargs.pop("start_time", "Undefined_Time")
         evaluation = kwargs.pop("evaluation", "")
 
+        self.evaluation_mode = kwargs.pop("evaluation_mode", None)
+        if self.evaluation_mode:
+            assert self.evaluation_mode == "average", "Currently only plotting the average of all predictions is " \
+                                                      "implemented as an alternative to plotting all predictions. \n" \
+                                                      "Use evaluation_mode=average to make use of this feature."
+            self.all_values = {}
+
         if target:
             os.makedirs(target, exist_ok=True)
             self.file_path = os.path.join(target, plot_name + ".png")
@@ -274,6 +281,21 @@ class PredictionLabelComparisonPlot:
                 tmp_path, plot_name + f"_date_time={date_time}" + ".png")
 
     def add_to_plot(self, predictions, labels):
+        if self.evaluation_mode == "average":
+            if isinstance(labels, (list, np.ndarray)) and len(labels) > 1:
+                for idx, label in enumerate(labels):
+                    try:
+                        self.all_values[label].extend(predictions[idx])
+                    except KeyError:
+                        self.all_values[label] = [predictions[idx]]
+            else:
+                try:
+                    self.all_values[labels].extend(predictions)
+                except KeyError:
+                    if not isinstance(predictions, (list, np.ndarray)):
+                        predictions = [predictions]
+                    self.all_values[labels] = predictions
+
         self.fig_ax.plot(labels,
                          predictions,
                          marker='o',
@@ -282,6 +304,11 @@ class PredictionLabelComparisonPlot:
                          color="blue")
 
     def save_plot(self):
+        if self.evaluation_mode == "average":
+            for key, values in self.all_values.items():
+                mean = np.mean(values)
+                stddev = np.std(values)
+                self.fig_ax.errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="blue")
         xmin, xmax = self.fig_ax.axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
         self.fig_ax.plot(true_line, true_line, alpha=0.3, color="red")
