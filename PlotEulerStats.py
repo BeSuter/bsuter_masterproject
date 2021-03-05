@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import numpy as np
+import pandas as pd
 
 from datetime import datetime
 from Plotter import PredictionLabelComparisonPlot
@@ -53,5 +54,48 @@ def plot_euler_stats():
     s8_pred_check.save_plot()
 
 
+def generate_debug_file_names():
+    path = "/cluster/work/refregier/besuter/DebugFolder"
+    for real in range(50):
+        for noise in range(5):
+            tmp_name = f"meta_data_om=0.26_s8=0.84_noise={noise}_real={real}.csv"
+            f_name = os.path.join(path, tmp_name)
+            yield f_name
+
+
+def plot_debug_meta_data():
+    date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
+
+    om_pred_check = PredictionLabelComparisonPlot(
+        "Omega_m",
+        layer="DEBUG",
+        noise_type="Pipeline",
+        start_time=date_time,
+        evaluation="Evaluation")
+    s8_pred_check = PredictionLabelComparisonPlot(
+        "Sigma_8",
+        layer="DEBUG",
+        noise_type="Pipeline",
+        start_time=date_time,
+        evaluation="Evaluation")
+
+    for f_name in generate_debug_file_names():
+        df = pd.read_csv(f_name)
+
+        om_pred = df['OmPrediction']
+        om_label = df['OmLabel']
+
+        s8_pred = df['S8Prediction']
+        s8_label = df['S8Label']
+
+        om_pred_check.add_to_plot(om_pred, om_label)
+        s8_pred_check.add_to_plot(s8_pred, s8_label)
+
+    logger.info("Saving plots")
+    om_pred_check.save_plot()
+    s8_pred_check.save_plot()
+
+
 if __name__ == '__main__':
-    plot_euler_stats()
+    # plot_euler_stats()
+    plot_debug_meta_data()
