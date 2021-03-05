@@ -294,20 +294,20 @@ class PredictionLabelComparisonPlot:
                 print(predictions)
                 for idx, label in enumerate(labels):
                     try:
-                        self.all_values[label].extend(predictions[idx])
+                        self.all_values[label].append(predictions[idx])
                     except KeyError:
                         self.all_values[label] = [predictions[idx]]
             else:
                 print("Part 2")
                 if isinstance(labels, (list, np.ndarray)) and len(labels) == 1:
                     labels = int(labels[0])
+                if not isinstance(predictions, (list, np.ndarray)):
+                    predictions = [predictions]
                 try:
                     print(type(labels))
                     print(labels)
                     self.all_values[labels].extend(predictions)
                 except KeyError:
-                    if not isinstance(predictions, (list, np.ndarray)):
-                        predictions = [predictions]
                     self.all_values[labels] = predictions
 
         self.fig_ax.plot(labels,
