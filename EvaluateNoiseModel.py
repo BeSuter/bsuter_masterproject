@@ -299,13 +299,15 @@ class Evaluator:
             layer=self.params['model']['layer'],
             noise_type=self.params['noise']['noise_type'],
             start_time=self.date_time,
-            evaluation="Evaluation")
+            evaluation="Evaluation",
+            evaluation_mode="average")
         s8_pred_check = PredictionLabelComparisonPlot(
             "Sigma_8",
             layer=self.params['model']['layer'],
             noise_type=self.params['noise']['noise_type'],
             start_time=self.date_time,
-            evaluation="Evaluation")
+            evaluation="Evaluation",
+            evaluation_mode="average")
 
         if self.params['noise']['noise_type'] == "dominik_noise":
             self._init_noise_iteration()
