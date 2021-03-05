@@ -283,12 +283,14 @@ class PredictionLabelComparisonPlot:
     def add_to_plot(self, predictions, labels):
         if self.evaluation_mode == "average":
             if isinstance(labels, (list, np.ndarray)) and len(labels) > 1:
+                print("part 1")
                 for idx, label in enumerate(labels):
                     try:
                         self.all_values[label].extend(predictions[idx])
                     except KeyError:
                         self.all_values[label] = [predictions[idx]]
             else:
+                print("Part 2")
                 if isinstance(labels, (list, np.ndarray)) and len(labels) == 1:
                     labels = labels[0]
                 try:
