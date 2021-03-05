@@ -125,7 +125,7 @@ class Evaluator:
         else:
             random_ids = [index]
         for id in random_ids:
-            logger.debug(f"Using Id number {id}")
+            logger.info(f"Using Id number {id}")
             for file_name in all_map_paths:
                 if file_name.endswith(f"_id={all_ids[id]}.npy"):
                     choosen_labels.append(self._label_finder(file_name))
