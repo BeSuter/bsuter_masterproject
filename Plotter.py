@@ -289,6 +289,8 @@ class PredictionLabelComparisonPlot:
                     except KeyError:
                         self.all_values[label] = [predictions[idx]]
             else:
+                if isinstance(labels, (list, np.ndarray)) and len(labels) == 1:
+                    labels = labels[0]
                 try:
                     self.all_values[labels].extend(predictions)
                 except KeyError:
