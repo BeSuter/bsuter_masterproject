@@ -107,5 +107,5 @@ def plot_debug_meta_data():
 
 
 if __name__ == '__main__':
-    # plot_euler_stats()
-    plot_debug_meta_data()
+    plot_euler_stats()
+    # plot_debug_meta_data()
