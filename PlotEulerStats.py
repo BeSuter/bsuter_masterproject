@@ -31,23 +31,31 @@ def plot_euler_stats():
         layer="STATS",
         noise_type="Pipeline",
         start_time=date_time,
-        evaluation="Evaluation")
+        evaluation="Evaluation",
+        evaluation_mode="average")
     s8_pred_check = PredictionLabelComparisonPlot(
         "Sigma_8",
         layer="STATS",
         noise_type="Pipeline",
         start_time=date_time,
-        evaluation="Evaluation")
+        evaluation="Evaluation",
+        evaluation_mode="average")
 
     for cosmology in all_cosmologies:
         cosmo = [cosmology[0], cosmology[6]]
-        logger.info(f"Looking at cosmology {cosmo}")
-        f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat=FullHealpyGCNN_tomo=1x1_z=0.0.npy"
-        predictions = np.load(os.path.join(STATS_DIR, f_name))
+        logger.info(f"\n Looking at cosmology {cosmo}")
+        if cosmo[0] == 0.26 and cosmo[1] == 0.84:
+            realisation = 50
+        else:
+            realisation = 5
+        for real in range(realisation):
+            logger.info(f" Looking at cosmology {cosmo}")
+            f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat=FullHealpyGCNN_tomo=1x1_z=0.0_{real}.npy"
+            predictions = np.load(os.path.join(STATS_DIR, f_name))
 
-        for ii, prediction in enumerate(predictions):
-            om_pred_check.add_to_plot(prediction[0], cosmo[0])
-            s8_pred_check.add_to_plot(prediction[1], cosmo[1])
+            for ii, prediction in enumerate(predictions):
+                om_pred_check.add_to_plot(prediction[0], cosmo[0])
+                s8_pred_check.add_to_plot(prediction[1], cosmo[1])
 
     logger.info("Saving plots")
     om_pred_check.save_plot()
