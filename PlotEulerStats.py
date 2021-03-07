@@ -45,6 +45,21 @@ def plot_euler_stats():
         cosmo = [cosmology[0], cosmology[6]]
         logger.info(f"\n Looking at cosmology {cosmo}")
         for real in range(5):
+            try:
+                logger.info(f" Looking at realisation {real}")
+                f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat=FullHealpyGCNN_tomo=1x1_z=0.0_{real}.npy"
+                predictions = np.load(os.path.join(STATS_DIR, f_name))
+
+                for ii, prediction in enumerate(predictions):
+                    om_pred_check.add_to_plot(prediction[0], cosmo[0])
+                    s8_pred_check.add_to_plot(prediction[1], cosmo[1])
+            except FileNotFoundError:
+                pass
+
+    cosmo = [0.26, 0.84]
+    logger.info(f"\n Looking at cosmology {cosmo}")
+    for real in range(50):
+        try:
             logger.info(f" Looking at realisation {real}")
             f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat=FullHealpyGCNN_tomo=1x1_z=0.0_{real}.npy"
             predictions = np.load(os.path.join(STATS_DIR, f_name))
@@ -52,17 +67,8 @@ def plot_euler_stats():
             for ii, prediction in enumerate(predictions):
                 om_pred_check.add_to_plot(prediction[0], cosmo[0])
                 s8_pred_check.add_to_plot(prediction[1], cosmo[1])
-
-    cosmo = [0.26, 0.84]
-    logger.info(f"\n Looking at cosmology {cosmo}")
-    for real in range(50):
-        logger.info(f" Looking at realisation {real}")
-        f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat=FullHealpyGCNN_tomo=1x1_z=0.0_{real}.npy"
-        predictions = np.load(os.path.join(STATS_DIR, f_name))
-
-        for ii, prediction in enumerate(predictions):
-            om_pred_check.add_to_plot(prediction[0], cosmo[0])
-            s8_pred_check.add_to_plot(prediction[1], cosmo[1])
+        except FileNotFoundError:
+            pass
 
     logger.info("Saving plots")
     om_pred_check.save_plot()
