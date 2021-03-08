@@ -62,6 +62,11 @@ def get_dataset(path=[]):
 
 def resize_tfr(path, MAP_TYPE, F_COUNT, target_path):
     for dset, file_name in get_dataset(path):
+        if MAP_TYPE == "grid":
+            index = _index_finder(file_name)
+            if index in [0, 1]:
+                logger.info(f"Index would have been {index} --> Already performed resizing for that index. Continuing...")
+                continue
         serialized_example_dump = []
         for ddata in dset:
             full_map = ddata[0].numpy()
