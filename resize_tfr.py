@@ -63,9 +63,9 @@ def get_dataset(path=[]):
 def resize_tfr(path, MAP_TYPE, F_COUNT, target_path):
     for dset, file_name in get_dataset(path):
         serialized_example_dump = []
-        for data in dset:
-            full_map = data[0].numpy()
-            label = data[1].numpy()
+        for ddata in dset:
+            full_map = ddata[0].numpy()
+            label = ddata[1].numpy()
 
             resized_data = []
             for tomo in range(4):
@@ -75,7 +75,7 @@ def resize_tfr(path, MAP_TYPE, F_COUNT, target_path):
                 logger.debug(f"File Name is {file_name}")
                 if not MAP_TYPE == "noise":
                     index = _index_finder(file_name)
-                    logger.debug(f"FOund index {index} in file name")
+                    logger.debug(f"Found index {index} in file name")
                 logger.debug(f"Final Data has shape {np.shape(final_data)}")
                 logger.debug(final_data)
                 logger.debug(f"Stopping the script")
