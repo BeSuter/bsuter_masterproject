@@ -89,6 +89,7 @@ class Trainer:
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
+        print(f"- Loaded Healpy Indices from {self.params['model']['healpy_indices']}")
         print(f"- Learning Rate is set to {self.params['model']['l_rate']}")
         if self.params['model']['profiler']['profile']:
             print(f" -- Profiling Training for Epochs {self.params['model']['profiler']['epochs']}")
@@ -104,15 +105,6 @@ class Trainer:
         self.worker_id = f" -- Worker ID is {hvd.rank() + 1}/{hvd.size()}"
         if hvd.rank() != 0:
             self.is_root_worker = False
-
-    @staticmethod
-    def _mask_maker(raw_dset):
-        iterator = iter(raw_dset)
-        bool_mask = hp.mask_good(iterator.get_next()[0][0].numpy())
-        indices_ext = np.arange(len(bool_mask))[bool_mask > 0.5]
-        logger.debug(f"Extended indices are {indices_ext}")
-
-        return bool_mask, indices_ext
 
     def count_elements(self):
         num = 0
@@ -142,10 +134,13 @@ class Trainer:
         if distributed_training:
             total_dataset = total_dataset.shard(hvd.size(), hvd.rank())
 
-        bool_mask, indices_ext = Trainer._mask_maker(total_dataset)
-        self.bool_mask = bool_mask
-        self.indices_ext = indices_ext
-        self.pixel_num = len(indices_ext)
+        if self.params['model']['healpy_indices'] == 'undefined':
+            logger.critical(f" !!! It is mandatory to specify the path to the npy file defining the Healpy indices "
+                            f"considered !!!")
+            sys.exit(0)
+        else:
+            self.indices_ext = np.load(self.params['model']['healpy_indices'])
+            self.pixel_num = len(self.indices_ext)
 
         total_dataset = total_dataset.shuffle(shuffle_size)
         total_dataset = total_dataset.batch(batch_size, drop_remainder=True)
@@ -202,7 +197,8 @@ class Trainer:
             input_shape=(self.params['dataloader']['batch_size'],
                          self.pixel_num,
                          self.params['dataloader']['tomographic_bin_number']))
-        logger.debug(f"Building model with input shape ({self.params['dataloader']['batch_size'], self.pixel_num, self.params['dataloader']['tomographic_bin_number']})")
+        logger.debug(f"Building model with input shape "
+                     f"({self.params['dataloader']['batch_size'], self.pixel_num, self.params['dataloader']['tomographic_bin_number']})")
         if self.params['model']['continue_training']:
             if self.params['model']['checkpoint_dir'] == "undefined":
                 logger.critical(
@@ -287,10 +283,7 @@ class Trainer:
                 noises.append(noise)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
-            noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2,
-                                                                      1]),
-                                    self.bool_mask,
-                                    axis=1)
+            noise = tf.transpose(noise_element, perm=[0, 2, 1])
         if not self.params['noise']['noise_type'] == "dominik_noise":
             noise = tf.stack(noises, axis=-1)
 
@@ -317,9 +310,7 @@ class Trainer:
             shape = [self.params['dataloader']['batch_size'],
                      self.pixel_num,
                      self.params['dataloader']['tomographic_bin_number']]
-            kappa_data = tf.boolean_mask(tf.transpose(set[0], perm=[0, 2, 1]),
-                                         self.bool_mask,
-                                         axis=1)
+            kappa_data = tf.transpose(set[0], perm=[0, 2, 1])
             kappa_data = tf.ensure_shape(kappa_data, shape)
             labels = set[1]
             # Add noise
@@ -415,10 +406,7 @@ class Trainer:
                     start_time=self.date_time)
 
                 for set in self.test_dataset:
-                    kappa_data = tf.boolean_mask(tf.transpose(
-                        set[0], perm=[0, 2, 1]),
-                        self.bool_mask,
-                        axis=1)
+                    kappa_data = tf.transpose(set[0], perm=[0, 2, 1])
                     labels = set[1]
                     labels = labels.numpy()
 
@@ -543,6 +531,7 @@ if __name__ == "__main__":
                         action='store',
                         default=4)
     parser.add_argument('--distributed_training', action='store_true', default=False)
+    parser.add_argument('--healpy_indices', type=str, action='store', default='undefined')
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -594,6 +583,7 @@ if __name__ == "__main__":
             'checkpoint_dir': ARGS.checkpoint_dir,
             'epochs_save': ARGS.epochs_save,
             'number_of_epochs_eval': ARGS.number_of_epochs_eval,
+            'healpy_indices': ARGS.healpy_indices,
             'profiler': {
                 'log_dir': ARGS.log_dir,
                 'profile': ARGS.profile,
@@ -604,6 +594,5 @@ if __name__ == "__main__":
             'distributed': ARGS.distributed_training
         }
     }
-    #tf.config.experimental_run_functions_eagerly(True)
     trainer = Trainer(parameters)
     trainer.train()
