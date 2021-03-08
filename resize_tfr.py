@@ -103,7 +103,7 @@ def resize_tfr(path, MAP_TYPE, F_COUNT, target_path):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    MAP_TYPE = str(args[1])
+    MAP_TYPE = str(args[0])
 
     if MAP_TYPE == "fiducial":
         path = "/cluster/work/refregier/besuter/All_TFR/TFRecordFiducial"
