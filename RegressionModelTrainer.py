@@ -5,7 +5,6 @@ import argparse
 import logging
 import collections
 import numpy as np
-import healpy as hp
 import tensorflow as tf
 
 try:
@@ -397,13 +396,15 @@ class Trainer:
                     epoch=epoch_non_zero,
                     layer=self.params['model']['layer'],
                     noise_type=self.params['noise']['noise_type'],
-                    start_time=self.date_time)
+                    start_time=self.date_time,
+                    evaluation_mode="average")
                 s8_pred_check = PredictionLabelComparisonPlot(
                     "Sigma_8",
                     epoch=epoch_non_zero,
                     layer=self.params['model']['layer'],
                     noise_type=self.params['noise']['noise_type'],
-                    start_time=self.date_time)
+                    start_time=self.date_time,
+                    evaluation_mode="average")
 
                 for set in self.test_dataset:
                     kappa_data = tf.transpose(set[0], perm=[0, 2, 1])
@@ -561,7 +562,7 @@ if __name__ == "__main__":
             'noise_type': ARGS.noise_type,
             'noise_dir': ARGS.noise_dir,
             'noise_dataloader': {
-                'data_dirs': "/scratch/snx3000/bsuter/TFRecordNoise",
+                'data_dirs': "/scratch/snx3000/bsuter/Final_TFR/TFRecordNoise",
                 'shuffle_size': ARGS.noise_shuffle,
                 'repeat_count': ARGS.repeat_count
             },
