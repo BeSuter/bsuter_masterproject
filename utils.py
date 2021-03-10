@@ -75,7 +75,7 @@ def get_dataset(path=[]):
 def get_layers(layer):
     if layer == "layer_1":
         layers = [
-            healpy_layers.HealpyChebyshev5(K=5, activation=tf.nn.elu),
+            healpy_layers.HealpyChebyshev(K=5, activation=tf.nn.elu),
             healpy_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
             healpy_layers.HealpyMonomial(K=5, activation=tf.nn.elu),
             healpy_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
@@ -86,10 +86,10 @@ def get_layers(layer):
         layers = [
             healpy_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
             healpy_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
-            healpy_layers.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
             healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
-            healpy_layers.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
             healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
