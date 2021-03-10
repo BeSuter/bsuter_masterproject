@@ -92,6 +92,9 @@ class Evaluator:
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
+        print(
+            f"- Number of neighbors considered when building the graph is set to {self.params['model']['n_neighbors']}"
+        )
         path = os.path.join(self.params['model']['weights_dir'], self.params['model']['checkpoint_dir'])
         print(f"- Loading Weights from {path}")
         print('')
@@ -113,7 +116,7 @@ class Evaluator:
 
     def import_pipeline_maps(self, index, random=False):
         full_tomo_map = []
-        logger.info(f"Loading pipeline maps")
+        logger.debug(f"Loading pipeline maps")
         path_to_map_ids = os.path.join("/cluster/work/refregier/besuter/master_branch/data/Maps", "Map_ids.npy")
         all_map_paths = os.listdir("/cluster/work/refregier/besuter/master_branch/data/Maps/FullMaps")
 
@@ -124,8 +127,8 @@ class Evaluator:
             random_ids = np.random.randint(0, high=len(all_ids), size=1)
         else:
             random_ids = [index]
+            logger.info(f"Using Id number {index}")
         for id in random_ids:
-            logger.info(f"Using Id number {id}")
             for file_name in all_map_paths:
                 if file_name.endswith(f"_id={all_ids[id]}.npy"):
                     choosen_labels.append(self._label_finder(file_name))
@@ -224,7 +227,8 @@ class Evaluator:
 
         self.model = hp_nn.HealpyGCNN(nside=self.params['model']['nside'],
                                       indices=self.indices_ext,
-                                      layers=self.layers)
+                                      layers=self.layers,
+                                      n_neighbors=self.params['model']['n_neighbors'])
         self.model.build(
             input_shape=(self.params['dataloader']['batch_size'],
                          self.pixel_num,
@@ -420,6 +424,7 @@ if __name__ == "__main__":
                         default='pixel_noise')
     parser.add_argument('--split_data', action='store_true', default=False)
     parser.add_argument('--nside', type=int, action='store', default=512)
+    parser.add_argument('--n_neighbors', type=int, action='store', default=20)
     parser.add_argument('--debug', action='store_true', default=False)
     parser.add_argument('--checkpoint_dir',
                         type=str,
@@ -492,6 +497,7 @@ if __name__ == "__main__":
             'debug': ARGS.debug,
             'layer': ARGS.layer,
             'nside': ARGS.nside,
+            'n_neighbors': ARGS.n_neighbors,
             'weights_dir': ARGS.weights_dir,
             'checkpoint_dir': ARGS.checkpoint_dir,
             },

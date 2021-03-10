@@ -4,9 +4,7 @@ import sys
 import logging
 import tensorflow as tf
 
-from DeepSphere import data
-from DeepSphere import gnn_layers
-from DeepSphere import healpy_networks as hp_nn
+from deepsphere import healpy_layers
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -17,6 +15,35 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 
 logger.addHandler(handler)
+
+
+def decode_labeled_dset(dset, shapes, auto_tune=True):
+    """
+    Returns a dataset where the proto bufferes were decoded according to the prescription of serialize_labeled_example
+    :param dset: the data set to decode
+    :param shapes: a list of shapes [shape_sample, shape_label]
+    :param auto_tune: use the experimental auto tune feature for the final mapping (dynamic CPU allocation)
+    :return: the decoded dset having two elements, sample and label
+    """
+
+    # a function to decode a single proto buffer
+    def decoder_func(record_bytes):
+        scheme = {"sample": tf.io.FixedLenFeature(shapes[0], dtype=tf.float32),
+                  "label": tf.io.FixedLenFeature(shapes[1], dtype=tf.float32)}
+
+        example = tf.io.parse_single_example(
+                    # Data
+                    record_bytes,
+                    # Schema
+                    scheme
+                  )
+        return example["sample"], example["label"]
+
+    # return the new dset
+    if auto_tune:
+        return dset.map(decoder_func, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    # otherwise serial
+    return dset.map(decoder_func)
 
 
 def _shape_finder(str):
@@ -42,71 +69,71 @@ def get_dataset(path=[]):
         all_files.extend(f_names)
     shapes = _shape_finder(all_files[0])
     dset = tf.data.TFRecordDataset(all_files)
-    decoded_dset = data.decode_labeled_dset(dset, shapes)
+    decoded_dset = decode_labeled_dset(dset, shapes)
     return decoded_dset
 
 def get_layers(layer):
     if layer == "layer_1":
         layers = [
-            hp_nn.HealpyChebyshev5(K=5, activation=tf.nn.elu),
-            gnn_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
-            hp_nn.HealpyMonomial(K=5, activation=tf.nn.elu),
-            gnn_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
+            healpy_layers.HealpyChebyshev5(K=5, activation=tf.nn.elu),
+            healpy_layers.HealpyPseudoConv(p=2, Fout=8, activation='relu'),
+            healpy_layers.HealpyMonomial(K=5, activation=tf.nn.elu),
+            healpy_layers.HealpyPseudoConv(p=2, Fout=16, activation='relu'),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(2)
         ]
     if layer == "layer_2":
         layers = [
-            gnn_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
-            gnn_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
-            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
+            healpy_layers.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
-            gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
-            hp_nn.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+            healpy_layers.HealpyChebyshev5(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
-            gnn_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
-            hp_nn.Healpy_ResidualLayer("CHEBY",
-                                       layer_kwargs={
-                                           "K": 5,
-                                           "activation": tf.nn.relu
-                                       },
-                                       use_bn=True,
-                                       norm_type="layer_norm"),
-            hp_nn.Healpy_ResidualLayer("CHEBY",
-                                       layer_kwargs={
-                                           "K": 5,
-                                           "activation": tf.nn.relu
-                                       },
-                                       use_bn=True,
-                                       norm_type="layer_norm"),
-            hp_nn.Healpy_ResidualLayer("CHEBY",
-                                       layer_kwargs={
-                                           "K": 5,
-                                           "activation": tf.nn.relu
-                                       },
-                                       use_bn=True,
-                                       norm_type="layer_norm"),
-            hp_nn.Healpy_ResidualLayer("CHEBY",
-                                       layer_kwargs={
-                                           "K": 5,
-                                           "activation": tf.nn.relu
-                                       },
-                                       use_bn=True,
-                                       norm_type="layer_norm"),
-            hp_nn.Healpy_ResidualLayer("CHEBY",
-                                       layer_kwargs={
-                                           "K": 5,
-                                           "activation": tf.nn.relu
-                                       },
-                                       use_bn=True,
-                                       norm_type="layer_norm"),
-            hp_nn.Healpy_ResidualLayer("CHEBY",
-                                       layer_kwargs={
-                                           "K": 5,
-                                           "activation": tf.nn.relu
-                                       },
-                                       use_bn=True,
-                                       norm_type="layer_norm"),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                               "K": 5,
+                                               "activation": tf.nn.relu
+                                           },
+                                           use_bn=True,
+                                           norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
             tf.keras.layers.Flatten(),
             tf.keras.layers.LayerNormalization(axis=1),
             tf.keras.layers.Dense(2)

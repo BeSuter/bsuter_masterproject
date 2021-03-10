@@ -14,7 +14,7 @@ except ImportError:
     IMPORTED_HVD = False
 
 from datetime import datetime
-from DeepSphere import healpy_networks as hp_nn
+from deepsphere import healpy_networks as hp_nn
 from Plotter import l2_color_plot, histo_plot, stats, S8plot, PredictionLabelComparisonPlot
 
 
@@ -88,6 +88,9 @@ class Trainer:
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
+        print(
+            f"- Number of neighbors considered when building the graph is set to {self.params['model']['n_neighbors']}"
+        )
         print(f"- Loaded Healpy Indices from {self.params['model']['healpy_indices']}")
         print(f"- Learning Rate is set to {self.params['model']['l_rate']}")
         if self.params['model']['profiler']['profile']:
@@ -191,7 +194,8 @@ class Trainer:
 
         self.model = hp_nn.HealpyGCNN(nside=self.params['model']['nside'],
                                       indices=self.indices_ext,
-                                      layers=self.layers)
+                                      layers=self.layers,
+                                      n_neighbors=self.params['model']['n_neighbors'])
         self.model.build(
             input_shape=(self.params['dataloader']['batch_size'],
                          self.pixel_num,
@@ -501,6 +505,7 @@ if __name__ == "__main__":
     parser.add_argument('--split_data', action='store_true', default=False)
     parser.add_argument('--nside', type=int, action='store', default=512)
     parser.add_argument('--l_rate', type=float, action='store', default=0.008)
+    parser.add_argument('--n_neighbors', type=int, action='store', default=20)
     parser.add_argument('--continue_training',
                         action='store_true',
                         default=False)
@@ -579,6 +584,7 @@ if __name__ == "__main__":
             'layer': ARGS.layer,
             'epochs': ARGS.epochs,
             'l_rate': ARGS.l_rate,
+            'n_neighbors': ARGS.n_neighbors,
             'nside': ARGS.nside,
             'continue_training': ARGS.continue_training,
             'weights_dir': ARGS.weights_dir,
