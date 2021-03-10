@@ -222,7 +222,7 @@ class Trainer:
                                    self.date_time)
         os.makedirs(path_to_dir, exist_ok=True)
         weight_file_name = f"kappa_batch={self.params['dataloader']['batch_size']}" + \
-                           f"_shuffle={self.params['noise']['noise_dataloader']['shuffle_size']}" + \
+                           f"_shuffle={self.params['dataloader']['shuffle_size']}" + \
                            f"_epoch={epoch}.tf"
         save_weights_to = os.path.join(path_to_dir, weight_file_name)
         logger.info(
@@ -468,6 +468,7 @@ class Trainer:
                        start_time=self.date_time)
                 om_pred_check.save_plot()
                 s8_pred_check.save_plot()
+
 
         if not self.params['model']['debug'] and self.is_root_worker:
             stats(train_loss_results.stack().numpy(),
