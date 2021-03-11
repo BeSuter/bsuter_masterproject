@@ -174,7 +174,7 @@ class Trainer:
 
         # total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
         #       repeat_count)
-        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(0)
+        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(-1)
 
         total_noise_dataset = total_noise_dataset.batch(batch_size,
                                                         drop_remainder=True)
