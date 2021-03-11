@@ -270,7 +270,6 @@ class Trainer:
                 noises.append(noise)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
-            logger.debug(f"Got Noise Element from Dominik Noise")
             noise = tf.transpose(noise_element, perm=[0, 2, 1])
         if not self.params['noise']['noise_type'] == "dominik_noise":
             noise = tf.stack(noises, axis=-1)
@@ -342,7 +341,7 @@ class Trainer:
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
 
             if self.params['noise']['noise_type'] == "dominik_noise":
-                logger.debug(f"Initialising Noise Dataset")
+                logger.debug(f"Initialising Noise Dataset" + self.worker_id)
                 self._init_noise_iteration()
 
             epoch_cond = epoch in self.params['model']['profiler']['epochs']
