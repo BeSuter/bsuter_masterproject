@@ -172,12 +172,17 @@ class Trainer:
         if distributed_training:
             total_noise_dataset = total_noise_dataset.shard(hvd.size(), hvd.rank())
 
-        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
-            repeat_count)
+        # total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
+        #       repeat_count)
+        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(0)
+
         total_noise_dataset = total_noise_dataset.batch(batch_size,
                                                         drop_remainder=True)
         total_noise_dataset = total_noise_dataset.prefetch(prefetch_batch)
-        self.noise_dataset = total_noise_dataset
+        # self.noise_dataset = total_noise_dataset
+        iterator = iter(total_noise_dataset)
+        self.noise_dataset_iterator = iterator
+        logger.debug(f"Trying with infinite repeat and onetime initialisation of noise dataset..." + self.worker_id)
 
     def _init_noise_iteration(self):
         iterator = iter(self.noise_dataset)
@@ -270,6 +275,7 @@ class Trainer:
                 noises.append(noise)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
+            logger.debug("Received noise_element. Initialisation of iterator is working." + self.worker_id)
             noise = tf.transpose(noise_element, perm=[0, 2, 1])
         if not self.params['noise']['noise_type'] == "dominik_noise":
             noise = tf.stack(noises, axis=-1)
@@ -341,8 +347,9 @@ class Trainer:
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
 
             if self.params['noise']['noise_type'] == "dominik_noise":
-                logger.debug(f"Initialising Noise Dataset" + self.worker_id)
-                self._init_noise_iteration()
+                # logger.debug(f"Initialising Noise Dataset" + self.worker_id)
+                # self._init_noise_iteration()
+                logger.debug(f"Using single initialisation of noise dataset. Skipping..." + self.worker_id)
 
             epoch_cond = epoch in self.params['model']['profiler']['epochs']
             if self.params['model']['profiler']['profile'] and epoch_cond and self.is_root_worker:
