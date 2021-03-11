@@ -341,7 +341,7 @@ class Trainer:
                                              clear_after_read=False)
         if self.params['model']['epochs'] < self.params['model']['number_of_epochs_eval']:
             # Defaults to evaluating the last epoch
-            self.params['model']['number_of_epochs_eval'] = self.params['model']['epochs'] - 1
+            self.params['model']['number_of_epochs_eval'] = 1
 
         for epoch in range(self.params['model']['epochs']):
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
