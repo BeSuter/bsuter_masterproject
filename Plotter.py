@@ -6,6 +6,47 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from datetime import datetime
+from getdist import plots, mcsamples
+
+
+def add_S8_to_MCMC(top_dir, out_name):
+    with open('{}/{}/{}.paramnames'.format(top_dir, out_name, out_name), 'r') as f:
+        content = ''.join(f.readlines())
+
+    if 'S8' in content:
+        pass
+    else:
+        with open('{}/{}/{}.paramnames'.format(top_dir, out_name, out_name), 'a') as f:
+            f.writelines('S8 S_8 \n')
+
+        with open('{}/{}/{}.pdf_ranges'.format(top_dir, out_name, out_name), 'r') as f:
+            omega = f.readline()
+            omega_min = float(omega.split(' ')[1])
+            omega_max = float(omega.split(' ')[2])
+            sigma = f.readline()
+            sigma_min = float(sigma.split(' ')[1])
+            sigma_max = float(sigma.split(' ')[2])
+        S8s = sigma_min * np.sqrt(omega_min / 0.3), sigma_max * \
+              np.sqrt(omega_max / 0.3)
+        with open('{}/{}/{}.pdf_ranges'.format(top_dir, out_name, out_name), 'a') as f:
+            f.writelines('S8 {} {} \n'.format(np.min(S8s), np.max(S8s)))
+
+        data = np.genfromtxt('{}/{}/{}.txt'.format(top_dir, out_name, out_name))
+        data = np.hstack((data,
+                          (data[:, 3] * np.sqrt(
+                              data[:, 2] / 0.3)).reshape(-1, 1)))
+        np.savetxt('{}/{}/{}.txt'.format(top_dir, out_name, out_name), data)
+
+
+def plot_contours(top_dir, out_name):
+    add_S8_to_MCMC(top_dir, out_name)
+
+    sample = mcsamples.loadMCSamples(
+        '{}/{}/{}.txt'.format(top_dir, out_name, out_name))
+    g = plots.get_subplot_plotter()
+    g.triangle_plot(sample, colors=['b'], filled=True)
+    fig = plt.gcf()
+    plt.savefig('{}/{}/{}.png'.format(top_dir, out_name, out_name))
 
 
 def noise_plotter(noise,
