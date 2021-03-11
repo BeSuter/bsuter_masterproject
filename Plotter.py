@@ -35,18 +35,19 @@ def add_S8_to_MCMC(top_dir, out_name):
         data = np.hstack((data,
                           (data[:, 3] * np.sqrt(
                               data[:, 2] / 0.3)).reshape(-1, 1)))
-        np.savetxt('{}/{}/{}.txt'.format(top_dir, out_name, out_name), data)
+        np.savetxt('{}/{}/{}_test.txt'.format(top_dir, out_name, out_name), data)
 
 
 def plot_contours(top_dir, out_name):
     add_S8_to_MCMC(top_dir, out_name)
 
     sample = mcsamples.loadMCSamples(
-        '{}/{}/{}.txt'.format(top_dir, out_name, out_name))
+        '{}/{}/{}_test.txt'.format(top_dir, out_name, out_name))
     g = plots.get_subplot_plotter()
     g.triangle_plot(sample, colors=['b'], filled=True)
     fig = plt.gcf()
     plt.savefig('{}/{}/{}.png'.format(top_dir, out_name, out_name))
+    return fig
 
 
 def noise_plotter(noise,
