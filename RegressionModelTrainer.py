@@ -268,20 +268,9 @@ class Trainer:
                 noise = tf.math.multiply(noise, stddev)
                 noise = tf.math.add(noise, mean)
                 noises.append(noise)
-        elif self.params['noise']['noise_type'] == "old_noise":
-            for tomo in range(
-                    self.params['dataloader']['tomographic_bin_number']):
-                noise = tf.random.normal(
-                    [self.params['dataloader']['batch_size'], self.pixel_num],
-                    mean=0.0,
-                    stddev=1.0)
-                noise *= self.params['noise']['tomographic_context'][tomo +
-                                                                     1][0]
-                noise += self.params['noise']['tomographic_context'][tomo +
-                                                                     1][1]
-                noises.append(noise)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
+            logger.debug(f"Got Noise Element from Dominik Noise")
             noise = tf.transpose(noise_element, perm=[0, 2, 1])
         if not self.params['noise']['noise_type'] == "dominik_noise":
             noise = tf.stack(noises, axis=-1)
@@ -353,6 +342,7 @@ class Trainer:
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
 
             if self.params['noise']['noise_type'] == "dominik_noise":
+                logger.debug(f"Initialising Noise Dataset")
                 self._init_noise_iteration()
 
             epoch_cond = epoch in self.params['model']['profiler']['epochs']
@@ -566,12 +556,6 @@ if __name__ == "__main__":
                 'data_dirs': "/scratch/snx3000/bsuter/Final_TFR/TFRecordNoise",
                 'shuffle_size': ARGS.noise_shuffle,
                 'repeat_count': ARGS.repeat_count
-            },
-            'tomographic_context': {
-                1: [0.060280509803501296, 2.6956629531655215e-07],
-                2: [0.06124986702256547, -1.6575954273040043e-07],
-                3: [0.06110073383083452, -1.4452612096534303e-07],
-                4: [0.06125788725968831, 1.2850254404014072e-07]
             }
         },
         'model': {
