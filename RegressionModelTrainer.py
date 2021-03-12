@@ -165,7 +165,6 @@ class Trainer:
         """ Only used if we intend to use noise maps directly from the NGSF pipeline """
         data_dirs = self.params['noise']['noise_dataloader']['data_dirs']
         shuffle_size = self.params['noise']['noise_dataloader']['shuffle_size']
-        repeat_count = self.params['noise']['noise_dataloader']['repeat_count']
         batch_size = self.params['dataloader']['batch_size']
         prefetch_batch = self.params['dataloader']['prefetch_batch']
         distributed_training = self.params['training']['distributed']
@@ -175,15 +174,11 @@ class Trainer:
         if distributed_training:
             total_noise_dataset = total_noise_dataset.shard(hvd.size(), hvd.rank())
 
-        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
-            repeat_count)
+        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(-1)
         total_noise_dataset = total_noise_dataset.batch(batch_size,
                                                         drop_remainder=True)
         total_noise_dataset = total_noise_dataset.prefetch(prefetch_batch)
-        self.noise_dataset = total_noise_dataset
-
-    def _init_noise_iteration(self):
-        iterator = iter(self.noise_dataset)
+        iterator = iter(total_noise_dataset)
         self.noise_dataset_iterator = iterator
 
     def _set_model(self):
@@ -351,13 +346,10 @@ class Trainer:
                                              clear_after_read=False)
         if self.params['model']['epochs'] < self.params['model']['number_of_epochs_eval']:
             # Defaults to evaluating the last epoch
-            self.params['model']['number_of_epochs_eval'] = self.params['model']['epochs'] - 1
+            self.params['model']['number_of_epochs_eval'] = 1
 
         for epoch in range(self.params['model']['epochs']):
             logger.debug(f"Executing training step for epoch={epoch}" + self.worker_id)
-
-            if self.params['noise']['noise_type'] == "dominik_noise":
-                self._init_noise_iteration()
 
             epoch_cond = epoch in self.params['model']['profiler']['epochs']
             if self.params['model']['profiler']['profile'] and epoch_cond and self.is_root_worker:
@@ -527,7 +519,6 @@ if __name__ == "__main__":
                         type=int,
                         action='store',
                         default=75)
-    parser.add_argument('--repeat_count', type=int, action='store', default=2)
     parser.add_argument('--log_dir',
                         type=str,
                         action='store',
@@ -569,8 +560,7 @@ if __name__ == "__main__":
             'noise_dir': ARGS.noise_dir,
             'noise_dataloader': {
                 'data_dirs': "/scratch/snx3000/bsuter/Final_TFR/TFRecordNoise",
-                'shuffle_size': ARGS.noise_shuffle,
-                'repeat_count': ARGS.repeat_count
+                'shuffle_size': ARGS.noise_shuffle
             },
             'tomographic_context': {
                 1: [0.060280509803501296, 2.6956629531655215e-07],
