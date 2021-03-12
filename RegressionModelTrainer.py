@@ -81,7 +81,6 @@ class Trainer:
         if self.params['noise']['noise_type'] == 'dominik_noise':
             print(f" -- Loaded Noise from {self.params['noise']['noise_dataloader']['data_dirs']}")
             print(f" -- Noise Shuffle Size is {self.params['noise']['noise_dataloader']['shuffle_size']}")
-            print(f" -- Noise Repeat Count is {self.params['noise']['noise_dataloader']['repeat_count']}")
 
         print('')
         print(' MODEL ')
