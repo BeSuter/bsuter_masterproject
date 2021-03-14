@@ -45,9 +45,9 @@ def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS", sta
         logger.info(f"\n Looking at cosmology {cosmo}")
         for real in range(5):
             try:
-                logger.info(f" Looking at realisation {real}")
-                f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo=1x1_z=0.0_{real}.npy"
+                f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo=0x0_z=0.0_{real}.npy"
                 predictions = np.load(os.path.join(STATS_DIR, f_name))
+                logger.info(f"Found {f_name}")
 
                 for ii, prediction in enumerate(predictions):
                     om_pred_check.add_to_plot(prediction[0], cosmo[0])
@@ -59,9 +59,9 @@ def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS", sta
     logger.info(f"\n Looking at cosmology {cosmo}")
     for real in range(50):
         try:
-            logger.info(f" Looking at realisation {real}")
             f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo=1x1_z=0.0_{real}.npy"
             predictions = np.load(os.path.join(STATS_DIR, f_name))
+            logger.info(f"Found {f_name}")
 
             for ii, prediction in enumerate(predictions):
                 om_pred_check.add_to_plot(prediction[0], cosmo[0])
