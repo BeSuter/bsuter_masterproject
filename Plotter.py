@@ -8,6 +8,19 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
+def make_contours(top_dir, stat='FullHealpyGCNN_DS2'):
+    try:
+        from NGSF.plotting import plotting
+    except ImportError:
+        print("Did not find NGSF.plotting")
+
+    directory = '{}/PLOTS'.format(top_dir)
+    filename_config = '/cluster/work/refregier/besuter/configuration_file_ext.yml'
+
+    fig = plotting.plot_contours(directory, filename_config, statistic=stat, systematics=False,
+                                 verbose=False)
+    plt.savefig('{}/FullHealpyGCNN_Contours.png'.format(top_dir))
+
 def add_S8_to_MCMC(top_dir, out_name):
     with open('{}/{}/{}.paramnames'.format(top_dir, out_name, out_name), 'r') as f:
         content = ''.join(f.readlines())
