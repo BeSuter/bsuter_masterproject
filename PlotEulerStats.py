@@ -18,11 +18,10 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def plot_euler_stats():
+def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS"):
 
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
-    STATS_DIR = "/cluster/work/refregier/besuter/data/STATS"
     cosmo_file = os.path.join("/cluster/work/refregier/besuter/data", "cosmo.par")
     all_cosmologies = np.genfromtxt(cosmo_file)
 
