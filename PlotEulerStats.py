@@ -18,7 +18,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
-def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS", stat="FullHealpyGCNN_DS2"):
+def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS", stat="FullHealpyGCNN_DS2", tomo="0x0"):
 
     date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
 
@@ -45,7 +45,7 @@ def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS", sta
         logger.info(f"\n Looking at cosmology {cosmo}")
         for real in range(5):
             try:
-                f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo=0x0_z=0.0_{real}.npy"
+                f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo={tomo}_z=0.0_{real}.npy"
                 predictions = np.load(os.path.join(STATS_DIR, f_name))
                 logger.info(f"Found {f_name}")
 
@@ -59,7 +59,7 @@ def plot_euler_stats(STATS_DIR="/cluster/work/refregier/besuter/data/STATS", sta
     logger.info(f"\n Looking at cosmology {cosmo}")
     for real in range(50):
         try:
-            f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo=1x1_z=0.0_{real}.npy"
+            f_name = f"SIM_IA=0.0_Om={cosmo[0]}_eta=0.0_m=0.0_mode=E_s8={cosmo[1]}_stat={stat}_tomo={tomo}_z=0.0_{real}.npy"
             predictions = np.load(os.path.join(STATS_DIR, f_name))
             logger.info(f"Found {f_name}")
 
