@@ -154,7 +154,7 @@ class Trainer:
             self.test_dataset = test_dataset.prefetch(prefetch_batch)
             self.train_dataset = train_dataset.prefetch(prefetch_batch)
         else:
-            self.test_dataset = total_dataset.enumerate().filter(is_train).map(
+            self.test_dataset = total_dataset.enumerate().filter(is_test).map(
                 recover).prefetch(prefetch_batch)
             self.train_dataset = total_dataset.prefetch(prefetch_batch)
 
