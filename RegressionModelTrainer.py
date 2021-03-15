@@ -359,11 +359,19 @@ class Trainer:
             else:
                 epoch_loss_avg, epoch_global_norm = self.train_step(epoch == 0)
 
+            epoch_loss_avg = epoch_loss_avg.numpy()
+            epoch_global_norm = epoch_global_norm.numpy()
             # End epoch
-            loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
-            glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
+            for index in range(self.params['dataloader']["number_of_elements"]):
+                write_index = (epoch * self.params['dataloader']["number_of_elements"]) + index
+                write_index = tf.dtypes.cast(write_index, tf.int32)
+
+                train_loss_results = train_loss_results.write(write_index, epoch_loss_avg[index])
+                global_norm_results = global_norm_results.write(write_index, epoch_global_norm[index])
 
             if epoch > 0 and epoch % 10 == 0:
+                loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
+                glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
                 logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
 
             train_loss_results = train_loss_results.write(epoch, loss)
