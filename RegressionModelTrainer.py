@@ -360,14 +360,14 @@ class Trainer:
                 epoch_loss_avg, epoch_global_norm = self.train_step(epoch == 0)
 
             # End epoch
-            if epoch > 0 and epoch % 10 == 0:
-                loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
-                glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
+            loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
+            glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
 
+            if epoch > 0 and epoch % 10 == 0:
                 logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
 
-                train_loss_results = train_loss_results.write(epoch, loss)
-                global_norm_results = global_norm_results.write(epoch, glob_norm)
+            train_loss_results = train_loss_results.write(epoch, loss)
+            global_norm_results = global_norm_results.write(epoch, glob_norm)
 
             epoch_cond = epoch % self.params['model']['epochs_save'] == 0
             if epoch > 0 and epoch_cond and self.is_root_worker and not self.params['model']['debug']:
