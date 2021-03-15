@@ -125,6 +125,8 @@ def stats(data,
         file_path += f"_epoch={epoch}.png"
     else:
         file_path += ".png"
+    result_path = file_path[:-4] + ".npy"
+    np.save(result_path, data)
     plt.savefig(file_path)
     plt.close("stats")
 
