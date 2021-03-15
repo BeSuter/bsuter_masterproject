@@ -374,9 +374,6 @@ class Trainer:
                 glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
                 logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
 
-            train_loss_results = train_loss_results.write(epoch, loss)
-            global_norm_results = global_norm_results.write(epoch, glob_norm)
-
             epoch_cond = epoch % self.params['model']['epochs_save'] == 0
             if epoch > 0 and epoch_cond and self.is_root_worker and not self.params['model']['debug']:
                 self._save_model(epoch + 1)
