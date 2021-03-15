@@ -97,16 +97,24 @@ def stats(data,
           layer="Undefined_Layer",
           noise_type="Undefinded_Noise_Type",
           start_time="Undefined_Time",
-          evaluation=""):
+          evaluation="",
+          type=False):
     """
     :params data: ndarray
     :params label: str
     """
     date_time = datetime.now().strftime("%m-%d-%Y")
 
+    if type and label == "global_norm":
+        y_max = 2.
+    elif type and label == "training_loss":
+        y_max = 0.75
+    else:
+        y_max = 5.
+
     plt.figure(num="stats", figsize=(12, 8))
     plt.plot(data, label=label)
-    plt.ylim(0, 5.)
+    plt.ylim(0, y_max)
     plt.title(f"Monitoring {label}, epoch={epoch}")
     plt.legend()
 

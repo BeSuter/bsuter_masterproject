@@ -475,12 +475,14 @@ class Trainer:
                   "training_loss",
                   layer=self.params['model']['layer'],
                   noise_type=self.params['noise']['noise_type'],
-                  start_time=self.date_time)
+                  start_time=self.date_time,
+                  type=self.params['model']['continue_training'])
             stats(global_norm_results.stack().numpy(),
                   "global_norm",
                   layer=self.params['model']['layer'],
                   noise_type=self.params['noise']['noise_type'],
-                  start_time=self.date_time)
+                  start_time=self.date_time,
+                  type=self.params['model']['continue_training'])
 
             self._save_model(epoch + 1)
 
