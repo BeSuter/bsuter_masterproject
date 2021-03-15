@@ -344,8 +344,8 @@ class Trainer:
 
             epoch_loss_avg = epoch_loss_avg.write(index, loss_value)
             epoch_global_norm = epoch_global_norm.write(index, tf.linalg.global_norm(grads))
-            epoch_mean_abs_err_avg = epoch_mean_abs_err_avg(index, mean_abs_err)
-            epoch_l2_avg = epoch_l2_avg(index, l2_norm)
+            epoch_mean_abs_err_avg = epoch_mean_abs_err_avg.write(index, mean_abs_err)
+            epoch_l2_avg = epoch_l2_avg.write(index, l2_norm)
 
         return epoch_loss_avg.stack(), epoch_global_norm.stack(), epoch_mean_abs_err_avg.stack(), epoch_l2_avg.stack()
 
