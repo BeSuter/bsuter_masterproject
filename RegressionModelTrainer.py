@@ -300,6 +300,18 @@ class Trainer:
             dynamic_size=False,
             clear_after_read=False,
         )
+        epoch_mean_abs_err_avg = tf.TensorArray(
+            tf.float32,
+            size=self.params['dataloader']["number_of_elements"],
+            dynamic_size=False,
+            clear_after_read=False,
+        )
+        epoch_l2_avg = tf.TensorArray(
+            tf.float32,
+            size=self.params['dataloader']["number_of_elements"],
+            dynamic_size=False,
+            clear_after_read=False,
+        )
 
         for element in self.train_dataset.enumerate():
             index = tf.dtypes.cast(element[0], tf.int32)
@@ -318,7 +330,9 @@ class Trainer:
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
                 y_ = self.model.__call__(kappa_data, training=True)
-                loss_value = loss_object(y_true=labels, y_pred=y_)
+                l2_norm = 1e-3 * tf.math.square(tf.linalg.global_norm(self.model.trainable_weights))
+                mean_abs_err = loss_object(y_true=labels, y_pred=y_)
+                loss_value = mean_abs_err + l2_norm
             if self.params['training']['distributed']:
                 tape = hvd.DistributedGradientTape(tape)
             grads = tape.gradient(loss_value, self.model.trainable_variables)
@@ -330,8 +344,10 @@ class Trainer:
 
             epoch_loss_avg = epoch_loss_avg.write(index, loss_value)
             epoch_global_norm = epoch_global_norm.write(index, tf.linalg.global_norm(grads))
+            epoch_mean_abs_err_avg = epoch_mean_abs_err_avg(index, mean_abs_err)
+            epoch_l2_avg = epoch_l2_avg(index, l2_norm)
 
-        return epoch_loss_avg.stack(), epoch_global_norm.stack()
+        return epoch_loss_avg.stack(), epoch_global_norm.stack(), epoch_mean_abs_err_avg.stack(), epoch_l2_avg.stack()
 
     def train(self):
         # Keep results for plotting
@@ -343,6 +359,14 @@ class Trainer:
                                              size=0,
                                              dynamic_size=True,
                                              clear_after_read=False)
+        mean_abs_err_results = tf.TensorArray(tf.float32,
+                                              size=0,
+                                              dynamic_size=True,
+                                              clear_after_read=False)
+        l2_results = tf.TensorArray(tf.float32,
+                                    size=0,
+                                    dynamic_size=True,
+                                    clear_after_read=False)
         if self.params['model']['epochs'] < self.params['model']['number_of_epochs_eval']:
             # Defaults to evaluating the last epoch
             self.params['model']['number_of_epochs_eval'] = 1
@@ -355,12 +379,14 @@ class Trainer:
                 log_dir = self._make_log_dir(epoch)
                 logger.info("Starting profiling" + self.worker_id + "\n")
                 with tf.profiler.experimental.Profile(log_dir):
-                    epoch_loss_avg, epoch_global_norm = self.train_step(epoch == 0)
+                    epoch_loss_avg, epoch_global_norm, epoch_mean_abs_err_avg, epoch_l2_avg = self.train_step(epoch == 0)
             else:
-                epoch_loss_avg, epoch_global_norm = self.train_step(epoch == 0)
+                epoch_loss_avg, epoch_global_norm, epoch_mean_abs_err_avg, epoch_l2_avg = self.train_step(epoch == 0)
 
             epoch_loss_avg = epoch_loss_avg.numpy()
             epoch_global_norm = epoch_global_norm.numpy()
+            epoch_mean_abs_err_avg = epoch_mean_abs_err_avg.numpy()
+            epoch_l2_avg = epoch_l2_avg.numpy()
             # End epoch
             for index in range(self.params['dataloader']["number_of_elements"]):
                 write_index = (epoch * self.params['dataloader']["number_of_elements"]) + index
@@ -368,6 +394,8 @@ class Trainer:
 
                 train_loss_results = train_loss_results.write(write_index, epoch_loss_avg[index])
                 global_norm_results = global_norm_results.write(write_index, epoch_global_norm[index])
+                mean_abs_err_results = mean_abs_err_results.write(write_index, epoch_mean_abs_err_avg[index])
+                l2_results = l2_results.write(write_index, epoch_l2_avg[index])
 
             if epoch > 0 and epoch % 10 == 0:
                 loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
@@ -479,6 +507,18 @@ class Trainer:
                   type=self.params['model']['continue_training'])
             stats(global_norm_results.stack().numpy(),
                   "global_norm",
+                  layer=self.params['model']['layer'],
+                  noise_type=self.params['noise']['noise_type'],
+                  start_time=self.date_time,
+                  type=self.params['model']['continue_training'])
+            stats(mean_abs_err_results.stack().numpy(),
+                  "MeanAbsErr",
+                  layer=self.params['model']['layer'],
+                  noise_type=self.params['noise']['noise_type'],
+                  start_time=self.date_time,
+                  type=self.params['model']['continue_training'])
+            stats(l2_results.stack().numpy(),
+                  "L2Regularization",
                   layer=self.params['model']['layer'],
                   noise_type=self.params['noise']['noise_type'],
                   start_time=self.date_time,
