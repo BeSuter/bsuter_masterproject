@@ -247,11 +247,13 @@ def l2_color_plot(predictions,
 
 class PredictionLabelComparisonPlot:
     def __init__(self, topic, target=None, **kwargs):
-        epoch = kwargs.pop("epochs", None)
+        epoch = kwargs.pop("epoch", None)
         if epoch:
             title = f"{topic} prediction compared to Label for epoch {epoch}"
+            epoch_name = f"_epoch={epoch}"
         else:
             title = f"{topic} prediction compared to Label"
+            epoch_name = ""
         date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
         self.fig = plt.figure(figsize=(12, 8))
         self.fig_ax = self.fig.add_axes(
@@ -259,16 +261,14 @@ class PredictionLabelComparisonPlot:
             ylabel="Predictions",
             xlabel="Labels",
             title=title)
-        plot_name = f"{topic}_comparison"
+        plot_name = f"{topic}_comparison" + epoch_name
         batch_size = kwargs.pop("batch_size", None)
         if batch_size:
             plot_name += f"_batch={batch_size}"
         shuffle_size = kwargs.pop("shuffle_size", None)
         if shuffle_size:
             plot_name += f"_shuffle={shuffle_size}"
-        epoch = kwargs.pop("epochs", None)
-        if epoch:
-            plot_name += f"_epochs={epoch}"
+
         layer = kwargs.pop("layer", "Undefined_Layer")
         noise_type = kwargs.pop("noise_type", "Undefinded_Noise_Type")
         start_time = kwargs.pop("start_time", "Undefined_Time")
@@ -334,6 +334,7 @@ class PredictionLabelComparisonPlot:
         xmin, xmax = self.fig_ax.axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
         self.fig_ax.plot(true_line, true_line, alpha=0.3, color="red")
+        self.fig_ax.title(f"{topic} comparison")
 
         self.fig.savefig(self.file_path)
         plt.close(self.fig)
