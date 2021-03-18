@@ -10,8 +10,8 @@ import healpy as hp
 import tensorflow as tf
 
 from datetime import datetime
-from DeepSphere import healpy_networks as hp_nn
-from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot, noise_plotter
+from deepsphere import healpy_networks as hp_nn
+from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -210,15 +210,11 @@ class Evaluator:
 
         total_noise_dataset = utils.get_dataset(data_dirs)
 
-        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(
-            repeat_count)
+        total_noise_dataset = total_noise_dataset.shuffle(shuffle_size).repeat(-1)
         total_noise_dataset = total_noise_dataset.batch(batch_size,
                                                         drop_remainder=True)
         total_noise_dataset = total_noise_dataset.prefetch(prefetch_batch)
-        self.noise_dataset = total_noise_dataset
-
-    def _init_noise_iteration(self):
-        iterator = iter(self.noise_dataset)
+        iterator = iter(total_noise_dataset)
         self.noise_dataset_iterator = iterator
 
     def _set_model(self):
@@ -324,9 +320,6 @@ class Evaluator:
             start_time=self.date_time,
             evaluation="Evaluation",
             evaluation_mode=self.params['plots']['PredictionLabelComparisonPlot']['evaluation_mode'])
-
-        if self.params['noise']['noise_type'] == "dominik_noise":
-            self._init_noise_iteration()
 
         for set in self.test_dataset:
             if not self.params['dataloader']['pipeline_data']:
