@@ -330,7 +330,7 @@ class Trainer:
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
                 y_ = self.model.__call__(kappa_data, training=True)
-                l2_norm = 1e-3 * tf.math.square(tf.linalg.global_norm(self.model.trainable_weights))
+                l2_norm = 1e-5 * tf.math.square(tf.linalg.global_norm(self.model.trainable_weights))
                 mean_abs_err = loss_object(y_true=labels, y_pred=y_)
                 loss_value = mean_abs_err + l2_norm
             if self.params['training']['distributed']:
