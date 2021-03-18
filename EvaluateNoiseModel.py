@@ -236,8 +236,9 @@ class Evaluator:
             path_to_weights = os.path.join(
                 self.params['model']['weights_dir'],
                 self.params['model']['checkpoint_dir'])
-            self.model.load_weights(
-                tf.train.latest_checkpoint(path_to_weights))
+            # self.model.load_weights(
+            #    tf.train.latest_checkpoint(path_to_weights))
+            self.model.load_weights(tf.train.latest_checkpoint(path_to_weights))
 
     def _make_noise(self):
         noises = []
