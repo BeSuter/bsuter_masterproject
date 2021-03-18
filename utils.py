@@ -99,6 +99,7 @@ def get_layers(layer):
                                            },
                                            use_bn=True,
                                            norm_type="layer_norm"),
+            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
@@ -113,6 +114,7 @@ def get_layers(layer):
                                                },
                                                use_bn=True,
                                                norm_type="layer_norm"),
+            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
@@ -127,6 +129,7 @@ def get_layers(layer):
                                                },
                                                use_bn=True,
                                                norm_type="layer_norm"),
+            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
