@@ -19,7 +19,7 @@ def make_contours(top_dir, stat='FullHealpyGCNN', tomo=False):
 
     fig = plotting.plot_contours(directory, filename_config, statistic=stat, systematics=False,
                                  verbose=False, tomo=tomo)
-    plt.savefig('{}/FullHealpyGCNN_Contours.png'.format(top_dir))
+    plt.savefig('{}/{}_Contours.png'.format(top_dir, stat))
 
 def add_S8_to_MCMC(top_dir, out_name):
     with open('{}/{}/{}.paramnames'.format(top_dir, out_name, out_name), 'r') as f:
