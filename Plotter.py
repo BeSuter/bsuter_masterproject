@@ -18,7 +18,7 @@ def make_contours(top_dir, stat='FullHealpyGCNN', tomo=False):
     filename_config = '/cluster/work/refregier/besuter/configuration_file_ext.yml'
 
     fig = plotting.plot_contours(directory, filename_config, statistic=stat, systematics=False,
-                                 verbose=False, tomo=False)
+                                 verbose=False, tomo=tomo)
     plt.savefig('{}/FullHealpyGCNN_Contours.png'.format(top_dir))
 
 def add_S8_to_MCMC(top_dir, out_name):
@@ -47,7 +47,7 @@ def add_S8_to_MCMC(top_dir, out_name):
         data = np.hstack((data,
                           (data[:, 3] * np.sqrt(
                               data[:, 2] / 0.3)).reshape(-1, 1)))
-        np.savetxt('{}/{}/{}_test.txt'.format(top_dir, out_name, out_name), data)
+        np.savetxt('{}/{}/{}.txt'.format(top_dir, out_name, out_name), data)
 
 
 def noise_plotter(noise,
