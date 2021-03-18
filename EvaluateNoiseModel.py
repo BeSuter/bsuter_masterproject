@@ -10,8 +10,8 @@ import healpy as hp
 import tensorflow as tf
 
 from datetime import datetime
-from DeepSphere import healpy_networks as hp_nn
-from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot, noise_plotter
+from deepsphere import healpy_networks as hp_nn
+from Plotter import l2_color_plot, histo_plot, S8plot, PredictionLabelComparisonPlot
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
