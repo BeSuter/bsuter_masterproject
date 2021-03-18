@@ -34,7 +34,8 @@ class Trainer:
             logger.critical("Failed to import horovod.tensorflow. Proceeding with non distributed training")
             self.params['training']['distributed'] = False
 
-        self._train_preprint()
+        if self.is_root_worker:
+            self._train_preprint()
 
         self._set_dataloader()
 
@@ -87,6 +88,7 @@ class Trainer:
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
+        print(f"- Training for {self.params['model']['epochs']} epochs.")
         print(
             f"- Number of neighbors considered when building the graph is set to {self.params['model']['n_neighbors']}"
         )
@@ -211,6 +213,8 @@ class Trainer:
                     tf.train.latest_checkpoint(path_to_weights))
                 self.params['model']['weights_dir'] = os.path.join(
                     self.params['model']['weights_dir'], "RetrainedWeights")
+        if self.is_root_worker:
+            self.model.summary()
 
     def _save_model(self, epoch):
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
