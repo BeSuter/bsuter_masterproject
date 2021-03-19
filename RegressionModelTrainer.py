@@ -340,6 +340,7 @@ class Trainer:
             if self.params['training']['distributed']:
                 tape = hvd.DistributedGradientTape(tape)
             grads = tape.gradient(loss_value, self.model.trainable_variables)
+            grads, _ = tf.clip_by_global_norm(grads, 5.0)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
 
             if self.params['training']['distributed'] and index == 0 and first_epoch:
