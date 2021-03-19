@@ -85,13 +85,13 @@ def get_layers(layer):
     if layer == "layer_2":
         layers = [
             healpy_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
-            # healpy_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=128, activation=tf.nn.relu),
             healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
             healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
-            healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+            # healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                "K": 5,
