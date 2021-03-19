@@ -44,6 +44,14 @@ class Trainer:
 
         self._set_model()
 
+        if self.is_root_worker:
+            print('')
+            print(" ######################################################")
+            print(" Model summary is:")
+            print(self.model.summary())
+            print(" ######################################################")
+            print('')
+
     def _train_preprint(self):
         print('')
         print(' -------------- Starting training    ({})'.format(self.date_time))
@@ -213,11 +221,6 @@ class Trainer:
                     tf.train.latest_checkpoint(path_to_weights))
                 self.params['model']['weights_dir'] = os.path.join(
                     self.params['model']['weights_dir'], "RetrainedWeights")
-        if self.is_root_worker:
-            print(" ######################################################")
-            print(" Model summary is:")
-            print(self.model.summary())
-            print(" ######################################################")
 
     def _save_model(self, epoch):
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
