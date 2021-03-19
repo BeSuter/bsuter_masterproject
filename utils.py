@@ -91,7 +91,7 @@ def get_layers(layer):
             healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
-            # healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=256, activation=tf.nn.relu),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                "K": 5,
@@ -99,7 +99,7 @@ def get_layers(layer):
                                            },
                                            use_bn=True,
                                            norm_type="layer_norm"),
-            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
+            # healpy_layers.HealpyPool(p=1, pool_type="AVG"),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
@@ -122,6 +122,7 @@ def get_layers(layer):
                                                },
                                                use_bn=True,
                                                norm_type="layer_norm"),
+            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
@@ -129,7 +130,6 @@ def get_layers(layer):
                                                },
                                                use_bn=True,
                                                norm_type="layer_norm"),
-            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
