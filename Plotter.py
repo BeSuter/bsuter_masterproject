@@ -334,7 +334,6 @@ class PredictionLabelComparisonPlot:
         xmin, xmax = self.fig_ax.axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
         self.fig_ax.plot(true_line, true_line, alpha=0.3, color="red")
-        self.fig_ax.title(f"{topic} comparison")
 
         self.fig.savefig(self.file_path)
         plt.close(self.fig)
