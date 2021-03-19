@@ -214,7 +214,10 @@ class Trainer:
                 self.params['model']['weights_dir'] = os.path.join(
                     self.params['model']['weights_dir'], "RetrainedWeights")
         if self.is_root_worker:
-            self.model.summary()
+            print(" ######################################################")
+            print(" Model summary is:")
+            print(self.model.summary())
+            print(" ######################################################")
 
     def _save_model(self, epoch):
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
