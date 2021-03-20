@@ -276,6 +276,7 @@ class Trainer:
                 noise = tf.math.multiply(noise, stddev)
                 noise = tf.math.add(noise, mean)
                 noises.append(noise)
+            noise = tf.stack(noises, axis=-1)
         elif self.params['noise']['noise_type'] == "old_noise":
             for tomo in range(
                     self.params['dataloader']['tomographic_bin_number']):
@@ -288,11 +289,10 @@ class Trainer:
                 noise += self.params['noise']['tomographic_context'][tomo +
                                                                      1][1]
                 noises.append(noise)
+            noise = tf.stack(noises, axis=-1)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
             noise = tf.transpose(noise_element, perm=[0, 2, 1])
-        if not self.params['noise']['noise_type'] == "dominik_noise":
-            noise = tf.stack(noises, axis=-1)
 
         return noise
 
@@ -410,7 +410,6 @@ class Trainer:
 
             if epoch > 0 and epoch % 10 == 0:
                 loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
-                glob_norm = sum(epoch_global_norm) / len(epoch_global_norm)
                 logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
 
             epoch_cond = epoch % self.params['model']['epochs_save'] == 0
