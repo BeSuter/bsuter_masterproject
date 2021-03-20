@@ -108,7 +108,7 @@ def stats(data,
     if type and label == "global_norm":
         y_max = 2.
     elif label == "training_loss":
-        y_max = 0.75
+        y_max = 2.
     else:
         y_max = 5.
 
