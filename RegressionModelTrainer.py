@@ -171,11 +171,10 @@ class Trainer:
                 eval_dataset = eval_dataset.shard(hvd.size(), hvd.rank())
             eval_dataset = eval_dataset.shuffle(shuffle_size)
             eval_dataset = eval_dataset.batch(batch_size, drop_remainder=True)
-            self.test_dataset = eval_dataset.prefetch(prefetch_batch)
+            eval_dataset = eval_dataset.enumerate().filter(is_test).map(recover)
 
-            train_dataset = total_dataset.enumerate().filter(is_train).map(
-                recover)
-            self.train_dataset = train_dataset.prefetch(prefetch_batch)
+            self.test_dataset = eval_dataset.prefetch(prefetch_batch)
+            self.train_dataset = total_dataset.prefetch(prefetch_batch)
 
         elif not eval_dirs and self.params['dataloader']['split_data']:
             test_dataset = total_dataset.enumerate().filter(is_test).map(
@@ -325,6 +324,7 @@ class Trainer:
 
         return noise
 
+    @tf.function
     def noisy_training(self):
         noises = []
         for tomo in range(self.params['dataloader']['tomographic_bin_number']):
