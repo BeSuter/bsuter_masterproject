@@ -296,6 +296,7 @@ class Trainer:
         elif self.params['noise']['noise_type'] == "noise_free":
             for tomo in range(self.params['dataloader']['tomographic_bin_number']):
                 noise = np.zeros((self.params['dataloader']['batch_size'], self.pixel_num))
+                noise = tf.convert_to_tensor(noise, dtype=tf.float32)
                 noises.append(noise)
             noise = tf.stack(noises, axis=-1)
 
