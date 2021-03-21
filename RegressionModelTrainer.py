@@ -679,6 +679,7 @@ if __name__ == "__main__":
                         default=4)
     parser.add_argument('--distributed_training', action='store_true', default=False)
     parser.add_argument('--healpy_indices', type=str, action='store', default='undefined')
+    parser.add_argument('--pad_indices', type=str, action='store', default='undefined')
     parser.add_argument('gauss_loc', type=float, action='store', default=0.0)
     parser.add_argument('gauss_stddev', type=float, action='store', default=1.0)
     parser.add_argument('noisy_training', action='store_true', default=False)
@@ -739,6 +740,7 @@ if __name__ == "__main__":
             'epochs_save': ARGS.epochs_save,
             'number_of_epochs_eval': ARGS.number_of_epochs_eval,
             'healpy_indices': ARGS.healpy_indices,
+            'pad_indices': ARGS.pad_indices,
             'profiler': {
                 'log_dir': ARGS.log_dir,
                 'profile': ARGS.profile,
