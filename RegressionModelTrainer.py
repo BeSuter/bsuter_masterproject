@@ -73,7 +73,9 @@ class Trainer:
         print('')
         print(' DATALOADER ')
         print(' ---------- ')
-        print(f"- Loaded Data from {self.params['dataloader']['data_dirs']}")
+        print(f"- Loaded Training Data from {self.params['dataloader']['data_dirs']}")
+        if self.params['dataloader']['eval_dirs']:
+            print(f"- Loaded Evaluation Data from {self.params['dataloader']['eval_dirs']}")
         print(f"- Batch Size is  {self.params['dataloader']['batch_size']}")
         print(f"- Shuffle Size is {self.params['dataloader']['shuffle_size']}")
         print(f"- Prefetch Size is {self.params['dataloader']['prefetch_batch']}")
@@ -90,6 +92,8 @@ class Trainer:
         if self.params['noise']['noise_type'] == 'dominik_noise':
             print(f" -- Loaded Noise from {self.params['noise']['noise_dataloader']['data_dirs']}")
             print(f" -- Noise Shuffle Size is {self.params['noise']['noise_dataloader']['shuffle_size']}")
+        if self.params['model']['noisy_training']:
+            print(f" - Adding additional Gaussian noise to data with loc={self.params['noise']['Gauss']['loc']} and stddev={self.params['noise']['Gauss']['stddev']}")
 
         print('')
         print(' MODEL ')
@@ -122,7 +126,10 @@ class Trainer:
         for element in self.train_dataset.enumerate():
             num += 1
         self.params['dataloader']['number_of_elements'] = int(num)
-        logger.debug(f"self.params['dataloader']['number_of_elements'] has type {type(self.params['dataloader']['number_of_elements'])}")
+        num = 0
+        for element in self.test_dataset.enumerate():
+            num += 1
+        self.params['dataloader']['number_of_evaluation_elements'] = int(num)
 
     def _set_dataloader(self):
         def is_test(index, value):
@@ -135,6 +142,7 @@ class Trainer:
             return value
 
         data_dirs = self.params['dataloader']['data_dirs']
+        eval_dirs = self.params['dataloader']['eval_dirs']
         batch_size = self.params['dataloader']['batch_size']
         shuffle_size = self.params['dataloader']['shuffle_size']
         prefetch_batch = self.params['dataloader']['prefetch_batch']
@@ -145,18 +153,31 @@ class Trainer:
         if distributed_training:
             total_dataset = total_dataset.shard(hvd.size(), hvd.rank())
 
-        if self.params['model']['healpy_indices'] == 'undefined':
+        if self.params['model']['healpy_indices'] == 'undefined' or self.params['model']['pad_indices'] == 'undefined':
             logger.critical(f" !!! It is mandatory to specify the path to the npy file defining the Healpy indices "
                             f"considered !!!")
             sys.exit(0)
         else:
             self.indices_ext = np.load(self.params['model']['healpy_indices'])
+            self.padding_indices = np.load(self.params['model']['pad_indices'])
             self.pixel_num = len(self.indices_ext)
 
         total_dataset = total_dataset.shuffle(shuffle_size)
         total_dataset = total_dataset.batch(batch_size, drop_remainder=True)
 
-        if self.params['dataloader']['split_data']:
+        if eval_dirs:
+            eval_dataset = utils.get_dataset(eval_dirs)
+            if distributed_training:
+                eval_dataset = eval_dataset.shard(hvd.size(), hvd.rank())
+            eval_dataset = eval_dataset.shuffle(shuffle_size)
+            eval_dataset = eval_dataset.batch(batch_size, drop_remainder=True)
+            self.test_dataset = eval_dataset.prefetch(prefetch_batch)
+
+            train_dataset = total_dataset.enumerate().filter(is_train).map(
+                recover)
+            self.train_dataset = train_dataset.prefetch(prefetch_batch)
+
+        elif not eval_dirs and self.params['dataloader']['split_data']:
             test_dataset = total_dataset.enumerate().filter(is_test).map(
                 recover)
             train_dataset = total_dataset.enumerate().filter(is_train).map(
@@ -258,7 +279,9 @@ class Trainer:
                         f"NewPixelNoise_tomo={tomo + 1}.npz")
                     noise_ctx = np.load(noise_path)
                     mean_map = noise_ctx["mean_map"]
+                    mean_map[self.padding_indices] = 0
                     variance_map = noise_ctx["variance_map"]
+                    variance_map[self.padding_indices] = 0
                 except FileNotFoundError:
                     logger.critical(
                         "Are you trying to read PixelNoise_tomo=2x2.npz or PixelNoise_tomo=2.npz?\n" +
@@ -302,6 +325,18 @@ class Trainer:
 
         return noise
 
+    def noisy_training(self):
+        noises = []
+        for tomo in range(self.params['dataloader']['tomographic_bin_number']):
+            noise = np.random.normal(loc=self.params['noise']['Gauss']['loc'],
+                                     scale=self.params['noise']['Gauss']['stddev'],
+                                     size=(self.params['dataloader']['batch_size'], self.pixel_num))
+            noise[:, self.padding_indices] = 0
+            noise = tf.convert_to_tensor(noise, dtype=tf.float32)
+            noises.append(noise)
+        noise = tf.stack(noises, axis=-1)
+        return noise
+
     @tf.function
     def train_step(self, first_epoch):
         epoch_global_norm = tf.TensorArray(
@@ -342,6 +377,11 @@ class Trainer:
             noise = tf.ensure_shape(self._make_noise(), shape)
             kappa_data = tf.math.add(kappa_data, noise)
 
+            if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
+                training_noise = self.noisy_training()
+                kappa_data = tf.math.add(kappa_data, training_noise)
+                kappa_data = tf.ensure_shape(kappa_data, shape)
+
             # Optimize the model
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
@@ -366,12 +406,47 @@ class Trainer:
 
         return epoch_loss_avg.stack(), epoch_global_norm.stack(), epoch_mean_abs_err_avg.stack(), epoch_l2_avg.stack()
 
+    @tf.function
+    def validation_loss(self):
+        epoch_loss_avg = tf.TensorArray(
+            tf.float32,
+            size=self.params['dataloader']["number_of_evaluation_elements"],
+            dynamic_size=False,
+            clear_after_read=False,
+        )
+
+        for element in self.test_dataset.enumerate():
+            index = tf.dtypes.cast(element[0], tf.int32)
+            set = element[1]
+            shape = [self.params['dataloader']['batch_size'],
+                     self.pixel_num,
+                     self.params['dataloader']['tomographic_bin_number']]
+            kappa_data = tf.transpose(set[0], perm=[0, 2, 1])
+            kappa_data = tf.ensure_shape(kappa_data, shape)
+            labels = set[1]
+            # Add noise
+            noise = tf.ensure_shape(self._make_noise(), shape)
+            kappa_data = tf.math.add(kappa_data, noise)
+
+            with tf.GradientTape() as tape:
+                loss_object = tf.keras.losses.MeanAbsoluteError()
+                y_ = self.model.__call__(kappa_data, training=True)
+                mean_abs_err = loss_object(y_true=labels, y_pred=y_)
+
+            epoch_loss_avg = epoch_loss_avg.write(index, mean_abs_err)
+
+        return epoch_loss_avg.stack()
+
     def train(self):
         # Keep results for plotting
         train_loss_results = tf.TensorArray(tf.float32,
                                             size=0,
                                             dynamic_size=True,
                                             clear_after_read=False)
+        validation_loss_results = tf.TensorArray(tf.float32,
+                                                 size=0,
+                                                 dynamic_size=True,
+                                                 clear_after_read=False)
         global_norm_results = tf.TensorArray(tf.float32,
                                              size=0,
                                              dynamic_size=True,
@@ -400,10 +475,14 @@ class Trainer:
             else:
                 epoch_loss_avg, epoch_global_norm, epoch_mean_abs_err_avg, epoch_l2_avg = self.train_step(epoch == 0)
 
+            epoch_val_loss = self.validation_loss()
+
             epoch_loss_avg = epoch_loss_avg.numpy()
             epoch_global_norm = epoch_global_norm.numpy()
             epoch_mean_abs_err_avg = epoch_mean_abs_err_avg.numpy()
             epoch_l2_avg = epoch_l2_avg.numpy()
+
+            epoch_val_avg = epoch_val_loss.numpy()
             # End epoch
             for index in range(self.params['dataloader']["number_of_elements"]):
                 write_index = (epoch * self.params['dataloader']["number_of_elements"]) + index
@@ -413,10 +492,16 @@ class Trainer:
                 global_norm_results = global_norm_results.write(write_index, epoch_global_norm[index])
                 mean_abs_err_results = mean_abs_err_results.write(write_index, epoch_mean_abs_err_avg[index])
                 l2_results = l2_results.write(write_index, epoch_l2_avg[index])
+            for index in range(self.params['dataloader']['number_of_evaluation_elements']):
+                write_index = (epoch * self.params['dataloader']["number_of_evaluation_elements"]) + index
+                write_index = tf.dtypes.cast(write_index, tf.int32)
+
+                validation_loss_results = validation_loss_results.write(write_index, epoch_val_avg[index])
 
             if epoch > 0 and epoch % 10 == 0:
                 loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
-                logger.info(f"Finished epoch {epoch}. Loss was {loss}" + self.worker_id)
+                val_loss = sum(epoch_val_avg) / len(epoch_val_avg)
+                logger.info(f"Finished epoch {epoch}. Loss was {loss}, Validation Loss was {val_loss}" + self.worker_id)
 
             epoch_cond = epoch % self.params['model']['epochs_save'] == 0
             if epoch > 0 and epoch_cond and self.is_root_worker and not self.params['model']['debug']:
@@ -532,7 +617,8 @@ class Trainer:
                   layer=self.params['model']['layer'],
                   noise_type=self.params['noise']['noise_type'],
                   start_time=self.date_time,
-                  type=self.params['model']['continue_training'])
+                  type=self.params['model']['continue_training'],
+                  val_loss=validation_loss_results.stack().numpy())
             stats(l2_results.stack().numpy(),
                   "L2Regularization",
                   layer=self.params['model']['layer'],
@@ -546,6 +632,7 @@ class Trainer:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dirs', nargs='+', type=str, action='store')
+    parser.add_argument('--eval_dirs', nargs='+', type=str, action='store', default=False)
     parser.add_argument('--weights_dir', type=str, action='store')
     parser.add_argument('--noise_dir', type=str, action='store')
     parser.add_argument('--batch_size', type=int, action='store')
@@ -592,6 +679,9 @@ if __name__ == "__main__":
                         default=4)
     parser.add_argument('--distributed_training', action='store_true', default=False)
     parser.add_argument('--healpy_indices', type=str, action='store', default='undefined')
+    parser.add_argument('gauss_loc', type=float, action='store', default=0.0)
+    parser.add_argument('gauss_stddev', type=float, action='store', default=1.0)
+    parser.add_argument('noisy_training', action='store_true', default=False)
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -611,6 +701,7 @@ if __name__ == "__main__":
     parameters = {
         'dataloader': {
             'data_dirs': ARGS.data_dirs,
+            'eval_dirs': ARGS.eval_dirs,
             'batch_size': ARGS.batch_size,
             'shuffle_size': ARGS.shuffle_size,
             'prefetch_batch': ARGS.prefetch_batch,
@@ -618,6 +709,10 @@ if __name__ == "__main__":
             'split_data': ARGS.split_data
         },
         'noise': {
+            'Gauss': {
+                'loc': ARGS.gauss_loc,
+                'stddev': ARGS.gauss_stddev
+            },
             'noise_type': ARGS.noise_type,
             'noise_dir': ARGS.noise_dir,
             'noise_dataloader': {
@@ -648,7 +743,8 @@ if __name__ == "__main__":
                 'log_dir': ARGS.log_dir,
                 'profile': ARGS.profile,
                 'epochs': [1, 10]
-            }
+            },
+            'noisy_training': ARGS.noisy_training
         },
         'training': {
             'distributed': ARGS.distributed_training

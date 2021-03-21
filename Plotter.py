@@ -98,23 +98,27 @@ def stats(data,
           noise_type="Undefinded_Noise_Type",
           start_time="Undefined_Time",
           evaluation="",
-          type=False):
+          type=False,
+          val_loss=None):
     """
     :params data: ndarray
     :params label: str
     """
     date_time = datetime.now().strftime("%m-%d-%Y")
 
-    if type and label == "global_norm":
-        y_max = 2.
-    elif label == "training_loss":
-        y_max = 2.
-    else:
-        y_max = 5.
-
     plt.figure(num="stats", figsize=(12, 8))
     plt.plot(data, label=label)
-    plt.ylim(0, y_max)
+    
+    if type and label == "global_norm":
+        plt.ylim(0, 2.)
+    elif label == "training_loss":
+        plt.ylim(0, 2.)
+    elif label == "MeanAbsErr":
+        if isinstance(val_loss, np.ndarray):
+            plt.plot(val_loss, label="Validation Loss")
+    else:
+        plt.ylim(0, 5.)
+
     plt.title(f"Monitoring {label}, epoch={epoch}")
     plt.legend()
 
