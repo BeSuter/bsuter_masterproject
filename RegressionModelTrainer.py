@@ -680,9 +680,9 @@ if __name__ == "__main__":
     parser.add_argument('--distributed_training', action='store_true', default=False)
     parser.add_argument('--healpy_indices', type=str, action='store', default='undefined')
     parser.add_argument('--pad_indices', type=str, action='store', default='undefined')
-    parser.add_argument('gauss_loc', type=float, action='store', default=0.0)
-    parser.add_argument('gauss_stddev', type=float, action='store', default=1.0)
-    parser.add_argument('noisy_training', action='store_true', default=False)
+    parser.add_argument('--gauss_loc', type=float, action='store', default=0.0)
+    parser.add_argument('--gauss_stddev', type=float, action='store', default=1.0)
+    parser.add_argument('--noisy_training', action='store_true', default=False)
     ARGS = parser.parse_args()
 
     if ARGS.debug:
