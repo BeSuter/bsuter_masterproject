@@ -219,8 +219,9 @@ class Trainer:
                     self.params['model']['checkpoint_dir'])
                 self.model.load_weights(
                     tf.train.latest_checkpoint(path_to_weights))
-                self.params['model']['weights_dir'] = os.path.join(
-                    self.params['model']['weights_dir'], "RetrainedWeights")
+                if "RetrainedWeights" not in self.params['model']['checkpoint_dir']:
+                    self.params['model']['weights_dir'] = os.path.join(
+                        self.params['model']['weights_dir'], "RetrainedWeights")
 
     def _save_model(self, epoch):
         path_to_dir = os.path.join(os.path.expandvars("$HOME"),
