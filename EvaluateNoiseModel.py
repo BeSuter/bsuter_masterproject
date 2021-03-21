@@ -269,6 +269,7 @@ class Evaluator:
                 noise = tf.math.multiply(noise, stddev)
                 noise = tf.math.add(noise, mean)
                 noises.append(noise)
+            noise = tf.stack(noises, axis=-1)
         elif self.params['noise']['noise_type'] == "old_noise":
             for tomo in range(
                     self.params['dataloader']['tomographic_bin_number']):
@@ -281,13 +282,17 @@ class Evaluator:
                 noise += self.params['noise']['tomographic_context'][tomo +
                                                                      1][1]
                 noises.append(noise)
+            noise = tf.stack(noises, axis=-1)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
-            noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2,
-                                                                      1]),
+            noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
                                     self.bool_mask,
                                     axis=1)
-        if not self.params['noise']['noise_type'] == "dominik_noise":
+        elif self.params['noise']['noise_type'] == "noise_free":
+            for tomo in range(self.params['dataloader']['tomographic_bin_number']):
+                noise = np.zeros((self.params['dataloader']['batch_size'], self.pixel_num))
+                noise = tf.convert_to_tensor(noise, dtype=tf.float32)
+                noises.append(noise)
             noise = tf.stack(noises, axis=-1)
 
         return noise
