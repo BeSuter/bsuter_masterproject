@@ -379,6 +379,7 @@ class Trainer:
 
             if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
                 training_noise = self.noisy_training()
+                kappa_data = tf.linalg.normalize(kappa_data, axis=1)
                 kappa_data = tf.math.add(kappa_data, training_noise)
                 kappa_data = tf.ensure_shape(kappa_data, shape)
 
@@ -427,6 +428,8 @@ class Trainer:
             # Add noise
             noise = tf.ensure_shape(self._make_noise(), shape)
             kappa_data = tf.math.add(kappa_data, noise)
+            if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
+                kappa_data = tf.linalg.normalize(kappa_data, axis=1)
 
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
@@ -459,6 +462,14 @@ class Trainer:
                                     size=0,
                                     dynamic_size=True,
                                     clear_after_read=False)
+        avg_loss = tf.TensorArray(tf.float32,
+                                  size=0,
+                                  dynamic_size=True,
+                                  clear_after_read=False)
+        avg_val_loss = tf.TensorArray(tf.float32,
+                                      size=0,
+                                      dynamic_size=True,
+                                      clear_after_read=False)
         if self.params['model']['epochs'] < self.params['model']['number_of_epochs_eval']:
             # Defaults to evaluating the last epoch
             self.params['model']['number_of_epochs_eval'] = 1
@@ -498,9 +509,13 @@ class Trainer:
 
                 validation_loss_results = validation_loss_results.write(write_index, epoch_val_avg[index])
 
-            if epoch > 0 and epoch % 10 == 0:
-                loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
-                val_loss = sum(epoch_val_avg) / len(epoch_val_avg)
+            loss = sum(epoch_loss_avg) / len(epoch_loss_avg)
+            val_loss = sum(epoch_val_avg) / len(epoch_val_avg)
+
+            avg_loss = avg_loss.write(epoch, loss)
+            avg_val_loss = avg_val_loss.write(epoch, val_loss)
+
+            if epoch > 0 and epoch % 5 == 0:
                 logger.info(f"Finished epoch {epoch}. Loss was {loss}, Validation Loss was {val_loss}" + self.worker_id)
 
             epoch_cond = epoch % self.params['model']['epochs_save'] == 0
@@ -543,6 +558,8 @@ class Trainer:
                     # Add noise
                     kappa_data = tf.math.add(kappa_data,
                                              self._make_noise())
+                    if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
+                        kappa_data = tf.linalg.normalize(kappa_data, axis=1)
                     predictions = self.model.__call__(kappa_data)
 
                     for ii, prediction in enumerate(predictions.numpy()):
@@ -598,6 +615,14 @@ class Trainer:
                 om_pred_check.save_plot()
                 s8_pred_check.save_plot()
 
+                stats(avg_loss.stack().numpy(),
+                      "AverageLoss_per_Epoch",
+                      layer=self.params['model']['layer'],
+                      noise_type=self.params['noise']['noise_type'],
+                      start_time=self.date_time,
+                      type=self.params['model']['continue_training'],
+                      val_loss=avg_val_loss.stack().numpy())
+
 
         if not self.params['model']['debug'] and self.is_root_worker:
             stats(train_loss_results.stack().numpy(),
@@ -617,14 +642,26 @@ class Trainer:
                   layer=self.params['model']['layer'],
                   noise_type=self.params['noise']['noise_type'],
                   start_time=self.date_time,
-                  type=self.params['model']['continue_training'],
-                  val_loss=validation_loss_results.stack().numpy())
+                  type=self.params['model']['continue_training'])
             stats(l2_results.stack().numpy(),
                   "L2Regularization",
                   layer=self.params['model']['layer'],
                   noise_type=self.params['noise']['noise_type'],
                   start_time=self.date_time,
                   type=self.params['model']['continue_training'])
+            stats(validation_loss_results.stack().numpy(),
+                  "Validation_Loss",
+                  layer=self.params['model']['layer'],
+                  noise_type=self.params['noise']['noise_type'],
+                  start_time=self.date_time,
+                  type=self.params['model']['continue_training'])
+            stats(avg_loss.stack().numpy(),
+                  "AverageLoss_per_Epoch",
+                  layer=self.params['model']['layer'],
+                  noise_type=self.params['noise']['noise_type'],
+                  start_time=self.date_time,
+                  type=self.params['model']['continue_training'],
+                  val_loss=avg_val_loss.stack().numpy())
 
             self._save_model(epoch + 1)
 
