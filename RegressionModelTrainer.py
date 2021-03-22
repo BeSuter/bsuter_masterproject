@@ -167,10 +167,8 @@ class Trainer:
 
         if eval_dirs:
             eval_dataset = utils.get_dataset(eval_dirs)
-            if distributed_training:
-                eval_dataset = eval_dataset.shard(hvd.size(), hvd.rank())
-            eval_shuffle = int(shuffle_size / 3)
-            eval_dataset = eval_dataset.shuffle(eval_shuffle)
+            # if distributed_training:
+            #     eval_dataset = eval_dataset.shard(hvd.size(), hvd.rank())
             eval_dataset = eval_dataset.batch(batch_size, drop_remainder=True)
 
             self.test_dataset = eval_dataset.prefetch(prefetch_batch)
@@ -526,7 +524,7 @@ class Trainer:
             epoch_cond = (epoch + 1 == self.params['model']['epochs'])
             if ((epoch > 0 and eval_cond) or epoch_cond) and self.is_root_worker and not self.params['model']['debug']:
                 # Evaluate the model and plot the results
-                logger.info(f"Evaluating the model and plotting results for epoch={epoch}" + self.worker_id)
+                logger.info(f"Evaluating the model and plotting results for epoch={epoch+1}" + self.worker_id)
                 epoch_non_zero = epoch + 1
 
                 color_predictions = []
