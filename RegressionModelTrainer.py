@@ -433,7 +433,7 @@ class Trainer:
 
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
-                y_ = self.model.__call__(kappa_data, training=True)
+                y_ = self.model.__call__(kappa_data, training=False)
                 mean_abs_err = loss_object(y_true=labels, y_pred=y_)
 
             epoch_loss_avg = epoch_loss_avg.write(index, mean_abs_err)
@@ -560,7 +560,7 @@ class Trainer:
                                              self._make_noise())
                     if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
                         kappa_data, _ = tf.linalg.normalize(kappa_data, axis=1)
-                    predictions = self.model.__call__(kappa_data)
+                    predictions = self.model.__call__(kappa_data, training=False)
 
                     for ii, prediction in enumerate(predictions.numpy()):
                         om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
