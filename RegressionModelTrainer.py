@@ -379,7 +379,7 @@ class Trainer:
 
             if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
                 training_noise = self.noisy_training()
-                kappa_data = tf.linalg.normalize(kappa_data, axis=1)
+                kappa_data, _ = tf.linalg.normalize(kappa_data, axis=1)
                 kappa_data = tf.math.add(kappa_data, training_noise)
                 kappa_data = tf.ensure_shape(kappa_data, shape)
 
@@ -429,7 +429,7 @@ class Trainer:
             noise = tf.ensure_shape(self._make_noise(), shape)
             kappa_data = tf.math.add(kappa_data, noise)
             if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
-                kappa_data = tf.linalg.normalize(kappa_data, axis=1)
+                kappa_data, _ = tf.linalg.normalize(kappa_data, axis=1)
 
             with tf.GradientTape() as tape:
                 loss_object = tf.keras.losses.MeanAbsoluteError()
@@ -559,7 +559,7 @@ class Trainer:
                     kappa_data = tf.math.add(kappa_data,
                                              self._make_noise())
                     if self.params['model']['noisy_training'] and self.params['noise']['noise_type'] == "dominik_noise":
-                        kappa_data = tf.linalg.normalize(kappa_data, axis=1)
+                        kappa_data, _ = tf.linalg.normalize(kappa_data, axis=1)
                     predictions = self.model.__call__(kappa_data)
 
                     for ii, prediction in enumerate(predictions.numpy()):
