@@ -169,9 +169,9 @@ class Trainer:
             eval_dataset = utils.get_dataset(eval_dirs)
             if distributed_training:
                 eval_dataset = eval_dataset.shard(hvd.size(), hvd.rank())
-            eval_dataset = eval_dataset.shuffle(shuffle_size)
+            eval_shuffle = int(shuffle_size / 3)
+            eval_dataset = eval_dataset.shuffle(eval_shuffle)
             eval_dataset = eval_dataset.batch(batch_size, drop_remainder=True)
-            eval_dataset = eval_dataset.enumerate().filter(is_test).map(recover)
 
             self.test_dataset = eval_dataset.prefetch(prefetch_batch)
             self.train_dataset = total_dataset.prefetch(prefetch_batch)
