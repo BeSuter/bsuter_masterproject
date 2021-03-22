@@ -139,6 +139,9 @@ def stats(data,
         file_path += ".png"
     result_path = file_path[:-4] + ".npy"
     np.save(result_path, data)
+    if isinstance(val_loss, np.ndarray):
+        result_path = result_path[:-4] + "_val_loss.npy"
+        np.save(result_path, val_loss)
     plt.savefig(file_path)
     plt.close("stats")
 
