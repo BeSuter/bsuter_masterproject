@@ -241,7 +241,7 @@ class Trainer:
                     self.params['model']['weights_dir'], "RetrainedWeights")
 
     def _save_model(self, epoch):
-        path_to_dir = os.path.join(os.path.expandvars("$HOME"),
+        path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
                                    self.params['model']['weights_dir'],
                                    self.params['model']['layer'],
                                    self.params['noise']['noise_type'],

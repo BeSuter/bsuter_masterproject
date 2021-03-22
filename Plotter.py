@@ -32,7 +32,7 @@ def noise_plotter(noise,
             file_path = os.path.join(
                 target, f"Noise_tomo={tomo + 1}_date_time={date_time}.plt")
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
+            tmp_path = os.path.join(os.path.expandvars("$SCRATCH"), "Plots", evaluation,
                                     "Noise", layer, noise_type, start_time)
             os.makedirs(tmp_path, exist_ok=True)
             file_path = os.path.join(
@@ -77,7 +77,7 @@ def S8plot(data,
         file_path = os.path.join(target,
                                  f"S8plot_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation, "S8plot",
+        tmp_path = os.path.join(os.path.expandvars("$SCRATCH"), "Plots", evaluation, "S8plot",
                                 label, layer, noise_type, start_time)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path, f"S8plot_date_time={date_time}")
@@ -127,7 +127,7 @@ def stats(data,
         file_path = os.path.join(target,
                                  f"Monitoring_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
+        tmp_path = os.path.join(os.path.expandvars("$SCRATCH"), "Plots", evaluation,
                                 "Monitoring", label, layer, noise_type,
                                 start_time)
         os.makedirs(tmp_path, exist_ok=True)
@@ -170,7 +170,7 @@ def histo_plot(data,
         file_path = os.path.join(
             target, f"HistoPlot_for_{label}_date_time={date_time}")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation, label,
+        tmp_path = os.path.join(os.path.expandvars("$SCRATCH"), "Plots", evaluation, label,
                                 layer, noise_type, start_time)
         os.makedirs(tmp_path, exist_ok=True)
         file_path = os.path.join(tmp_path, f"HistoPlot_{label}")
@@ -227,7 +227,7 @@ def l2_color_plot(predictions,
         file_path = os.path.join(target,
                                  f"L2ColorPlot_date_time={date_time}.png")
     else:
-        tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
+        tmp_path = os.path.join(os.path.expandvars("$SCRATCH"), "Plots", evaluation,
                                 "L2_color_plot", layer, noise_type, start_time)
         os.makedirs(tmp_path, exist_ok=True)
         if epoch:
@@ -292,7 +292,7 @@ class PredictionLabelComparisonPlot:
             os.makedirs(target, exist_ok=True)
             self.file_path = os.path.join(target, plot_name + ".png")
         else:
-            tmp_path = os.path.join(os.path.expandvars("$HOME"), "Plots", evaluation,
+            tmp_path = os.path.join(os.path.expandvars("$SCRATCH"), "Plots", evaluation,
                                     layer, noise_type, start_time)
             os.makedirs(tmp_path, exist_ok=True)
             self.file_path = os.path.join(
