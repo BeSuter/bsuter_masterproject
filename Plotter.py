@@ -113,11 +113,11 @@ def stats(data,
         plt.ylim(0, 2.)
     elif label == "training_loss":
         plt.ylim(0, 2.)
-    elif label == "MeanAbsErr":
-        if isinstance(val_loss, np.ndarray):
-            plt.plot(val_loss, label="Validation Loss")
     else:
         plt.ylim(0, 5.)
+
+    if isinstance(val_loss, np.ndarray):
+        plt.plot(val_loss, label="Validation Loss")
 
     plt.title(f"Monitoring {label}, epoch={epoch}")
     plt.legend()
