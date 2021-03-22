@@ -237,12 +237,12 @@ class Trainer:
                     self.params['model']['checkpoint_dir'])
                 self.model.load_weights(
                     tf.train.latest_checkpoint(path_to_weights))
-                self.params['model']['weights_dir'] = os.path.join(
-                    self.params['model']['weights_dir'], "RetrainedWeights")
+                self.params['model']['save_weights_dir'] = os.path.join(
+                    self.params['model']['save_weights_dir'], "RetrainedWeights")
 
     def _save_model(self, epoch):
         path_to_dir = os.path.join(os.path.expandvars("$SCRATCH"),
-                                   self.params['model']['weights_dir'],
+                                   self.params['model']['save_weights_dir'],
                                    self.params['model']['layer'],
                                    self.params['noise']['noise_type'],
                                    self.date_time)
@@ -771,6 +771,7 @@ if __name__ == "__main__":
             'nside': ARGS.nside,
             'continue_training': ARGS.continue_training,
             'weights_dir': ARGS.weights_dir,
+            'save_weights_dir': "NGSFweightsDS2",
             'checkpoint_dir': ARGS.checkpoint_dir,
             'epochs_save': ARGS.epochs_save,
             'number_of_epochs_eval': ARGS.number_of_epochs_eval,
