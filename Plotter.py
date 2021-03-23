@@ -107,17 +107,10 @@ def stats(data,
     date_time = datetime.now().strftime("%m-%d-%Y")
 
     plt.figure(num="stats", figsize=(12, 8))
-    plt.plot(data, label=label)
-    
-    if type and label == "global_norm":
-        plt.ylim(0, 2.)
-    elif label == "training_loss":
-        plt.ylim(0, 2.)
-    else:
-        plt.ylim(0, 5.)
+    plt.semilogy(data, label=label)
 
     if isinstance(val_loss, np.ndarray):
-        plt.plot(val_loss, label="Validation Loss")
+        plt.semilogy(val_loss, label="Validation Loss")
 
     plt.title(f"Monitoring {label}, epoch={epoch}")
     plt.legend()
