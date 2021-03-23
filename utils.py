@@ -318,4 +318,63 @@ def get_layers(layer):
             tf.keras.layers.LayerNormalization(axis=1),
             tf.keras.layers.Dense(2)
         ]
+    elif layer == "dropout_4":
+        layers = [
+            healpy_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
+            tf.keras.layers.Dropout(0.7),
+            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
+            healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
+            tf.keras.layers.LayerNormalization(axis=1),
+            healpy_layers.HealpyPseudoConv(p=1, Fout=64, activation=tf.nn.relu),
+            tf.keras.layers.Dropout(0.6),
+            healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
+            tf.keras.layers.LayerNormalization(axis=1),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            tf.keras.layers.Dropout(0.5),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.HealpyPool(p=1, pool_type="AVG"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            healpy_layers.Healpy_ResidualLayer("CHEBY",
+                                               layer_kwargs={
+                                                   "K": 5,
+                                                   "activation": tf.nn.relu
+                                               },
+                                               use_bn=True,
+                                               norm_type="layer_norm"),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.LayerNormalization(axis=1),
+            tf.keras.layers.Dense(2)
+        ]
     return layers
