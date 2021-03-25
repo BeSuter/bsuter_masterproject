@@ -476,7 +476,7 @@ if __name__ == "__main__":
             'noise_type': ARGS.noise_type,
             'noise_dir': ARGS.noise_dir,
             'noise_dataloader': {
-                'data_dirs': "/scratch/snx3000/bsuter/TFRecordNoise",
+                'data_dirs': "/scratch/snx3000/bsuter/Final_TFR/TFRecordNoise",
                 'shuffle_size': ARGS.noise_shuffle,
                 'repeat_count': ARGS.repeat_count
             },
