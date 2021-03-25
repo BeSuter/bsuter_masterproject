@@ -322,7 +322,7 @@ def get_layers(layer):
             healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
             healpy_layers.HealpyPool(p=1, pool_type="AVG"),
-            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dropout(0.4),
             healpy_layers.HealpyChebyshev(K=5, Fout=256, activation=tf.nn.relu),
             tf.keras.layers.LayerNormalization(axis=1),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
@@ -346,7 +346,7 @@ def get_layers(layer):
                                                },
                                                use_bn=True,
                                                norm_type="layer_norm"),
-            tf.keras.layers.Dropout(0.3),
+            tf.keras.layers.Dropout(0.5),
             healpy_layers.Healpy_ResidualLayer("CHEBY",
                                                layer_kwargs={
                                                    "K": 5,
