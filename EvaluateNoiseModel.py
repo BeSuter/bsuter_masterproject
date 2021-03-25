@@ -346,7 +346,7 @@ class Evaluator:
                 logger.debug(f"Kappa Data has shape {kappa_data.shape}")
                 logger.debug(f"Labels have shape {np.shape(labels)}")
 
-            predictions = self.model.__call__(kappa_data)
+            predictions = self.model.__call__(kappa_data, training=False)
 
             for ii, prediction in enumerate(predictions.numpy()):
                 om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
