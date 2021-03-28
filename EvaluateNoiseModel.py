@@ -442,6 +442,8 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, action='store', default=0)
     parser.add_argument('--random', action='store_true', default=False)
     parser.add_argument('--evaluation_mode', action='store', default=None)
+    parser.add_argument('--healpy_indices', type=str, action='store', default='undefined')
+    parser.add_argument('--pad_indices', type=str, action='store', default='undefined')
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -494,6 +496,8 @@ if __name__ == "__main__":
             'n_neighbors': ARGS.n_neighbors,
             'weights_dir': ARGS.weights_dir,
             'checkpoint_dir': ARGS.checkpoint_dir,
+            'healpy_indices': ARGS.healpy_indices,
+            'pad_indices': ARGS.pad_indices,
             },
         'plots': {
             'PredictionLabelComparisonPlot': {
