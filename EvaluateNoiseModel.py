@@ -87,6 +87,7 @@ class Evaluator:
         print(' ----- ')
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
+        print(f"- Loaded Healpy Indices from {self.params['model']['healpy_indices']}")
         print(
             f"- Number of neighbors considered when building the graph is set to {self.params['model']['n_neighbors']}"
         )
@@ -175,10 +176,14 @@ class Evaluator:
 
             total_dataset = utils.get_dataset(data_dirs)
 
-            bool_mask, indices_ext = Evaluator._mask_maker(total_dataset)
-            self.bool_mask = bool_mask
-            self.indices_ext = indices_ext
-            self.pixel_num = len(indices_ext)
+            if self.params['model']['healpy_indices'] == 'undefined' or self.params['model']['pad_indices'] == 'undefined':
+                logger.critical(f" !!! It is mandatory to specify the path to the npy file defining the Healpy indices "
+                                f"considered !!!")
+                sys.exit(0)
+            else:
+                self.indices_ext = np.load(self.params['model']['healpy_indices'])
+                self.padding_indices = np.load(self.params['model']['pad_indices'])
+                self.pixel_num = len(self.indices_ext)
 
             total_dataset = total_dataset.shuffle(shuffle_size)
             total_dataset = total_dataset.batch(batch_size, drop_remainder=True)
@@ -285,9 +290,7 @@ class Evaluator:
             noise = tf.stack(noises, axis=-1)
         elif self.params['noise']['noise_type'] == "dominik_noise":
             noise_element = self.noise_dataset_iterator.get_next()[0]
-            noise = tf.boolean_mask(tf.transpose(noise_element, perm=[0, 2, 1]),
-                                    self.bool_mask,
-                                    axis=1)
+            noise = tf.transpose(noise_element, perm=[0, 2, 1])
         elif self.params['noise']['noise_type'] == "noise_free":
             for tomo in range(self.params['dataloader']['tomographic_bin_number']):
                 noise = np.zeros((self.params['dataloader']['batch_size'], self.pixel_num))
@@ -327,10 +330,7 @@ class Evaluator:
                 shape = [self.params['dataloader']['batch_size'],
                          self.pixel_num,
                          self.params['dataloader']['tomographic_bin_number']]
-                kappa_data = tf.boolean_mask(tf.transpose(
-                    set[0], perm=[0, 2, 1]),
-                    self.bool_mask,
-                    axis=1)
+                kappa_data = tf.transpose(set[0], perm=[0, 2, 1])
                 kappa_data = tf.ensure_shape(kappa_data, shape)
                 labels = set[1]
                 labels = labels.numpy()
