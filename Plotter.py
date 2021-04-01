@@ -246,22 +246,31 @@ def l2_color_plot(predictions,
 
 
 class PredictionLabelComparisonPlot:
-    def __init__(self, topic, target=None, **kwargs):
+    def __init__(self, target=None, **kwargs):
+        import matplotlib
+
+        font = {'family': 'normal',
+                'weight': 'bold'}
+
+        matplotlib.rc('font', **font)
+        plt.rc('axes', labelsize=26)
+
         epoch = kwargs.pop("epoch", None)
         if epoch:
-            title = f"{topic} prediction compared to Label for epoch {epoch}"
             epoch_name = f"_epoch={epoch}"
         else:
-            title = f"{topic} prediction compared to Label"
             epoch_name = ""
         date_time = datetime.now().strftime("%m-%d-%Y-%H-%M")
-        self.fig = plt.figure(figsize=(12, 8))
-        self.fig_ax = self.fig.add_axes(
-            [0.1, 0.35, 0.8, 0.6],
-            ylabel="Predictions",
-            xlabel="Labels",
-            title=title)
-        plot_name = f"{topic}_comparison" + epoch_name
+
+        self.fig, self.axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+
+        self.axes[0].set_xlabel("Labels")
+        self.axes[1].set_xlabel("Labels")
+
+        self.axes[0].set_ylabel("$\Omega_{m}$ Predictions", labelpad=-5)
+        self.axes[1].set_ylabel("$\sigma_{8} Predictions$", labelpad=-5)
+
+        plot_name = f"Predictions" + epoch_name
         batch_size = kwargs.pop("batch_size", None)
         if batch_size:
             plot_name += f"_batch={batch_size}"
@@ -279,7 +288,8 @@ class PredictionLabelComparisonPlot:
             assert self.evaluation_mode == "average", "Currently only plotting the average of all predictions is " \
                                                       "implemented as an alternative to plotting all predictions. \n" \
                                                       "Use evaluation_mode=average to make use of this feature."
-            self.all_values = {}
+            self.om_values = {}
+            self.s8_values = {}
 
         if target:
             os.makedirs(target, exist_ok=True)
@@ -291,7 +301,7 @@ class PredictionLabelComparisonPlot:
             self.file_path = os.path.join(
                 tmp_path, plot_name + f"_date_time={date_time}" + ".png")
 
-    def add_to_plot(self, predictions, labels):
+    def add_to_plot(self, topic, predictions, labels):
         if self.evaluation_mode == "average":
             if isinstance(labels, pd.core.series.Series):
                 labels = labels.tolist()
@@ -300,40 +310,75 @@ class PredictionLabelComparisonPlot:
             if isinstance(labels, (list, np.ndarray)) and len(labels) > 1:
                 for idx, label in enumerate(labels):
                     try:
-                        self.all_values[label].append(predictions[idx])
+                        if topic == 'om':
+                            self.om_values[label].append(predictions[idx])
+                        elif topic == 's8':
+                            self.s8_values[label].append(predictions[idx])
                     except KeyError:
-                        self.all_values[label] = [predictions[idx]]
+                        if topic == 'om':
+                            self.om_values[label] = [predictions[idx]]
+                        elif topic == 's8':
+                            self.s8_values[label] = [predictions[idx]]
             else:
                 if isinstance(labels, (list, np.ndarray)) and len(labels) == 1:
                     labels = int(labels[0])
                 if not isinstance(predictions, (list, np.ndarray)):
                     predictions = [predictions]
                 try:
-                    self.all_values[labels].extend(predictions)
+                    if topic == 'om':
+                        self.om_values[labels].extend(predictions)
+                    elif topic == 's8':
+                        self.s8_values[labels].extend(predictions)
                 except KeyError:
-                    self.all_values[labels] = predictions
+                    if topic == 'om':
+                        self.om_values[labels] = predictions
+                    elif topic == 's8':
+                        self.s8_values[labels] = predictions
         else:
-            self.fig_ax.plot(labels,
-                             predictions,
-                             marker='o',
-                             alpha=0.5,
-                             ls='',
-                             color="blue")
+            if topic == 'om':
+                self.axes[0].plot(labels,
+                                  predictions,
+                                  marker='o',
+                                  alpha=0.5,
+                                  ls='',
+                                  color="blue")
+            elif topic == 's8':
+                self.axes[1].plot(labels,
+                                  predictions,
+                                  marker='o',
+                                  alpha=0.5,
+                                  ls='',
+                                  color="blue")
 
     def save_plot(self):
         if self.evaluation_mode == "average":
-            all_results = []
-            for key, values in self.all_values.items():
+            om_results = []
+            for key, values in self.om_values.items():
                 mean = np.mean(values)
                 stddev = np.std(values)
-                self.fig_ax.errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="blue")
-                all_results.append([key, mean, stddev])
-            all_results = np.asarray(all_results)
-            result_path = self.file_path[:-4] + ".npy"
-            np.save(result_path, all_results)
-        xmin, xmax = self.fig_ax.axis()[:2]
+                self.axes[0].errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="blue")
+                om_results.append([key, mean, stddev])
+            om_results = np.asarray(om_results)
+            result_path = self.file_path[:-4] + "_om.npy"
+            np.save(result_path, om_results)
+
+            s8_results = []
+            for key, values in self.s8_values.items():
+                mean = np.mean(values)
+                stddev = np.std(values)
+                self.axes[1].errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="red")
+                s8_results.append([key, mean, stddev])
+            s8_results = np.asarray(s8_results)
+            result_path = self.file_path[:-4] + "_s8.npy"
+            np.save(result_path, s8_results)
+
+        xmin, xmax = self.axes[0].axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
-        self.fig_ax.plot(true_line, true_line, alpha=0.3, color="red")
+        self.axes[0].plot(true_line, true_line, alpha=0.3, color="red")
+
+        xmin, xmax = self.axes[1].axis()[:2]
+        true_line = np.linspace(xmin, xmax, 100)
+        self.axes[1].plot(true_line, true_line, alpha=0.3, color="red")
 
         self.fig.savefig(self.file_path)
         plt.close(self.fig)

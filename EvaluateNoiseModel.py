@@ -204,7 +204,6 @@ class Evaluator:
         """ Only used if we intend to use noise maps directly from the NGSF pipeline """
         data_dirs = self.params['noise']['noise_dataloader']['data_dirs']
         shuffle_size = self.params['noise']['noise_dataloader']['shuffle_size']
-        repeat_count = self.params['noise']['noise_dataloader']['repeat_count']
         batch_size = self.params['dataloader']['batch_size']
         prefetch_batch = self.params['dataloader']['prefetch_batch']
 
@@ -306,19 +305,11 @@ class Evaluator:
         print('')
         color_predictions = []
         color_labels = []
-        om_histo = []
-        s8_histo = []
+        # om_histo = []
+        # s8_histo = []
 
-        all_results = {"om": collections.OrderedDict(), "s8": collections.OrderedDict()}
-        om_pred_check = PredictionLabelComparisonPlot(
-            "Omega_m",
-            layer=self.params['model']['layer'],
-            noise_type=self.params['noise']['noise_type'],
-            start_time=self.date_time,
-            evaluation="Evaluation",
-            evaluation_mode=self.params['plots']['PredictionLabelComparisonPlot']['evaluation_mode'])
-        s8_pred_check = PredictionLabelComparisonPlot(
-            "Sigma_8",
+        # all_results = {"om": collections.OrderedDict(), "s8": collections.OrderedDict()}
+        pred_check = PredictionLabelComparisonPlot(
             layer=self.params['model']['layer'],
             noise_type=self.params['noise']['noise_type'],
             start_time=self.date_time,
@@ -349,36 +340,36 @@ class Evaluator:
             predictions = self.model.__call__(kappa_data, training=False)
 
             for ii, prediction in enumerate(predictions.numpy()):
-                om_pred_check.add_to_plot(prediction[0], labels[ii, 0])
-                s8_pred_check.add_to_plot(prediction[1], labels[ii, 1])
+                pred_check.add_to_plot('om', prediction[0], labels[ii, 0])
+                pred_check.add_to_plot('s8', prediction[1], labels[ii, 1])
 
                 color_predictions.append(prediction)
                 color_labels.append(labels[ii, :])
 
-                om_histo.append(prediction[0] - labels[ii, 0])
-                s8_histo.append(prediction[1] - labels[ii, 1])
+                # om_histo.append(prediction[0] - labels[ii, 0])
+                # s8_histo.append(prediction[1] - labels[ii, 1])
 
-                try:
-                    all_results["om"][(labels[ii][0], labels[ii][1])].append(prediction[0])
-                except KeyError:
-                    all_results["om"][(labels[ii][0], labels[ii][1])] = [prediction[0]]
-                try:
-                    all_results["s8"][(labels[ii][0], labels[ii][1])].append(prediction[1])
-                except KeyError:
-                    all_results["s8"][(labels[ii][0], labels[ii][1])] = [prediction[1]]
+                # try:
+                #    all_results["om"][(labels[ii][0], labels[ii][1])].append(prediction[0])
+                # except KeyError:
+                #    all_results["om"][(labels[ii][0], labels[ii][1])] = [prediction[0]]
+                # try:
+                #    all_results["s8"][(labels[ii][0], labels[ii][1])].append(prediction[1])
+                # except KeyError:
+                #    all_results["s8"][(labels[ii][0], labels[ii][1])] = [prediction[1]]
 
-        histo_plot(om_histo,
-                   "Om",
-                   layer=self.params['model']['layer'],
-                   noise_type=self.params['noise']['noise_type'],
-                   start_time=self.date_time,
-                   evaluation="Evaluation")
-        histo_plot(s8_histo,
-                   "S8",
-                   layer=self.params['model']['layer'],
-                   noise_type=self.params['noise']['noise_type'],
-                   start_time=self.date_time,
-                   evaluation="Evaluation")
+        # histo_plot(om_histo,
+        #           "Om",
+        #           layer=self.params['model']['layer'],
+        #           noise_type=self.params['noise']['noise_type'],
+        #           start_time=self.date_time,
+        #           evaluation="Evaluation")
+        # histo_plot(s8_histo,
+        #           "S8",
+        #           layer=self.params['model']['layer'],
+        #           noise_type=self.params['noise']['noise_type'],
+        #           start_time=self.date_time,
+        #           evaluation="Evaluation")
         l2_color_plot(
             np.asarray(color_predictions),
             np.asarray(color_labels),
@@ -386,20 +377,19 @@ class Evaluator:
             noise_type=self.params['noise']['noise_type'],
             start_time=self.date_time,
             evaluation="Evaluation")
-        S8plot(all_results["om"],
-               "Om",
-               layer=self.params['model']['layer'],
-               noise_type=self.params['noise']['noise_type'],
-               start_time=self.date_time,
-               evaluation="Evaluation")
-        S8plot(all_results["s8"],
-               "sigma8",
-               layer=self.params['model']['layer'],
-               noise_type=self.params['noise']['noise_type'],
-               start_time=self.date_time,
-               evaluation="Evaluation")
-        om_pred_check.save_plot()
-        s8_pred_check.save_plot()
+        # S8plot(all_results["om"],
+        #       "Om",
+        #       layer=self.params['model']['layer'],
+        #       noise_type=self.params['noise']['noise_type'],
+        #       start_time=self.date_time,
+        #       evaluation="Evaluation")
+        # S8plot(all_results["s8"],
+        #       "sigma8",
+        #       layer=self.params['model']['layer'],
+        #       noise_type=self.params['noise']['noise_type'],
+        #       start_time=self.date_time,
+        #       evaluation="Evaluation")
+        pred_check.save_plot()
 
 
 if __name__ == "__main__":
