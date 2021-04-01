@@ -85,6 +85,8 @@ class Evaluator:
         print('')
         print(' MODEL ')
         print(' ----- ')
+        if self.params['model']['dropout_marginalization']:
+            print(f"- Applying Dropout Marginalization. Each Batch will be averaged over {self.params['model']['marginalization_count']} Evaluations")
         print(f"- Layer Name is {self.params['model']['layer']}")
         print(f"- NSIDE set to {self.params['model']['nside']}")
         print(f"- Loaded Healpy Indices from {self.params['model']['healpy_indices']}")
