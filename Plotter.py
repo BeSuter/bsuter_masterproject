@@ -247,12 +247,6 @@ def l2_color_plot(predictions,
 
 class PredictionLabelComparisonPlot:
     def __init__(self, target=None, **kwargs):
-        import matplotlib
-
-        font = {'family': 'normal',
-                'weight': 'bold'}
-
-        matplotlib.rc('font', **font)
         plt.rc('axes', labelsize=26)
 
         epoch = kwargs.pop("epoch", None)
@@ -267,8 +261,8 @@ class PredictionLabelComparisonPlot:
         self.axes[0].set_xlabel("Labels")
         self.axes[1].set_xlabel("Labels")
 
-        self.axes[0].set_ylabel("$\Omega_{m}$ Predictions", labelpad=-5)
-        self.axes[1].set_ylabel("$\sigma_{8} Predictions$", labelpad=-5)
+        self.axes[0].set_ylabel("$\Omega_{m}$ Predictions", labelpad=-4)
+        self.axes[1].set_ylabel("$\sigma_{8} Predictions$", labelpad=-4)
 
         plot_name = f"Predictions" + epoch_name
         batch_size = kwargs.pop("batch_size", None)
