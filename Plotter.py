@@ -360,7 +360,7 @@ class PredictionLabelComparisonPlot:
             for key, values in self.s8_values.items():
                 mean = np.mean(values)
                 stddev = np.std(values)
-                self.axes[1].errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="red")
+                self.axes[1].errorbar(key, mean, yerr=stddev, marker='o', alpha=0.5, linestyle='', color="green")
                 s8_results.append([key, mean, stddev])
             s8_results = np.asarray(s8_results)
             result_path = self.file_path[:-4] + "_s8.npy"
