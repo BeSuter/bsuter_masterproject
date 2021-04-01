@@ -308,6 +308,8 @@ class Evaluator:
         # om_histo = []
         # s8_histo = []
 
+        loss_object = tf.keras.losses.MeanAbsoluteError()
+
         # all_results = {"om": collections.OrderedDict(), "s8": collections.OrderedDict()}
         pred_check = PredictionLabelComparisonPlot(
             layer=self.params['model']['layer'],
@@ -316,6 +318,7 @@ class Evaluator:
             evaluation="Evaluation",
             evaluation_mode=self.params['plots']['PredictionLabelComparisonPlot']['evaluation_mode'])
 
+        loss = []
         for set in self.test_dataset:
             if not self.params['dataloader']['pipeline_data']:
                 shape = [self.params['dataloader']['batch_size'],
@@ -323,8 +326,7 @@ class Evaluator:
                          self.params['dataloader']['tomographic_bin_number']]
                 kappa_data = tf.transpose(set[0], perm=[0, 2, 1])
                 kappa_data = tf.ensure_shape(kappa_data, shape)
-                labels = set[1]
-                labels = labels.numpy()
+                labels = set[1].numpy()
 
                 # Add noise
                 if not self.params['noise']['noise_free']:
@@ -337,9 +339,16 @@ class Evaluator:
                 logger.debug(f"Kappa Data has shape {kappa_data.shape}")
                 logger.debug(f"Labels have shape {np.shape(labels)}")
 
-            predictions = self.model.__call__(kappa_data, training=False)
+            if self.params['model']['dropout_marginalization']:
+                predictions = []
+                for ii in range(self.params['model']['marginalization_count']):
+                    predictions.append(self.model.__call__(kappa_data, training=True).numpy())
+                predictions = np.mean(np.asarray(predictions), axis=0)
+                loss.append(loss_object(y_true=labels, y_pred=predictions))
+            else:
+                predictions = self.model.__call__(kappa_data, training=False).numpy()
 
-            for ii, prediction in enumerate(predictions.numpy()):
+            for ii, prediction in enumerate(predictions):
                 pred_check.add_to_plot('om', prediction[0], labels[ii, 0])
                 pred_check.add_to_plot('s8', prediction[1], labels[ii, 1])
 
@@ -358,6 +367,7 @@ class Evaluator:
                 # except KeyError:
                 #    all_results["s8"][(labels[ii][0], labels[ii][1])] = [prediction[1]]
 
+        print(f"Average Loss is {np.mean(loss)}")
         # histo_plot(om_histo,
         #           "Om",
         #           layer=self.params['model']['layer'],
@@ -434,6 +444,8 @@ if __name__ == "__main__":
     parser.add_argument('--evaluation_mode', action='store', default=None)
     parser.add_argument('--healpy_indices', type=str, action='store', default='undefined')
     parser.add_argument('--pad_indices', type=str, action='store', default='undefined')
+    parser.add_argument('--dropout_marginalization', action='store_true', default=False)
+    parser.add_argument('--marginalization_count', type=int, action='store', default=64)
     ARGS = parser.parse_args()
 
     if ARGS.debug:
@@ -488,6 +500,8 @@ if __name__ == "__main__":
             'checkpoint_dir': ARGS.checkpoint_dir,
             'healpy_indices': ARGS.healpy_indices,
             'pad_indices': ARGS.pad_indices,
+            'dropout_marginalization': ARGS.dropout_marginalization,
+            'marginalization_count': ARGS.marginalization_count,
             },
         'plots': {
             'PredictionLabelComparisonPlot': {

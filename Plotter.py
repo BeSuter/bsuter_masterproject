@@ -258,11 +258,11 @@ class PredictionLabelComparisonPlot:
 
         self.fig, self.axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
 
-        self.axes[0].set_xlabel("Labels")
-        self.axes[1].set_xlabel("Labels")
+        self.axes[0].set_xlabel("$\Omega_{m}$ simulation")
+        self.axes[1].set_xlabel("$\sigma_{8}$ simulation")
 
-        self.axes[0].set_ylabel("$\Omega_{m}$ Predictions", labelpad=-4)
-        self.axes[1].set_ylabel("$\sigma_{8} Predictions$", labelpad=-4)
+        self.axes[0].set_ylabel("$\Omega_{m}$ predictions", labelpad=0)
+        self.axes[1].set_ylabel("$\sigma_{8} predictions$", labelpad=0)
 
         plot_name = f"Predictions" + epoch_name
         batch_size = kwargs.pop("batch_size", None)
@@ -368,11 +368,11 @@ class PredictionLabelComparisonPlot:
 
         xmin, xmax = self.axes[0].axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
-        self.axes[0].plot(true_line, true_line, alpha=0.3, color="red")
+        self.axes[0].plot(true_line, true_line, alpha=0.3, color="red", linestyle='--')
 
         xmin, xmax = self.axes[1].axis()[:2]
         true_line = np.linspace(xmin, xmax, 100)
-        self.axes[1].plot(true_line, true_line, alpha=0.3, color="red")
+        self.axes[1].plot(true_line, true_line, alpha=0.3, color="red", linestyle='--')
 
         self.fig.savefig(self.file_path)
         plt.close(self.fig)
