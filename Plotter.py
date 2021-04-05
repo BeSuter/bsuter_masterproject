@@ -262,7 +262,7 @@ class PredictionLabelComparisonPlot:
         self.axes[1].set_xlabel("$\sigma_{8}$ simulation")
 
         self.axes[0].set_ylabel("$\Omega_{m}$ predictions", labelpad=0)
-        self.axes[1].set_ylabel("$\sigma_{8} predictions$", labelpad=0)
+        self.axes[1].set_ylabel("$\sigma_{8}$ predictions", labelpad=0)
 
         plot_name = f"Predictions" + epoch_name
         batch_size = kwargs.pop("batch_size", None)
