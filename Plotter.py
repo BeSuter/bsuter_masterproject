@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 
-def make_contours(top_dir, stat='FullHealpyGCNN', tomo=False):
+def make_contours(top_dir, stat='FullHealpyGCNN', tomo=False, colors=['b']):
     try:
         from NGSF.plotting import plotting
     except ImportError:
@@ -18,7 +18,7 @@ def make_contours(top_dir, stat='FullHealpyGCNN', tomo=False):
     filename_config = '/cluster/work/refregier/besuter/configuration_file_ext.yml'
 
     fig = plotting.plot_contours(directory, filename_config, statistic=stat, systematics=False,
-                                 verbose=False, tomo=tomo)
+                                 verbose=False, tomo=tomo, colors=colors)
     plt.savefig('{}/{}_Contours.png'.format(top_dir, stat))
 
 def add_S8_to_MCMC(top_dir, out_name):
