@@ -243,8 +243,13 @@ def l2_color_plot(predictions,
                      edgecolors='black',
                      norm=LogNorm())
     formatter = LogFormatter(10, labelOnlyBase=False)
-    cbar = fig.colorbar(sc, ticks=[0.002, 0.010, 0.012, 0.018], format=formatter)
+    cbar = fig.colorbar(sc, ticks=[0.002, 0.003, 0.004, 0.006, 0.010, 0.015, 0.02], format=formatter)
+    cbar.ax.set_xticklabels([0.002, 0.003, 0.004, 0.006, 0.010, 0.015, 0.02])
     cbar.set_label("Mean $L_{2}$ Norm", rotation=90, labelpad=10)
+
+    np.save(tmp_path + "_om.npy", no_duplicate_labels[:, 0])
+    np.save(tmp_path + "_s8.npy", no_duplicate_labels[:, 1])
+    np.save(tmp_path + "_l2.npy", l2_values)
 
     fig.savefig(file_path)
     plt.close(fig)
