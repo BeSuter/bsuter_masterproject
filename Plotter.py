@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from datetime import datetime
+from matplotlib.colors import LogNorm
 
 
 def noise_plotter(noise,
@@ -213,7 +214,7 @@ def l2_color_plot(predictions,
     fig = plt.figure(figsize=(12, 8))
     fig.add_axes([0.1, 0.35, 0.8, 0.6],
                  ylabel="$\sigma_{8}$",
-                 xlabel="$\Omega_{m}$")
+                 xlabel="$\Omega_{}$")
 
     if target:
         os.makedirs(target, exist_ok=True)
@@ -239,7 +240,8 @@ def l2_color_plot(predictions,
                      s=100,
                      c=l2_values,
                      cmap=cm,
-                     edgecolors='black')
+                     edgecolors='black',
+                     norm=LogNorm())
     fig.colorbar(sc)
     fig.savefig(file_path)
     plt.close(fig)
