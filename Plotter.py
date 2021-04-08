@@ -209,11 +209,11 @@ def l2_color_plot(predictions,
                   evaluation=""):
     """Plots mean L2 Norm between all predictions and unique labels"""
     date_time = datetime.now().strftime("%m-%d-%Y")
+    plt.rc('axes', labelsize=26)
     fig = plt.figure(figsize=(12, 8))
     fig.add_axes([0.1, 0.35, 0.8, 0.6],
-                 ylabel="Sigma_8",
-                 xlabel="Omega_M",
-                 title=f"L2 Norm prediction to label for epoch {epoch}")
+                 ylabel="$\sigma_{8}$",
+                 xlabel="$\Omega_{m}$")
 
     if target:
         os.makedirs(target, exist_ok=True)
