@@ -242,7 +242,9 @@ def l2_color_plot(predictions,
                      cmap=cm,
                      edgecolors='black',
                      norm=LogNorm())
-    fig.colorbar(sc)
+    cbar = fig.colorbar(sc)
+    cbar.set_label("Mean $L_{2}$ Norm", rotation=90, labelpad=15)
+
     fig.savefig(file_path)
     plt.close(fig)
 
