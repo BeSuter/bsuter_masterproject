@@ -243,7 +243,7 @@ def l2_color_plot(predictions,
                      edgecolors='black',
                      norm=LogNorm())
     formatter = LogFormatter(10, labelOnlyBase=False)
-    cbar = fig.colorbar(sc, ticks=[0.002, 0.006, 0.010, 0.014, 0.018], format=formatter)
+    cbar = fig.colorbar(sc, ticks=[0.002, 0.010, 0.012, 0.018], format=formatter)
     cbar.set_label("Mean $L_{2}$ Norm", rotation=90, labelpad=10)
 
     fig.savefig(file_path)
